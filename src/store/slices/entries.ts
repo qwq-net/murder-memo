@@ -56,8 +56,8 @@ export const createEntriesSlice = (
     const entry = get().entries.find((e) => e.id === id);
     if (!entry) return;
     const updated = { ...entry, ...patch, updatedAt: Date.now() };
-    await putEntry(updated, sessionId);
     set((s) => ({ entries: s.entries.map((e) => (e.id === id ? updated : e)) }));
+    await putEntry(updated, sessionId);
   },
 
   deleteEntry: async (id) => {

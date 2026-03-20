@@ -9,6 +9,17 @@ interface TimelineEntryProps {
   hideTime?: boolean;
 }
 
+function getCaretOffset(x: number, y: number): number | null {
+  if (document.caretRangeFromPoint) {
+    const r = document.caretRangeFromPoint(x, y);
+    return r ? r.startOffset : null;
+  }
+  const cp = (document as Document & {
+    caretPositionFromPoint?: (x: number, y: number) => { offset: number } | null;
+  }).caretPositionFromPoint?.(x, y);
+  return cp ? cp.offset : null;
+}
+
 export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
   const updateEntry = useStore((s) => s.updateEntry);
   const focusedEntryId = useStore((s) => s.focusedEntryId);
@@ -20,13 +31,38 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
   const focusTargetRef = useRef<'time' | 'content'>('content');
+  const pendingCursorRef = useRef<number | null>(null);
+  const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null);
+
+  const resizeContent = useCallback((el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, []);
 
   useEffect(() => {
-    if (isEditing) {
-      const target = focusTargetRef.current === 'time' ? timeRef.current : contentRef.current;
-      target?.focus();
+    if (!isEditing) return;
+    resizeContent(contentRef.current);
+
+    if (focusTargetRef.current === 'time') {
+      timeRef.current?.focus();
+    } else {
+      const el = contentRef.current;
+      if (!el) return;
+      el.focus();
+      if (pendingSelectionRef.current !== null) {
+        const { start, end } = pendingSelectionRef.current;
+        el.setSelectionRange(start, end);
+        pendingSelectionRef.current = null;
+      } else if (pendingCursorRef.current !== null) {
+        const pos = pendingCursorRef.current;
+        el.setSelectionRange(pos, pos);
+        pendingCursorRef.current = null;
+      } else {
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
     }
-  }, [isEditing]);
+  }, [isEditing, resizeContent]);
 
   useEffect(() => {
     if (!isEditing) {
@@ -55,10 +91,10 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
   if (isEditing) {
     return (
       <div style={{
-        padding: '2px 10px 3px',
+        padding: '1px 10px 2px',
         display: 'flex',
-        gap: 6,
-        alignItems: 'flex-start',
+        gap: 8,
+        alignItems: 'center',
       }}>
         <input
           ref={timeRef}
@@ -68,46 +104,58 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
             if (e.key === 'Enter') { e.preventDefault(); contentRef.current?.focus(); }
             if (e.key === 'Escape') { e.preventDefault(); cancel(); }
           }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+            setDraftTime((v) => autoCompleteTime(v));
+            if (!e.relatedTarget || e.relatedTarget !== contentRef.current) {
+              save();
+            }
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--panel-timeline-accent)'; }}
           placeholder="--:--"
           aria-label="時刻"
           style={{
-            width: 52,
+            width: 44,
             flexShrink: 0,
-            background: 'var(--bg-base)',
-            border: '1px solid var(--panel-timeline-accent)',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-sm)',
-            color: 'var(--panel-timeline-accent)',
+            outline: 'none',
+            color: draftTime ? 'var(--panel-timeline-accent)' : 'var(--text-faint)',
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
-            padding: '4px 4px',
-            outline: 'none',
+            padding: '2px 4px',
             textAlign: 'center',
-            letterSpacing: '0.05em',
+            letterSpacing: '0.04em',
+            transition: 'border-color 0.15s',
           }}
         />
         <textarea
           ref={contentRef}
           value={draftContent}
-          onChange={(e) => setDraftContent(e.target.value)}
+          onChange={(e) => {
+            setDraftContent(e.target.value);
+            resizeContent(e.target);
+          }}
           onBlur={save}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); }
             if (e.key === 'Escape') { e.preventDefault(); cancel(); }
           }}
-          rows={Math.max(1, draftContent.split('\n').length)}
+          rows={1}
           style={{
             flex: 1,
             minWidth: 0,
-            background: 'var(--bg-base)',
-            border: '1px solid var(--border-default)',
-            borderRadius: 'var(--radius-sm)',
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
             color: 'var(--text-primary)',
             fontFamily: 'var(--font-sans)',
             fontSize: 13,
             lineHeight: 1.6,
-            padding: '3px 8px',
+            padding: 0,
             resize: 'none',
-            outline: 'none',
+            overflow: 'hidden',
           }}
         />
       </div>
@@ -148,10 +196,19 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
         {hideTime ? '' : (entry.eventTime ?? '')}
       </span>
 
-      {/* テキスト — クリックでテキストにフォーカス */}
+      {/* テキスト — クリック/ドラッグ選択でコンテンツにフォーカス */}
       <span
-        onClick={() => {
+        onMouseUp={(e) => {
           focusTargetRef.current = 'content';
+          const sel = window.getSelection();
+          if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            pendingSelectionRef.current = { start: range.startOffset, end: range.endOffset };
+            pendingCursorRef.current = null;
+          } else {
+            pendingCursorRef.current = getCaretOffset(e.clientX, e.clientY) ?? entry.content.length;
+            pendingSelectionRef.current = null;
+          }
           setFocusedEntry(entry.id);
         }}
         style={{

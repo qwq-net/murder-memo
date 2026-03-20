@@ -7,6 +7,17 @@ interface TextEntryProps {
   entry: MemoEntry;
 }
 
+function getCaretOffset(x: number, y: number): number | null {
+  if (document.caretRangeFromPoint) {
+    const r = document.caretRangeFromPoint(x, y);
+    return r ? r.startOffset : null;
+  }
+  const cp = (document as Document & {
+    caretPositionFromPoint?: (x: number, y: number) => { offset: number } | null;
+  }).caretPositionFromPoint?.(x, y);
+  return cp ? cp.offset : null;
+}
+
 export function TextEntry({ entry }: TextEntryProps) {
   const updateEntry = useStore((s) => s.updateEntry);
   const focusedEntryId = useStore((s) => s.focusedEntryId);
@@ -15,13 +26,33 @@ export function TextEntry({ entry }: TextEntryProps) {
   const isEditing = focusedEntryId === entry.id;
   const [draft, setDraft] = useState(entry.content);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const pendingCursorRef = useRef<number | null>(null);
+  const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null);
+
+  const resizeTextarea = useCallback((el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, []);
 
   useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.selectionStart = inputRef.current.value.length;
+    if (!isEditing || !inputRef.current) return;
+    const el = inputRef.current;
+    resizeTextarea(el);
+    el.focus();
+
+    if (pendingSelectionRef.current !== null) {
+      const { start, end } = pendingSelectionRef.current;
+      el.setSelectionRange(start, end);
+      pendingSelectionRef.current = null;
+    } else if (pendingCursorRef.current !== null) {
+      const pos = pendingCursorRef.current;
+      el.setSelectionRange(pos, pos);
+      pendingCursorRef.current = null;
+    } else {
+      el.setSelectionRange(el.value.length, el.value.length);
     }
-  }, [isEditing]);
+  }, [isEditing, resizeTextarea]);
 
   useEffect(() => {
     if (!isEditing) setDraft(entry.content);
@@ -45,7 +76,10 @@ export function TextEntry({ entry }: TextEntryProps) {
         <textarea
           ref={inputRef}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            resizeTextarea(e.target);
+          }}
           onBlur={save}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -57,19 +91,19 @@ export function TextEntry({ entry }: TextEntryProps) {
               cancel();
             }
           }}
-          rows={Math.max(1, draft.split('\n').length)}
+          rows={1}
           style={{
             width: '100%',
-            background: 'var(--bg-base)',
-            border: '1px solid var(--border-default)',
-            borderRadius: 'var(--radius-sm)',
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
             color: 'var(--text-primary)',
             fontFamily: 'var(--font-sans)',
             fontSize: 13,
             lineHeight: 1.6,
-            padding: '3px 8px',
+            padding: 0,
             resize: 'none',
-            outline: 'none',
+            overflow: 'hidden',
           }}
         />
       </div>
@@ -78,7 +112,18 @@ export function TextEntry({ entry }: TextEntryProps) {
 
   return (
     <div
-      onClick={() => setFocusedEntry(entry.id)}
+      onMouseUp={(e) => {
+        const sel = window.getSelection();
+        if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          pendingSelectionRef.current = { start: range.startOffset, end: range.endOffset };
+          pendingCursorRef.current = null;
+        } else {
+          pendingCursorRef.current = getCaretOffset(e.clientX, e.clientY) ?? entry.content.length;
+          pendingSelectionRef.current = null;
+        }
+        setFocusedEntry(entry.id);
+      }}
       style={{
         cursor: 'text',
         padding: '1px 10px 2px',

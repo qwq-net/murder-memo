@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '../../lib/time-parser';
 import { useStore } from '../../store';
@@ -22,6 +22,20 @@ export function EntryInput({ panel }: EntryInputProps) {
   const effectiveGroupId = isTimeline && timelineGroups.length === 1 && !selectedGroupId
     ? timelineGroups[0].id
     : selectedGroupId;
+
+  const MAX_INPUT_HEIGHT = 120;
+
+  const resizeInput = useCallback((el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    const next = Math.min(el.scrollHeight, MAX_INPUT_HEIGHT);
+    el.style.height = next + 'px';
+    el.style.overflowY = el.scrollHeight > MAX_INPUT_HEIGHT ? 'auto' : 'hidden';
+  }, []);
+
+  useEffect(() => {
+    resizeInput(inputRef.current);
+  }, [value, resizeInput]);
 
   const submit = useCallback(async () => {
     const text = value.trim();
@@ -137,7 +151,10 @@ export function EntryInput({ panel }: EntryInputProps) {
         <textarea
           ref={inputRef}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            resizeInput(e.target);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -164,6 +181,7 @@ export function EntryInput({ panel }: EntryInputProps) {
             padding: '6px 10px',
             resize: 'none',
             outline: 'none',
+            overflow: 'hidden',
             transition: 'border-color 0.15s',
             opacity: disabled ? 0.4 : 1,
           }}
