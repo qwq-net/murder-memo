@@ -16,11 +16,12 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { MemoEntry } from '../../types/memo';
 import { EntryCard } from './EntryCard';
+import { useSelection } from './selection-context';
 
 interface SortableEntryListProps {
   entries: MemoEntry[];
@@ -38,6 +39,9 @@ const dropAnimation: DropAnimation = {
 export function SortableEntryList({ entries, onReorder, hideTimeDuplicates }: SortableEntryListProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeEntry = activeId ? entries.find((e) => e.id === activeId) ?? null : null;
+  const { clearSelection } = useSelection();
+
+  const allIds = useMemo(() => entries.map((e) => e.id), [entries]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -46,6 +50,7 @@ export function SortableEntryList({ entries, onReorder, hideTimeDuplicates }: So
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+    clearSelection();
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -66,11 +71,12 @@ export function SortableEntryList({ entries, onReorder, hideTimeDuplicates }: So
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveId(null)}
     >
-      <SortableContext items={entries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext items={allIds} strategy={verticalListSortingStrategy}>
         {entries.map((entry, i) => (
           <SortableEntryCard
             key={entry.id}
             entry={entry}
+            allIds={allIds}
             hideTime={hideTimeDuplicates && i > 0 && entry.eventTime === entries[i - 1].eventTime}
           />
         ))}
@@ -97,23 +103,50 @@ export function SortableEntryList({ entries, onReorder, hideTimeDuplicates }: So
   );
 }
 
-function SortableEntryCard({ entry, hideTime }: { entry: MemoEntry; hideTime?: boolean }) {
+function SortableEntryCard({ entry, allIds, hideTime }: { entry: MemoEntry; allIds: string[]; hideTime?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: entry.id,
   });
+  const { isSelected, handleSelect, hasSelection, clearSelection } = useSelection();
+  const selected = isSelected(entry.id);
 
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      onClick={(e) => {
+        if (e.shiftKey) {
+          // Shift+クリック: 選択操作。編集モードに入らないよう伝播停止
+          e.preventDefault();
+          e.stopPropagation();
+          // ブラウザのテキスト選択をクリア
+          window.getSelection()?.removeAllRanges();
+          handleSelect(entry.id, true, allIds);
+        } else if (hasSelection) {
+          // Shift無しクリック + 選択中 → 選択解除
+          clearSelection();
+        }
+      }}
+      onMouseDown={(e) => {
+        // Shift+mousedownでブラウザの範囲テキスト選択を抑止
+        if (e.shiftKey) {
+          e.preventDefault();
+        }
+      }}
+      onMouseUp={(e) => {
+        // Shift中はTextEntry/TimelineEntryのonMouseUpに届かないようにする
+        if (e.shiftKey) {
+          e.stopPropagation();
+        }
+      }}
       style={{
         transform: transform ? `translate3d(0, ${transform.y}px, 0)` : undefined,
-        // ドラッグ中のアイテムはtransitionを無効化（DragOverlayが視覚的役割を担う）
-        // 他のアイテムにはtransitionを適用してスムーズにシフトさせる
         transition: isDragging ? 'none' : transition,
         opacity: isDragging ? 0 : 1,
         touchAction: 'none',
+        borderRadius: 'var(--radius-sm)',
+        background: selected ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : undefined,
       }}
     >
       <EntryCard entry={entry} hideTime={hideTime} />

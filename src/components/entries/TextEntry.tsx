@@ -113,6 +113,7 @@ export function TextEntry({ entry }: TextEntryProps) {
   return (
     <div
       onMouseUp={(e) => {
+        if (e.shiftKey) return; // Shift中は選択操作なので編集に入らない
         const sel = window.getSelection();
         if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
           const range = sel.getRangeAt(0);

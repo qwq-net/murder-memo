@@ -26,6 +26,20 @@ export interface MemoEntry {
 
   // clue用
   importance?: 'low' | 'medium' | 'high';
+
+  // free / personal グループ用（任意）
+  groupId?: string; // MemoGroup.id
+}
+
+// ─── Memo Group (自由メモ / 自分用メモ) ─────────────────────────────────────
+
+export interface MemoGroup {
+  id: string;
+  sessionId: string;
+  panel: 'free' | 'personal';
+  label: string;
+  sortOrder: number;
+  collapsed: boolean;
 }
 
 // ─── Timeline Group ─────────────────────────────────────────────────────────
@@ -81,5 +95,6 @@ export interface MurderMemoExport {
   entries: MemoEntry[];
   characters: Character[];
   timelineGroups: TimelineGroup[];
+  memoGroups: MemoGroup[];
   images: ExportedImage[];
 }

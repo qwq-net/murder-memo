@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { getHourKey, getHourLabel } from '../../lib/time-parser';
 import { useStore } from '../../store';
 import type { MemoEntry, TimelineGroup } from '../../types/memo';
+import { ConfirmModal } from '../common/ConfirmModal';
 import { EntryInput } from '../entries/EntryInput';
 import { SortableEntryList } from '../entries/SortableEntryList';
 
@@ -114,6 +115,12 @@ export function TimelinePanel() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleAddGroup();
                   if (e.key === 'Escape') {
+                    setIsAddingGroup(false);
+                    setNewGroupLabel('');
+                  }
+                }}
+                onBlur={() => {
+                  if (!newGroupLabel.trim()) {
                     setIsAddingGroup(false);
                     setNewGroupLabel('');
                   }
@@ -230,6 +237,7 @@ function TimelineGroupSection({
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [draftLabel, setDraftLabel] = useState(group.label);
   const [headerHovered, setHeaderHovered] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const entryCount = hourGroups.reduce((sum, hg) => sum + hg.entries.length, 0) + unknownEntries.length;
 
   const saveLabel = useCallback(() => {
@@ -343,9 +351,7 @@ function TimelineGroupSection({
           onClick={(e) => {
             e.stopPropagation();
             if (entryCount > 0) {
-              if (confirm(`「${group.label}」と所属する${entryCount}件のメモを削除しますか？`)) {
-                onRemove(group.id);
-              }
+              setDeleteModalOpen(true);
             } else {
               onRemove(group.id);
             }
@@ -431,6 +437,22 @@ function TimelineGroupSection({
           </div>
         </div>
       )}
+
+      {/* 削除確認モーダル */}
+      <ConfirmModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title={`「${group.label}」を削除`}
+        confirmationLabel={`メモが ${entryCount}件 一緒に削除されることを理解しました`}
+        actions={[
+          {
+            label: '削除',
+            color: 'var(--danger)',
+            requiresConfirmation: true,
+            onClick: () => onRemove(group.id),
+          },
+        ]}
+      />
     </div>
   );
 }

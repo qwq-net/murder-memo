@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
 
-import type { Character, GameSession, MemoEntry, TimelineGroup } from '../types/memo';
+import type { Character, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '../types/memo';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -24,6 +24,11 @@ interface MurderMemoDB extends DBSchema {
     value: TimelineGroup;
     indexes: { 'by-session': string };
   };
+  'memo-groups': {
+    key: string;
+    value: MemoGroup;
+    indexes: { 'by-session': string };
+  };
   sessions: {
     key: string;
     value: GameSession;
@@ -38,7 +43,7 @@ interface MurderMemoDB extends DBSchema {
 }
 
 const DB_NAME = 'murder-memo';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbPromise: Promise<IDBPDatabase<MurderMemoDB>> | null = null;
 
@@ -68,6 +73,12 @@ export function getDb(): Promise<IDBPDatabase<MurderMemoDB>> {
           const groupsStore = db.createObjectStore('timeline-groups', { keyPath: 'id' });
           groupsStore.createIndex('by-session', 'sessionId');
         }
+
+        if (oldVersion < 3) {
+          // memo-groups (自由メモ / 自分用メモ)
+          const memoGroupsStore = db.createObjectStore('memo-groups', { keyPath: 'id' });
+          memoGroupsStore.createIndex('by-session', 'sessionId');
+        }
       },
     });
   }
@@ -89,7 +100,7 @@ export async function putSession(session: GameSession): Promise<void> {
 export async function deleteSession(id: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
-    ['sessions', 'entries', 'characters', 'timeline-groups', 'images'],
+    ['sessions', 'entries', 'characters', 'timeline-groups', 'memo-groups', 'images'],
     'readwrite',
   );
 
@@ -110,6 +121,11 @@ export async function deleteSession(id: string): Promise<void> {
   const groups = await tx.objectStore('timeline-groups').index('by-session').getAll(id);
   for (const group of groups) {
     await tx.objectStore('timeline-groups').delete(group.id);
+  }
+
+  const memoGroups = await tx.objectStore('memo-groups').index('by-session').getAll(id);
+  for (const mg of memoGroups) {
+    await tx.objectStore('memo-groups').delete(mg.id);
   }
 
   await tx.objectStore('sessions').delete(id);
@@ -200,6 +216,32 @@ export async function bulkPutTimelineGroups(
 ): Promise<void> {
   const db = await getDb();
   const tx = db.transaction('timeline-groups', 'readwrite');
+  await Promise.all(groups.map((g) => tx.store.put(g)));
+  await tx.done;
+}
+
+// ─── Memo Groups ────────────────────────────────────────────────────────────
+
+export async function getMemoGroupsBySession(
+  sessionId: string,
+): Promise<MemoGroup[]> {
+  const db = await getDb();
+  return db.getAllFromIndex('memo-groups', 'by-session', sessionId);
+}
+
+export async function putMemoGroup(group: MemoGroup): Promise<void> {
+  const db = await getDb();
+  await db.put('memo-groups', group);
+}
+
+export async function deleteMemoGroup(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete('memo-groups', id);
+}
+
+export async function bulkPutMemoGroups(groups: MemoGroup[]): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction('memo-groups', 'readwrite');
   await Promise.all(groups.map((g) => tx.store.put(g)));
   await tx.done;
 }

@@ -5,6 +5,7 @@ export interface ContextMenuItem {
   onClick: () => void;
   danger?: boolean;
   disabled?: boolean;
+  color?: string;
   separator?: false;
 }
 
@@ -109,7 +110,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
                 ? 'var(--text-faint)'
                 : item.danger
                   ? 'var(--danger)'
-                  : 'var(--text-primary)',
+                  : item.color ?? 'var(--text-primary)',
               cursor: item.disabled ? 'default' : 'pointer',
               transition: 'background 0.1s',
             }}

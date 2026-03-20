@@ -178,7 +178,8 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
     >
       {/* 時刻 or 不明 — クリックで時刻にフォーカス */}
       <span
-        onClick={() => {
+        onClick={(e) => {
+          if (e.shiftKey) return;
           focusTargetRef.current = 'time';
           setFocusedEntry(entry.id);
         }}
@@ -204,6 +205,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
       {/* テキスト — クリック/ドラッグ選択でコンテンツにフォーカス */}
       <span
         onMouseUp={(e) => {
+          if (e.shiftKey) return; // Shift中は選択操作なので編集に入らない
           focusTargetRef.current = 'content';
           const sel = window.getSelection();
           if (sel && !sel.isCollapsed && sel.rangeCount > 0) {

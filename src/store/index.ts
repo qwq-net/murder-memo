@@ -6,6 +6,8 @@ import type { CharactersSlice } from './slices/characters';
 import { createCharactersSlice } from './slices/characters';
 import type { EntriesSlice } from './slices/entries';
 import { createEntriesSlice } from './slices/entries';
+import type { MemoGroupsSlice } from './slices/memo-groups';
+import { createMemoGroupsSlice } from './slices/memo-groups';
 import type { SessionsSlice } from './slices/sessions';
 import { createSessionsSlice } from './slices/sessions';
 import type { TimelineGroupsSlice } from './slices/timeline-groups';
@@ -17,6 +19,7 @@ export type StoreState = SessionsSlice &
   EntriesSlice &
   CharactersSlice &
   TimelineGroupsSlice &
+  MemoGroupsSlice &
   UiSlice;
 
 export const useStore = create<StoreState>()(
@@ -25,6 +28,7 @@ export const useStore = create<StoreState>()(
   ...createEntriesSlice(set as Parameters<typeof createEntriesSlice>[0], get),
   ...createCharactersSlice(set as Parameters<typeof createCharactersSlice>[0], get),
   ...createTimelineGroupsSlice(set as Parameters<typeof createTimelineGroupsSlice>[0], get),
+  ...createMemoGroupsSlice(set as Parameters<typeof createMemoGroupsSlice>[0], get),
     ...createUiSlice(set as Parameters<typeof createUiSlice>[0]),
   })),
 );
@@ -35,11 +39,12 @@ useStore.subscribe(
   (state) => state.activeSessionId,
   async (sessionId) => {
     if (!sessionId) return;
-    const { loadCharacters, loadEntries, loadTimelineGroups } = useStore.getState();
+    const { loadCharacters, loadEntries, loadTimelineGroups, loadMemoGroups } = useStore.getState();
     const [entries] = await Promise.all([
       getEntriesBySession(sessionId),
       loadCharacters(sessionId),
       loadTimelineGroups(sessionId),
+      loadMemoGroups(sessionId),
     ]);
     loadEntries(entries.sort((a, b) => a.sortOrder - b.sortOrder));
   },

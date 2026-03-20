@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { AppShell } from './components/layout/AppShell';
+import { SelectionProvider } from './components/entries/selection-context';
 import { useStore } from './store';
 
 export default function App() {
@@ -10,5 +11,9 @@ export default function App() {
     initSessions();
   }, [initSessions]);
 
-  return <AppShell />;
+  return (
+    <SelectionProvider>
+      <AppShell />
+    </SelectionProvider>
+  );
 }

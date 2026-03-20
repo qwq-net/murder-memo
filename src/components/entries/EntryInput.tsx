@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '../../lib/time-parser';
 import { useStore } from '../../store';
@@ -11,6 +11,7 @@ interface EntryInputProps {
 export function EntryInput({ panel }: EntryInputProps) {
   const addEntry = useStore((s) => s.addEntry);
   const timelineGroups = useStore((s) => s.timelineGroups);
+  const memoGroups = useStore((s) => s.memoGroups);
   const [value, setValue] = useState('');
   const [timeValue, setTimeValue] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState('');
@@ -18,6 +19,13 @@ export function EntryInput({ panel }: EntryInputProps) {
   const timeRef = useRef<HTMLInputElement>(null);
 
   const isTimeline = panel === 'timeline';
+  const isMemoPanel = panel === 'free' || panel === 'personal';
+
+  // メモパネル用のグループ一覧
+  const panelMemoGroups = useMemo(
+    () => isMemoPanel ? memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder) : [],
+    [isMemoPanel, memoGroups, panel],
+  );
 
   const effectiveGroupId = isTimeline && timelineGroups.length === 1 && !selectedGroupId
     ? timelineGroups[0].id
@@ -46,6 +54,10 @@ export function EntryInput({ panel }: EntryInputProps) {
     const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
 
     const defaultType = isTimeline ? 'timeline' as const : 'text' as const;
+
+    // メモパネル用: 選択中のグループIDをセット（空文字列ならundefined）
+    const memoGroupId = isMemoPanel && selectedGroupId ? selectedGroupId : undefined;
+
     await addEntry({
       content: text,
       panel,
@@ -55,6 +67,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         eventTime: timeTrimmed || undefined,
         eventTimeSortKey: sortKey,
       } : {}),
+      ...(memoGroupId ? { groupId: memoGroupId } : {}),
     });
     setValue('');
     setTimeValue('');
@@ -66,7 +79,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         inputRef.current?.focus();
       }
     });
-  }, [value, timeValue, panel, isTimeline, effectiveGroupId, addEntry]);
+  }, [value, timeValue, panel, isTimeline, isMemoPanel, effectiveGroupId, selectedGroupId, addEntry]);
 
   const disabled = isTimeline && timelineGroups.length === 0;
 
@@ -82,7 +95,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         gap: 4,
       }}
     >
-      {/* グループセレクタ（複数グループ時） */}
+      {/* タイムライングループセレクタ（複数グループ時） */}
       {isTimeline && timelineGroups.length > 1 && (
         <select
           value={effectiveGroupId}
@@ -100,6 +113,31 @@ export function EntryInput({ panel }: EntryInputProps) {
         >
           <option value="">グループを選択…</option>
           {timelineGroups.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.label}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {/* メモグループセレクタ（グループが1つ以上ある時） */}
+      {isMemoPanel && panelMemoGroups.length > 0 && (
+        <select
+          value={selectedGroupId}
+          onChange={(e) => setSelectedGroupId(e.target.value)}
+          aria-label="追加先グループ"
+          style={{
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--text-secondary)',
+            fontSize: 12,
+            padding: '3px 6px',
+            outline: 'none',
+          }}
+        >
+          <option value="">未分類</option>
+          {panelMemoGroups.map((g) => (
             <option key={g.id} value={g.id}>
               {g.label}
             </option>

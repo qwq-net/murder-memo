@@ -35,6 +35,11 @@
   --danger:  #b04040;
   --success: #4a8a50;
 
+  /* Importance — パネル色・選択色と重複しない専用パレット */
+  --importance-high:   #e05555;
+  --importance-medium: #e0a030;
+  --importance-low:    #6bab6b;
+
   /* Typography — system font stack, Windows Meiryo優先（Yu Gothic UIは細い） */
   --font-sans:  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
   --font-mono:  'Cascadia Mono', 'Cascadia Code', Consolas, Menlo, Monaco, monospace;
@@ -62,6 +67,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 入力要素・編集中テキストのみ選択可能 */
+input, textarea, [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────────────────────────── */

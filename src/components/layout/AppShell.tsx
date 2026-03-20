@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import type { PanelId } from '../../types/memo';
 import { CharacterSetupPanel } from '../characters/CharacterSetupPanel';
+import { useSelection } from '../entries/selection-context';
 import { FreeMemoPanel } from '../panels/FreeMemoPanel';
 import { PersonalMemoPanel } from '../panels/PersonalMemoPanel';
 import { TimelinePanel } from '../panels/TimelinePanel';
@@ -31,6 +32,7 @@ export function AppShell() {
   const activeSessionId = useStore((s) => s.activeSessionId);
   const characters = useStore((s) => s.characters);
   const activeSession = sessions.find((s) => s.id === activeSessionId);
+  const { hasSelection, clearSelection } = useSelection();
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   useEffect(() => {
@@ -53,6 +55,7 @@ export function AppShell() {
 
   return (
     <div
+      onClick={() => { if (hasSelection) clearSelection(); }}
       style={{
         display: 'flex',
         flexDirection: 'column',
