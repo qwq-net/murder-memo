@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { useStore } from '../../store';
 import type { MemoEntry } from '../../types/memo';
@@ -35,7 +35,7 @@ export function TextEntry({ entry }: TextEntryProps) {
     el.style.height = el.scrollHeight + 'px';
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isEditing || !inputRef.current) return;
     const el = inputRef.current;
     resizeTextarea(el);

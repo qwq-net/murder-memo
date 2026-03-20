@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '../../lib/time-parser';
 import { useStore } from '../../store';
@@ -40,7 +40,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
     el.style.height = el.scrollHeight + 'px';
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isEditing) return;
     resizeContent(contentRef.current);
 
@@ -124,6 +124,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
             color: draftTime ? 'var(--panel-timeline-accent)' : 'var(--text-faint)',
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
+            lineHeight: 1.6,
             padding: '2px 4px',
             textAlign: 'center',
             letterSpacing: '0.04em',
@@ -154,8 +155,10 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
             fontSize: 13,
             lineHeight: 1.6,
             padding: 0,
+            margin: 0,
             resize: 'none',
             overflow: 'hidden',
+            boxSizing: 'border-box',
           }}
         />
       </div>
@@ -182,6 +185,9 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
         style={{
           width: 44,
           flexShrink: 0,
+          border: '1px solid transparent',
+          padding: '2px 4px',
+          boxSizing: 'border-box' as const,
           fontFamily: 'var(--font-mono)',
           fontSize: 11,
           letterSpacing: '0.04em',

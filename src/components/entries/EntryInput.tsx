@@ -73,13 +73,13 @@ export function EntryInput({ panel }: EntryInputProps) {
   return (
     <div
       style={{
-        padding: '8px 10px',
+        padding: '6px 10px 8px',
         borderTop: '1px solid var(--border-subtle)',
         background: 'var(--bg-surface)',
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
-        gap: 5,
+        gap: 4,
       }}
     >
       {/* グループセレクタ（複数グループ時） */}
@@ -109,7 +109,7 @@ export function EntryInput({ panel }: EntryInputProps) {
       )}
 
       {/* 入力行 */}
-      <div style={{ display: 'flex', gap: 5, alignItems: 'stretch' }}>
+      <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
         {isTimeline && (
           <input
             ref={timeRef}
@@ -125,24 +125,24 @@ export function EntryInput({ panel }: EntryInputProps) {
             disabled={disabled}
             aria-label="時刻"
             style={{
-              width: 52,
+              width: 44,
               flexShrink: 0,
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-sm)',
+              background: 'transparent',
+              border: 'none',
+              borderBottom: '1px solid var(--border-default)',
               color: 'var(--panel-timeline-accent)',
               fontFamily: 'var(--font-mono)',
               fontSize: 11,
-              padding: '6px 4px',
+              padding: '1px 2px',
               outline: 'none',
               textAlign: 'center',
               letterSpacing: '0.05em',
               transition: 'border-color 0.15s',
               opacity: disabled ? 0.4 : 1,
             }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--panel-timeline-accent)'; }}
+            onFocus={(e) => { e.currentTarget.style.borderBottomColor = 'var(--panel-timeline-accent)'; }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.borderBottomColor = 'var(--border-default)';
               setTimeValue((v) => autoCompleteTime(v));
             }}
           />
@@ -164,29 +164,25 @@ export function EntryInput({ panel }: EntryInputProps) {
           placeholder={
             disabled
               ? 'まずグループを追加してください'
-              : 'メモを入力… Enter で追加'
+              : 'メモを入力… (Shift+Enter で改行)'
           }
           disabled={disabled}
           rows={1}
           style={{
             flex: 1,
             minWidth: 0,
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-sm)',
+            background: 'transparent',
+            border: 'none',
             color: 'var(--text-primary)',
             fontFamily: 'var(--font-sans)',
             fontSize: 13,
-            lineHeight: 1.5,
-            padding: '6px 10px',
+            lineHeight: 1.6,
+            padding: '1px 0',
             resize: 'none',
             outline: 'none',
             overflow: 'hidden',
-            transition: 'border-color 0.15s',
             opacity: disabled ? 0.4 : 1,
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
         />
       </div>
     </div>
