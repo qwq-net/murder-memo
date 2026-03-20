@@ -4,6 +4,7 @@ import { useStore } from '../../store';
 import type { PanelId } from '../../types/memo';
 import { CharacterSetupPanel } from '../characters/CharacterSetupPanel';
 import { FreeMemoPanel } from '../panels/FreeMemoPanel';
+import { PersonalMemoPanel } from '../panels/PersonalMemoPanel';
 import { MobileTabNav } from './MobileTabNav';
 import { Panel } from './Panel';
 import { PanelContainer } from './PanelContainer';
@@ -28,7 +29,7 @@ function PlaceholderPanel({ label }: { label: string }) {
 
 const PANEL_CONTENT: Record<PanelId, React.ReactNode> = {
   free:     <FreeMemoPanel />,
-  personal: <PlaceholderPanel label="ハンドアウトなど" />,
+  personal: <PersonalMemoPanel />,
   timeline: <PlaceholderPanel label="時系列整理" />,
 };
 

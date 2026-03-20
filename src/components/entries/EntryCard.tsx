@@ -1,5 +1,8 @@
+import { useCallback, useState } from 'react';
+
 import type { MemoEntry } from '../../types/memo';
 import { CharacterBadgeBar } from '../characters/CharacterBadgeBar';
+import { EntryContextMenu } from './actions/EntryContextMenu';
 import { ImageEntry } from './ImageEntry';
 import { TextEntry } from './TextEntry';
 
@@ -8,6 +11,13 @@ interface EntryCardProps {
 }
 
 export function EntryCard({ entry }: EntryCardProps) {
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY });
+  }, []);
+
   const renderContent = () => {
     switch (entry.type) {
       case 'image':
@@ -19,6 +29,7 @@ export function EntryCard({ entry }: EntryCardProps) {
 
   return (
     <div
+      onContextMenu={handleContextMenu}
       style={{
         display: 'flex',
         alignItems: 'flex-start',
@@ -33,10 +44,20 @@ export function EntryCard({ entry }: EntryCardProps) {
         <CharacterBadgeBar entry={entry} />
       </div>
 
-      {/* Content (fills remaining space) */}
+      {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         {renderContent()}
       </div>
+
+      {/* Context menu */}
+      {ctxMenu && (
+        <EntryContextMenu
+          entry={entry}
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          onClose={() => setCtxMenu(null)}
+        />
+      )}
     </div>
   );
 }
