@@ -15,7 +15,7 @@ export interface MemoEntry {
 
   // timeline用 — panel === 'timeline' 時は timelineGroupId 必須
   timelineGroupId?: string; // TimelineGroup.id
-  eventTime?: string; // "HH:MM" 形式のみ。未明の場合は undefined
+  eventTime?: string; // "HH:MM" 形式のみ。不明の場合は undefined
   eventTimeSortKey?: number; // HH:MM → 分換算 (12:30 → 750)
 
   // image用
@@ -44,7 +44,7 @@ export interface Character {
   id: string;
   name: string;
   color: string; // hex "#e74c3c"
-  sortOrder: number;
+  sortOrder: number; // DnDで並び替えた順 = 行動順
 }
 
 // ─── Session ─────────────────────────────────────────────────────────────────

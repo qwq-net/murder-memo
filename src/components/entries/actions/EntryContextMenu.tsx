@@ -60,14 +60,14 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
         onClick: () => reclassifyEntry(entry.id, t),
       }));
 
-    // タイムラインエントリの場合: 未明 / 時刻あり トグル
+    // タイムラインエントリの場合: 不明 / 時刻あり トグル
     const timeToggleItems: ContextMenuEntry[] = [];
     if (entry.panel === 'timeline') {
       const hasTime = entry.eventTime != null;
       timeToggleItems.push(
         { separator: true as const },
         {
-          label: hasTime ? '未明にする' : '時刻を設定',
+          label: hasTime ? '不明にする' : '時刻を設定',
           onClick: () => {
             if (hasTime) {
               updateEntry(entry.id, {

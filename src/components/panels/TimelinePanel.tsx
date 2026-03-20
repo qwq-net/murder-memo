@@ -124,7 +124,6 @@ export function TimelinePanel() {
                   border: '1px solid var(--panel-timeline-accent)',
                   borderRadius: 'var(--radius-sm)',
                   color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-serif)',
                   fontSize: 12,
                   padding: '4px 8px',
                   outline: 'none',
@@ -137,7 +136,7 @@ export function TimelinePanel() {
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
                   color: 'var(--bg-base)',
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: 600,
                   padding: '5px 12px',
                   cursor: 'pointer',
@@ -155,7 +154,7 @@ export function TimelinePanel() {
                   border: '1px solid var(--border-subtle)',
                   borderRadius: 'var(--radius-sm)',
                   color: 'var(--text-muted)',
-                  fontSize: 11,
+                  fontSize: 12,
                   padding: '4px 10px',
                   cursor: 'pointer',
                 }}
@@ -174,7 +173,7 @@ export function TimelinePanel() {
                 border: '1px dashed var(--border-default)',
                 borderRadius: 'var(--radius-sm)',
                 color: 'var(--text-muted)',
-                fontSize: 11,
+                fontSize: 12,
                 padding: '5px 10px',
                 cursor: 'pointer',
                 width: '100%',
@@ -297,7 +296,6 @@ function TimelineGroupSection({
               border: '1px solid var(--panel-timeline-accent)',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--panel-timeline-accent)',
-              fontFamily: 'var(--font-serif)',
               fontSize: 12,
               fontWeight: 600,
               padding: '1px 6px',
@@ -312,7 +310,6 @@ function TimelineGroupSection({
             }}
             style={{
               flex: 1,
-              fontFamily: 'var(--font-serif)',
               fontSize: 12,
               fontWeight: 600,
               color: 'var(--panel-timeline-accent)',
@@ -326,7 +323,7 @@ function TimelineGroupSection({
         {/* エントリ数 */}
         <span
           style={{
-            fontSize: 10,
+            fontSize: 12,
             color: 'var(--text-muted)',
             fontFamily: 'var(--font-mono)',
             minWidth: 16,
@@ -374,12 +371,15 @@ function TimelineGroupSection({
 
       {/* グループ内容 */}
       {!group.collapsed && (
-        <div style={{ position: 'relative' }}>
-          {/* 左端の縦線 — タイムラインのビジュアルライン */}
+        // --tl-spine-x: 縦線・ドットの中心X座標の単一の真実の情報源
+        // 縦線・HourDividerドットはともにこの値から位置を計算するため、値を変えれば両方追従する
+        <div style={{ position: 'relative', '--tl-spine-x': '15px' } as React.CSSProperties}>
+          {/* 縦線左端 = spine-x。ドット中心も spine-x なのでドットが線を中央で挟む。
+               整数pxのみ使用 → 解像度によるサブピクセルぶれなし */}
           <div
             style={{
               position: 'absolute',
-              left: 13,
+              left: 'var(--tl-spine-x)',
               top: 0,
               bottom: 0,
               width: 1,
@@ -402,10 +402,10 @@ function TimelineGroupSection({
               </div>
             ))}
 
-            {/* 未明グループ */}
+            {/* 不明グループ */}
             {unknownEntries.length > 0 && (
               <div>
-                <HourDivider label="未明" muted />
+                <HourDivider label="不明" muted />
                 {unknownEntries.map((entry) => (
                   <EntryCard key={entry.id} entry={entry} />
                 ))}
@@ -417,10 +417,9 @@ function TimelineGroupSection({
               <div
                 style={{
                   padding: '14px 12px',
-                  fontSize: 11,
+                  fontSize: 12,
                   color: 'var(--text-faint)',
                   textAlign: 'center',
-                  fontStyle: 'italic',
                 }}
               >
                 メモを追加してください
@@ -441,13 +440,16 @@ function HourDivider({ label, muted }: { label: string; muted?: boolean }) {
         display: 'flex',
         alignItems: 'center',
         gap: 8,
+        // paddingLeft = spine-x(15) - outer(6) - radius(3) = 6px
+        // → ドット中心 = 6 + 6 + 3 = 15px = spine-x = 縦線左端 ✓ (整数pxのみ)
         padding: '3px 8px 1px',
+        paddingLeft: 'calc(var(--tl-spine-x) - 9px)',
       }}
     >
       <span
         style={{
-          width: 5,
-          height: 5,
+          width: 6,
+          height: 6,
           borderRadius: '50%',
           background: muted
             ? 'var(--text-faint)'
@@ -458,11 +460,10 @@ function HourDivider({ label, muted }: { label: string; muted?: boolean }) {
       />
       <span
         style={{
-          fontSize: 10,
+          fontSize: 12,
           fontFamily: 'var(--font-mono)',
           color: muted ? 'var(--text-faint)' : 'var(--text-muted)',
           letterSpacing: '0.06em',
-          fontStyle: muted ? 'italic' : 'normal',
         }}
       >
         {label}

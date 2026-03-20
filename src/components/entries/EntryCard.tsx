@@ -12,9 +12,16 @@ interface EntryCardProps {
   hideTime?: boolean;
 }
 
+const PANEL_ACCENT: Record<string, string> = {
+  free:     'var(--panel-free-accent)',
+  personal: 'var(--panel-personal-accent)',
+  timeline: 'var(--panel-timeline-accent)',
+};
+
 export function EntryCard({ entry, hideTime }: EntryCardProps) {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const [hovered, setHovered] = useState(false);
+  const accent = PANEL_ACCENT[entry.panel] ?? 'var(--border-default)';
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -49,6 +56,24 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         transition: 'background 0.12s',
       }}
     >
+      {/* 引用ブロック風の縦線 — バッジ+テキストを1エントリとして視覚的にまとめる
+           timeline: 時刻(10+44=54px)とテキスト(62px)の8pxギャップ内に配置
+           other: 左マージンに配置 */}
+      <div
+        style={{
+          position: 'absolute',
+          left: entry.type === 'timeline' ? 57 : 4,
+          top: 2,
+          bottom: 2,
+          width: 2,
+          borderRadius: 2,
+          background: accent,
+          opacity: hovered ? 0.45 : 0.2,
+          transition: 'opacity 0.12s',
+          pointerEvents: 'none',
+        }}
+      />
+
       {/* Row 1: Character badges — テキスト開始位置に揃える */}
       <CharacterBadgeBar entry={entry} indent={entry.type === 'timeline'} />
 

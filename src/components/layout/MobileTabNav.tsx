@@ -45,7 +45,7 @@ export function MobileTabNav() {
               border: 'none',
               cursor: 'pointer',
               color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-              fontSize: 10,
+              fontSize: 12,
               letterSpacing: '0.04em',
               transition: 'color 0.15s',
               position: 'relative',
@@ -64,7 +64,7 @@ export function MobileTabNav() {
                 }}
               />
             )}
-            <span style={{ fontSize: 11 }}>{tab.label}</span>
+            <span style={{ fontSize: 12 }}>{tab.label}</span>
           </button>
         );
       })}

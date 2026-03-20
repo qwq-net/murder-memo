@@ -135,7 +135,7 @@ export function TextEntry({ entry }: TextEntryProps) {
       }}
     >
       {entry.content || (
-        <span style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>空のメモ</span>
+        <span style={{ color: 'var(--text-faint)' }}>空のメモ</span>
       )}
     </div>
   );

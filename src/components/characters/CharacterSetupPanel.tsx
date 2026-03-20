@@ -1,4 +1,20 @@
-import { useCallback, useRef, useState } from 'react';
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useStore } from '../../store';
 import { CharacterColorPalette } from './CharacterColorPalette';
@@ -15,23 +31,42 @@ export function CharacterSetupPanel() {
   const addCharacter = useStore((s) => s.addCharacter);
   const updateCharacter = useStore((s) => s.updateCharacter);
   const removeCharacter = useStore((s) => s.removeCharacter);
+  const reorderCharacters = useStore((s) => s.reorderCharacters);
 
   const [newName, setNewName] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const oldIndex = characters.findIndex((c) => c.id === active.id);
+      const newIndex = characters.findIndex((c) => c.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+      const reordered = arrayMove(characters, oldIndex, newIndex);
+      reorderCharacters(reordered.map((c) => c.id));
+    },
+    [characters, reorderCharacters],
+  );
+
   const handleAdd = useCallback(async () => {
     const name = newName.trim();
     if (!name) return;
-
     const usedColors = new Set(characters.map((c) => c.color));
     const nextColor = DEFAULT_COLORS.find((c) => !usedColors.has(c)) ?? '#888888';
-
     await addCharacter({ name, color: nextColor });
     setNewName('');
     requestAnimationFrame(() => nameInputRef.current?.focus());
   }, [newName, characters, addCharacter]);
 
   if (!isOpen) return null;
+
+  const sortedChars = [...characters].sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
     <>
@@ -79,13 +114,16 @@ export function CharacterSetupPanel() {
         >
           <span
             style={{
-              fontFamily: 'var(--font-serif)',
               fontSize: 14,
               color: 'var(--text-primary)',
               letterSpacing: '0.04em',
+              fontWeight: 600,
             }}
           >
             登場人物
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+            ドラッグで行動順を変更
           </span>
           <button
             onClick={() => setOpen(false)}
@@ -104,7 +142,7 @@ export function CharacterSetupPanel() {
         </div>
 
         {/* Character list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 0' }}>
           {characters.length === 0 && (
             <div
               style={{
@@ -118,16 +156,27 @@ export function CharacterSetupPanel() {
             </div>
           )}
 
-          {characters.map((char) => (
-            <CharacterRow
-              key={char.id}
-              id={char.id}
-              name={char.name}
-              color={char.color}
-              onUpdate={updateCharacter}
-              onRemove={removeCharacter}
-            />
-          ))}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={sortedChars.map((c) => c.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {sortedChars.map((char) => (
+                <SortableCharacterRow
+                  key={char.id}
+                  id={char.id}
+                  name={char.name}
+                  color={char.color}
+                  onUpdate={updateCharacter}
+                  onRemove={removeCharacter}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
 
         {/* Add new */}
@@ -145,7 +194,7 @@ export function CharacterSetupPanel() {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                 e.preventDefault();
                 handleAdd();
               }
@@ -186,9 +235,9 @@ export function CharacterSetupPanel() {
   );
 }
 
-// ─── Character Row ──────────────────────────────────────────────────────────
+// ─── Sortable Character Row ──────────────────────────────────────────────────
 
-function CharacterRow({
+function SortableCharacterRow({
   id,
   name,
   color,
@@ -198,10 +247,65 @@ function CharacterRow({
   id: string;
   name: string;
   color: string;
-  onUpdate: (id: string, patch: { name?: string; color?: string }) => void;
+  onUpdate: (id: string, patch: Partial<import('../../types/memo').Character>) => void;
+  onRemove: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  // X軸の移動を除去してモーダルの水平スクロールバーを防止
+  const transformStyle = transform
+    ? `translate3d(0, ${transform.y}px, 0)`
+    : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: transformStyle,
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        zIndex: isDragging ? 10 : undefined,
+        position: 'relative',
+      }}
+    >
+      <CharacterRow
+        id={id}
+        name={name}
+        color={color}
+        dragHandleProps={{ ...attributes, ...listeners }}
+        onUpdate={onUpdate}
+        onRemove={onRemove}
+      />
+    </div>
+  );
+}
+
+// ─── Character Row ──────────────────────────────────────────────────────────
+
+function CharacterRow({
+  id,
+  name,
+  color,
+  dragHandleProps,
+  onUpdate,
+  onRemove,
+}: {
+  id: string;
+  name: string;
+  color: string;
+  dragHandleProps?: React.HTMLAttributes<HTMLElement>;
+  onUpdate: (id: string, patch: Partial<import('../../types/memo').Character>) => void;
   onRemove: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  // ローカルステートでIME compositionを管理
+  const [localName, setLocalName] = useState(name);
+  const composingRef = useRef(false);
+
+  // 外部から名前が変わった時（他操作）だけ同期
+  useEffect(() => {
+    if (!composingRef.current) setLocalName(name);
+  }, [name]);
 
   return (
     <div
@@ -218,6 +322,23 @@ function CharacterRow({
           minHeight: 36,
         }}
       >
+        {/* Drag handle */}
+        <span
+          {...dragHandleProps}
+          aria-label="ドラッグして並び替え"
+          style={{
+            cursor: 'grab',
+            color: 'var(--text-faint)',
+            fontSize: 13,
+            flexShrink: 0,
+            lineHeight: 1,
+            touchAction: 'none',
+            userSelect: 'none',
+          }}
+        >
+          ⠿
+        </span>
+
         {/* Color dot — click to expand palette */}
         <button
           onClick={() => setExpanded((p) => !p)}
@@ -233,10 +354,20 @@ function CharacterRow({
           }}
         />
 
-        {/* Name */}
+        {/* Name — IME対応ローカルステート */}
         <input
-          value={name}
-          onChange={(e) => onUpdate(id, { name: e.target.value })}
+          value={localName}
+          onChange={(e) => setLocalName(e.target.value)}
+          onCompositionStart={() => { composingRef.current = true; }}
+          onCompositionEnd={(e) => {
+            composingRef.current = false;
+            onUpdate(id, { name: e.currentTarget.value });
+          }}
+          onBlur={(e) => {
+            if (!composingRef.current) {
+              onUpdate(id, { name: e.currentTarget.value.trim() || name });
+            }
+          }}
           aria-label="登場人物の名前"
           style={{
             flex: 1,
@@ -271,7 +402,7 @@ function CharacterRow({
 
       {/* Expanded: color palette */}
       {expanded && (
-        <div style={{ padding: '8px 0 4px 26px' }}>
+        <div style={{ padding: '8px 0 4px 42px' }}>
           <CharacterColorPalette value={color} onChange={(c) => onUpdate(id, { color: c })} />
         </div>
       )}

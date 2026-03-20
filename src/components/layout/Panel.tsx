@@ -54,7 +54,7 @@ export function Panel({ panelId, title, actions, children }: PanelProps) {
           />
           <span
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 500,
               color: 'var(--text-secondary)',
               letterSpacing: '0.06em',

@@ -123,7 +123,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
             outline: 'none',
             color: draftTime ? 'var(--panel-timeline-accent)' : 'var(--text-faint)',
             fontFamily: 'var(--font-mono)',
-            fontSize: 11,
+            fontSize: 12,
             lineHeight: 1.6,
             padding: '2px 4px',
             textAlign: 'center',
@@ -176,7 +176,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
         minHeight: 22,
       }}
     >
-      {/* 時刻 or 未明 — クリックで時刻にフォーカス */}
+      {/* 時刻 or 不明 — クリックで時刻にフォーカス */}
       <span
         onClick={() => {
           focusTargetRef.current = 'time';
@@ -189,14 +189,13 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
           padding: '2px 4px',
           boxSizing: 'border-box' as const,
           fontFamily: 'var(--font-mono)',
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: '0.04em',
           color: entry.eventTime
             ? 'var(--panel-timeline-accent)'
             : 'var(--text-faint)',
           textAlign: 'center',
           cursor: 'text',
-          fontStyle: entry.eventTime ? 'normal' : 'italic',
         }}
       >
         {hideTime ? '' : (entry.eventTime ?? '')}
@@ -227,7 +226,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
         }}
       >
         {entry.content || (
-          <span style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>空のメモ</span>
+          <span style={{ color: 'var(--text-faint)' }}>空のメモ</span>
         )}
       </span>
     </div>

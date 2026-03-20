@@ -93,8 +93,7 @@ export function EntryInput({ panel }: EntryInputProps) {
             border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-sm)',
             color: 'var(--text-secondary)',
-            fontFamily: 'var(--font-serif)',
-            fontSize: 11,
+            fontSize: 12,
             padding: '3px 6px',
             outline: 'none',
           }}
@@ -132,7 +131,7 @@ export function EntryInput({ panel }: EntryInputProps) {
               borderBottom: '1px solid var(--border-default)',
               color: 'var(--panel-timeline-accent)',
               fontFamily: 'var(--font-mono)',
-              fontSize: 11,
+              fontSize: 12,
               padding: '1px 2px',
               outline: 'none',
               textAlign: 'center',
