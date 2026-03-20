@@ -1,9 +1,14 @@
-function App() {
-  return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
-      <h1 className="p-4 text-xl font-bold">Murder Memo</h1>
-    </div>
-  );
-}
+import { useEffect } from 'react';
 
-export default App;
+import { AppShell } from './components/layout/AppShell';
+import { useStore } from './store';
+
+export default function App() {
+  const initSessions = useStore((s) => s.initSessions);
+
+  useEffect(() => {
+    initSessions();
+  }, [initSessions]);
+
+  return <AppShell />;
+}

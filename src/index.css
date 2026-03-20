@@ -1,1 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Shippori+Mincho:wght@400;500;600&display=swap');
 @import 'tailwindcss';
+
+/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  /* Surface */
+  --bg-base:       #0d0c0a;
+  --bg-surface:    #131210;
+  --bg-panel:      #161513;
+  --bg-elevated:   #1e1c19;
+  --bg-hover:      #252320;
+  --bg-active:     #2a2824;
+
+  /* Borders */
+  --border-subtle: #252320;
+  --border-default:#302d28;
+  --border-strong: #3d3a33;
+
+  /* Text */
+  --text-primary:  #e8dfc8;
+  --text-secondary:#a89f8a;
+  --text-muted:    #6b6458;
+  --text-faint:    #3d3a33;
+
+  /* Accent — amber investigation light */
+  --accent:        #c8891a;
+  --accent-dim:    #8a5e10;
+  --accent-glow:   rgba(200, 137, 26, 0.15);
+
+  /* Panel identity colors */
+  --panel-free-accent:     #c8891a;
+  --panel-personal-accent: #4a8fa8;
+  --panel-timeline-accent: #7a6aa8;
+
+  /* Functional */
+  --danger:  #b04040;
+  --success: #4a8a50;
+
+  /* Typography */
+  --font-sans:  'Noto Sans JP', sans-serif;
+  --font-serif: 'Shippori Mincho', serif;
+  --font-mono:  'Menlo', 'Consolas', monospace;
+
+  /* Layout */
+  --header-h:        44px;
+  --panel-header-h:  38px;
+  --resize-w:        5px;
+  --radius-sm:       4px;
+  --radius-md:       6px;
+  --radius-lg:       10px;
+}
+
+/* ─── Reset & Base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* ─── Selection ─────────────────────────────────────────────────────────────── */
+::selection { background: var(--accent-glow); color: var(--text-primary); }
+
+/* ─── Focus ─────────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 1.5px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
