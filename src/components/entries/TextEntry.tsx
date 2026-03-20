@@ -41,36 +41,38 @@ export function TextEntry({ entry }: TextEntryProps) {
 
   if (isEditing) {
     return (
-      <textarea
-        ref={inputRef}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={save}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            save();
-          }
-          if (e.key === 'Escape') {
-            e.preventDefault();
-            cancel();
-          }
-        }}
-        rows={Math.max(1, draft.split('\n').length)}
-        style={{
-          width: '100%',
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--accent-dim)',
-          borderRadius: 'var(--radius-sm)',
-          color: 'var(--text-primary)',
-          fontFamily: 'var(--font-sans)',
-          fontSize: 13,
-          lineHeight: 1.6,
-          padding: '4px 8px',
-          resize: 'none',
-          outline: 'none',
-        }}
-      />
+      <div style={{ padding: '1px 10px 2px' }}>
+        <textarea
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={save}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              save();
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              cancel();
+            }
+          }}
+          rows={Math.max(1, draft.split('\n').length)}
+          style={{
+            width: '100%',
+            background: 'var(--bg-base)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: 13,
+            lineHeight: 1.6,
+            padding: '3px 8px',
+            resize: 'none',
+            outline: 'none',
+          }}
+        />
+      </div>
     );
   }
 
@@ -79,20 +81,12 @@ export function TextEntry({ entry }: TextEntryProps) {
       onClick={() => setFocusedEntry(entry.id)}
       style={{
         cursor: 'text',
-        padding: '4px 8px',
-        borderRadius: 'var(--radius-sm)',
+        padding: '1px 10px 2px',
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-word',
-        transition: 'background 0.12s',
-        minHeight: 24,
+        minHeight: 22,
         fontSize: 13,
         lineHeight: 1.6,
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-hover)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = 'transparent';
       }}
     >
       {entry.content || (

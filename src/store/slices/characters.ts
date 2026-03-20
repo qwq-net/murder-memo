@@ -37,7 +37,6 @@ export const createCharactersSlice = (
     if (!sessionId) throw new Error('No active session');
     const maxOrder = get().characters.reduce((m, c) => Math.max(m, c.sortOrder), -1);
     const char: Character = {
-      shortcut: undefined,
       ...partial,
       id: nanoid(),
       sortOrder: maxOrder + 1,

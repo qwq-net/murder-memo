@@ -19,7 +19,7 @@ export interface UiSlice {
 
 const DEFAULT_LAYOUT: PanelLayoutConfig = {
   sizes: [40, 30, 30],
-  order: ['free', 'personal', 'timeline'],
+  order: ['free', 'timeline', 'personal'],
 };
 
 export const createUiSlice = (

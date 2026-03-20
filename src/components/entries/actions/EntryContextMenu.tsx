@@ -28,15 +28,29 @@ interface EntryContextMenuProps {
 
 export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps) {
   const moveEntryToPanel = useStore((s) => s.moveEntryToPanel);
+  const updateEntry = useStore((s) => s.updateEntry);
   const reclassifyEntry = useStore((s) => s.reclassifyEntry);
   const deleteEntry = useStore((s) => s.deleteEntry);
+  const timelineGroups = useStore((s) => s.timelineGroups);
 
   const items = useMemo<ContextMenuEntry[]>(() => {
     const moveItems: ContextMenuEntry[] = (['free', 'personal', 'timeline'] as PanelId[])
       .filter((p) => p !== entry.panel)
       .map((p) => ({
         label: `${PANEL_LABELS[p]}へ移動`,
-        onClick: () => moveEntryToPanel(entry.id, p),
+        disabled: p === 'timeline' && timelineGroups.length === 0,
+        onClick: async () => {
+          if (p === 'timeline' && timelineGroups.length > 0) {
+            // タイムラインへ移動時は最初のグループに所属させる
+            await moveEntryToPanel(entry.id, p);
+            await updateEntry(entry.id, {
+              timelineGroupId: timelineGroups[0].id,
+              type: 'timeline',
+            });
+          } else {
+            await moveEntryToPanel(entry.id, p);
+          }
+        },
       }));
 
     const typeItems: ContextMenuEntry[] = (['text', 'timeline', 'character-info', 'clue'] as MemoEntryType[])
@@ -46,10 +60,37 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
         onClick: () => reclassifyEntry(entry.id, t),
       }));
 
+    // タイムラインエントリの場合: 未明 / 時刻あり トグル
+    const timeToggleItems: ContextMenuEntry[] = [];
+    if (entry.panel === 'timeline') {
+      const hasTime = entry.eventTime != null;
+      timeToggleItems.push(
+        { separator: true as const },
+        {
+          label: hasTime ? '未明にする' : '時刻を設定',
+          onClick: () => {
+            if (hasTime) {
+              updateEntry(entry.id, {
+                eventTime: undefined,
+                eventTimeSortKey: undefined,
+              });
+            } else {
+              // 時刻設定 → 編集モードに入る
+              updateEntry(entry.id, {});
+              // フォーカスして編集モードへ
+              const { setFocusedEntry } = useStore.getState();
+              setFocusedEntry(entry.id);
+            }
+          },
+        },
+      );
+    }
+
     return [
       ...moveItems,
       { separator: true as const },
       ...typeItems,
+      ...timeToggleItems,
       { separator: true as const },
       {
         label: '削除',
@@ -57,7 +98,7 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
         danger: true,
       },
     ];
-  }, [entry, moveEntryToPanel, reclassifyEntry, deleteEntry]);
+  }, [entry, moveEntryToPanel, updateEntry, reclassifyEntry, deleteEntry, timelineGroups]);
 
   return <ContextMenu x={x} y={y} items={items} onClose={onClose} />;
 }

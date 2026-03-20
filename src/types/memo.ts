@@ -13,9 +13,10 @@ export interface MemoEntry {
   updatedAt: number;
   sortOrder: number;
 
-  // timeline用
-  eventTime?: string; // 自由形式 "14:30", "1日目 午後" etc.
-  eventTimeSortKey?: number; // ソート用数値キー
+  // timeline用 — panel === 'timeline' 時は timelineGroupId 必須
+  timelineGroupId?: string; // TimelineGroup.id
+  eventTime?: string; // "HH:MM" 形式のみ。未明の場合は undefined
+  eventTimeSortKey?: number; // HH:MM → 分換算 (12:30 → 750)
 
   // image用
   imageBlobKey?: string; // IndexedDB images store のキー
@@ -27,13 +28,22 @@ export interface MemoEntry {
   importance?: 'low' | 'medium' | 'high';
 }
 
+// ─── Timeline Group ─────────────────────────────────────────────────────────
+
+export interface TimelineGroup {
+  id: string;
+  sessionId: string;
+  label: string; // "当日", "前日", "7月15日" 等の自由テキスト
+  sortOrder: number; // 手動ソート
+  collapsed: boolean;
+}
+
 // ─── Character ───────────────────────────────────────────────────────────────
 
 export interface Character {
   id: string;
   name: string;
   color: string; // hex "#e74c3c"
-  shortcut?: string; // "1"–"9" キーボードショートカット
   sortOrder: number;
 }
 
@@ -70,5 +80,6 @@ export interface MurderMemoExport {
   session: GameSession;
   entries: MemoEntry[];
   characters: Character[];
+  timelineGroups: TimelineGroup[];
   images: ExportedImage[];
 }

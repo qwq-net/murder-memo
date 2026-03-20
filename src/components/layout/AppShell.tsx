@@ -5,32 +5,15 @@ import type { PanelId } from '../../types/memo';
 import { CharacterSetupPanel } from '../characters/CharacterSetupPanel';
 import { FreeMemoPanel } from '../panels/FreeMemoPanel';
 import { PersonalMemoPanel } from '../panels/PersonalMemoPanel';
+import { TimelinePanel } from '../panels/TimelinePanel';
 import { MobileTabNav } from './MobileTabNav';
 import { Panel } from './Panel';
 import { PanelContainer } from './PanelContainer';
 
-// 後続TODOで PersonalMemoPanel, TimelinePanel に差し替え
-function PlaceholderPanel({ label }: { label: string }) {
-  return (
-    <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'var(--text-faint)',
-        fontSize: 12,
-      }}
-    >
-      {label}
-    </div>
-  );
-}
-
 const PANEL_CONTENT: Record<PanelId, React.ReactNode> = {
   free:     <FreeMemoPanel />,
   personal: <PersonalMemoPanel />,
-  timeline: <PlaceholderPanel label="時系列整理" />,
+  timeline: <TimelinePanel />,
 };
 
 const PANEL_TITLES: Record<PanelId, string> = {

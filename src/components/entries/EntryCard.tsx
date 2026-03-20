@@ -5,13 +5,16 @@ import { CharacterBadgeBar } from '../characters/CharacterBadgeBar';
 import { EntryContextMenu } from './actions/EntryContextMenu';
 import { ImageEntry } from './ImageEntry';
 import { TextEntry } from './TextEntry';
+import { TimelineEntry } from './TimelineEntry';
 
 interface EntryCardProps {
   entry: MemoEntry;
+  hideTime?: boolean;
 }
 
-export function EntryCard({ entry }: EntryCardProps) {
+export function EntryCard({ entry, hideTime }: EntryCardProps) {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+  const [hovered, setHovered] = useState(false);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -22,6 +25,8 @@ export function EntryCard({ entry }: EntryCardProps) {
     switch (entry.type) {
       case 'image':
         return <ImageEntry entry={entry} />;
+      case 'timeline':
+        return <TimelineEntry entry={entry} hideTime={hideTime} />;
       default:
         return <TextEntry entry={entry} />;
     }
@@ -30,22 +35,25 @@ export function EntryCard({ entry }: EntryCardProps) {
   return (
     <div
       onContextMenu={handleContextMenu}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex',
-        alignItems: 'flex-start',
-        gap: 4,
-        borderBottom: '1px solid var(--border-subtle)',
+        flexDirection: 'column',
         position: 'relative',
-        padding: '2px 0',
+        padding: '1px 0',
+        borderRadius: 'var(--radius-sm)',
+        background: hovered
+          ? 'color-mix(in srgb, var(--bg-hover) 50%, transparent)'
+          : 'transparent',
+        transition: 'background 0.12s',
       }}
     >
-      {/* Badge bar (left) */}
-      <div style={{ paddingTop: 6, paddingLeft: 4 }}>
-        <CharacterBadgeBar entry={entry} />
-      </div>
+      {/* Row 1: Character badges — テキスト開始位置に揃える */}
+      <CharacterBadgeBar entry={entry} indent={entry.type === 'timeline'} />
 
-      {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Row 2: Content (time + text) */}
+      <div style={{ minWidth: 0 }}>
         {renderContent()}
       </div>
 

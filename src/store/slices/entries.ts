@@ -72,7 +72,14 @@ export const createEntriesSlice = (
     if (!sessionId) return;
     const entry = get().entries.find((e) => e.id === id);
     if (!entry) return;
-    const updated = { ...entry, panel, updatedAt: Date.now() };
+    const patch: Partial<MemoEntry> = { panel, updatedAt: Date.now() };
+    // タイムラインから離れる場合、グループ・時刻情報をクリア
+    if (panel !== 'timeline') {
+      patch.timelineGroupId = undefined;
+      patch.eventTime = undefined;
+      patch.eventTimeSortKey = undefined;
+    }
+    const updated = { ...entry, ...patch };
     await putEntry(updated, sessionId);
     set((s) => ({ entries: s.entries.map((e) => (e.id === id ? updated : e)) }));
   },
