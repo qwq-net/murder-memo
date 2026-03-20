@@ -1,4 +1,5 @@
 import type { MemoEntry } from '../../types/memo';
+import { ImageEntry } from './ImageEntry';
 import { TextEntry } from './TextEntry';
 
 interface EntryCardProps {
@@ -6,15 +7,10 @@ interface EntryCardProps {
 }
 
 export function EntryCard({ entry }: EntryCardProps) {
-  // 型別に描画を分岐（後続TODOで ImageEntry, TimelineEntry 等を追加）
   const renderContent = () => {
     switch (entry.type) {
       case 'image':
-        return (
-          <div style={{ padding: '4px 8px', color: 'var(--text-muted)', fontSize: 12 }}>
-            [画像]
-          </div>
-        );
+        return <ImageEntry entry={entry} />;
       default:
         return <TextEntry entry={entry} />;
     }

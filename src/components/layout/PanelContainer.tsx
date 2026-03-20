@@ -35,20 +35,26 @@ export function PanelContainer({ panels }: PanelContainerProps) {
   return (
     <div
       ref={containerRef}
-      style={{ display: 'flex', flex: 1, overflow: 'hidden', height: '100%' }}
+      style={{ display: 'flex', flex: 1, overflow: 'hidden', height: '100%', minHeight: 0 }}
     >
       {panels.map((panel, i) => (
-        <>
+        <div key={panel.id} style={{ display: 'contents' }}>
           <div
-            key={panel.id}
-            style={{ width: `${sizes[i]}%`, minWidth: 0, overflow: 'hidden' }}
+            style={{
+              width: `${sizes[i]}%`,
+              minWidth: 0,
+              height: '100%',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
           >
             {panel.node}
           </div>
           {i < panels.length - 1 && (
-            <ResizeHandle key={`resize-${i}`} onDelta={(dx) => handleDelta(i as 0 | 1, dx)} />
+            <ResizeHandle onDelta={(dx) => handleDelta(i as 0 | 1, dx)} />
           )}
-        </>
+        </div>
       ))}
     </div>
   );

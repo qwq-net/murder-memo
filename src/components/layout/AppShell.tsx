@@ -161,7 +161,9 @@ export function AppShell() {
           <MobileTabNav />
         </>
       ) : (
-        <PanelContainer panels={orderedPanels} />
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <PanelContainer panels={orderedPanels} />
+        </div>
       )}
     </div>
   );
