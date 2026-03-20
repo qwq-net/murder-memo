@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { useStore } from '../../store';
 import type { PanelId } from '../../types/memo';
+import { CharacterSetupPanel } from '../characters/CharacterSetupPanel';
 import { FreeMemoPanel } from '../panels/FreeMemoPanel';
 import { MobileTabNav } from './MobileTabNav';
 import { Panel } from './Panel';
@@ -165,6 +166,9 @@ export function AppShell() {
           <PanelContainer panels={orderedPanels} />
         </div>
       )}
+
+      {/* Modals */}
+      <CharacterSetupPanel />
     </div>
   );
 }
