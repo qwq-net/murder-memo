@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 
 import { useStore } from '../../store';
 import type { PanelId } from '../../types/memo';
+import { FreeMemoPanel } from '../panels/FreeMemoPanel';
 import { MobileTabNav } from './MobileTabNav';
 import { Panel } from './Panel';
 import { PanelContainer } from './PanelContainer';
 
-// パネルコンテンツはプレースホルダー（後続TODOで差し替え）
+// 後続TODOで PersonalMemoPanel, TimelinePanel に差し替え
 function PlaceholderPanel({ label }: { label: string }) {
   return (
     <div
@@ -24,11 +25,17 @@ function PlaceholderPanel({ label }: { label: string }) {
   );
 }
 
-const PANEL_DEFS: { id: PanelId; title: string; placeholder: string }[] = [
-  { id: 'free',     title: '自由メモ',     placeholder: 'メモを書き殴る' },
-  { id: 'personal', title: '自分用メモ',   placeholder: 'ハンドアウトなど' },
-  { id: 'timeline', title: 'タイムライン', placeholder: '時系列整理' },
-];
+const PANEL_CONTENT: Record<PanelId, React.ReactNode> = {
+  free:     <FreeMemoPanel />,
+  personal: <PlaceholderPanel label="ハンドアウトなど" />,
+  timeline: <PlaceholderPanel label="時系列整理" />,
+};
+
+const PANEL_TITLES: Record<PanelId, string> = {
+  free:     '自由メモ',
+  personal: '自分用メモ',
+  timeline: 'タイムライン',
+};
 
 export function AppShell() {
   const order = useStore((s) => s.layout.order);
@@ -46,17 +53,14 @@ export function AppShell() {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
-  const orderedPanels = order.map((id) => {
-    const def = PANEL_DEFS.find((d) => d.id === id)!;
-    return {
-      id,
-      node: (
-        <Panel panelId={id} title={def.title}>
-          <PlaceholderPanel label={def.placeholder} />
-        </Panel>
-      ),
-    };
-  });
+  const orderedPanels = order.map((id) => ({
+    id,
+    node: (
+      <Panel panelId={id} title={PANEL_TITLES[id]}>
+        {PANEL_CONTENT[id]}
+      </Panel>
+    ),
+  }));
 
   return (
     <div
