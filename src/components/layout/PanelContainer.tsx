@@ -11,6 +11,9 @@ interface PanelContainerProps {
   }[];
 }
 
+// Must match --resize-w in index.css
+const HANDLE_PX = 5;
+
 export function PanelContainer({ panels }: PanelContainerProps) {
   const sizes = useStore((s) => s.layout.sizes);
   const setLayout = useStore((s) => s.setLayout);
@@ -19,17 +22,22 @@ export function PanelContainer({ panels }: PanelContainerProps) {
   const handleDelta = useCallback(
     (index: 0 | 1, dx: number) => {
       const containerW = containerRef.current?.offsetWidth ?? window.innerWidth;
-      const dPct = (dx / containerW) * 100;
+      // Read current state directly to avoid stale closure on rapid drags
+      const currentSizes = useStore.getState().layout.sizes;
+      const totalGrow = currentSizes.reduce((a, b) => a + b, 0);
+      const availableW = containerW - HANDLE_PX * (panels.length - 1);
+      const dGrow = (dx / availableW) * totalGrow;
+      const minGrow = totalGrow * 0.1;
 
       setLayout({
-        sizes: sizes.map((s, i) => {
-          if (i === index) return Math.max(10, s + dPct);
-          if (i === index + 1) return Math.max(10, s - dPct);
+        sizes: currentSizes.map((s, i) => {
+          if (i === index) return Math.max(minGrow, s + dGrow);
+          if (i === index + 1) return Math.max(minGrow, s - dGrow);
           return s;
         }) as [number, number, number],
       });
     },
-    [sizes, setLayout],
+    [panels.length, setLayout],
   );
 
   return (
@@ -37,12 +45,13 @@ export function PanelContainer({ panels }: PanelContainerProps) {
       ref={containerRef}
       style={{ display: 'flex', flex: 1, overflow: 'hidden', height: '100%', minHeight: 0 }}
     >
-      {panels.map((panel, i) => (
-        <div key={panel.id} style={{ display: 'contents' }}>
+      {panels.flatMap((panel, i) => {
+        const items: React.ReactNode[] = [
           <div
+            key={panel.id}
             style={{
-              width: `${sizes[i]}%`,
-              minWidth: 0,
+              flex: `${sizes[i]} 1 0`,
+              minWidth: 120,
               height: '100%',
               overflow: 'hidden',
               display: 'flex',
@@ -50,12 +59,15 @@ export function PanelContainer({ panels }: PanelContainerProps) {
             }}
           >
             {panel.node}
-          </div>
-          {i < panels.length - 1 && (
-            <ResizeHandle onDelta={(dx) => handleDelta(i as 0 | 1, dx)} />
-          )}
-        </div>
-      ))}
+          </div>,
+        ];
+        if (i < panels.length - 1) {
+          items.push(
+            <ResizeHandle key={`handle-${i}`} onDelta={(dx) => handleDelta(i as 0 | 1, dx)} />,
+          );
+        }
+        return items;
+      })}
     </div>
   );
 }

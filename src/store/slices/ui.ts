@@ -18,7 +18,7 @@ export interface UiSlice {
 }
 
 const DEFAULT_LAYOUT: PanelLayoutConfig = {
-  sizes: [40, 30, 30],
+  sizes: [33.33, 33.33, 33.34],
   order: ['free', 'timeline', 'personal'],
 };
 
