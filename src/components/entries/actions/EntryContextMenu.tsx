@@ -11,22 +11,10 @@ const PANEL_LABELS: Record<PanelId, string> = {
   timeline: 'タイムライン',
 };
 
-const PANEL_COLORS: Record<PanelId, string> = {
-  free: 'var(--panel-free-accent)',
-  personal: 'var(--panel-personal-accent)',
-  timeline: 'var(--panel-timeline-accent)',
-};
-
 const IMPORTANCE_LABELS: Record<string, string> = {
   high: '高',
   medium: '中',
   low: '低',
-};
-
-const IMPORTANCE_COLORS: Record<string, string> = {
-  high: 'var(--importance-high)',
-  medium: 'var(--importance-medium)',
-  low: 'var(--importance-low)',
 };
 
 interface EntryContextMenuProps {
@@ -46,74 +34,117 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
   const items = useMemo<ContextMenuEntry[]>(() => {
     const result: ContextMenuEntry[] = [];
 
-    // ── パネル移動 ──
+    // ── カテゴリ移動（全パネルにサブメニュー） ──
+    result.push({ header: true as const, label: 'カテゴリ移動' });
+
     for (const p of ['free', 'personal', 'timeline'] as PanelId[]) {
       if (p === entry.panel) continue;
-      result.push({
-        label: `${PANEL_LABELS[p]}へ移動`,
-        color: PANEL_COLORS[p],
-        disabled: p === 'timeline' && timelineGroups.length === 0,
-        onClick: async () => {
-          if (p === 'timeline' && timelineGroups.length > 0) {
-            await moveEntryToPanel(entry.id, p);
-            await updateEntry(entry.id, {
-              timelineGroupId: timelineGroups[0].id,
-              type: 'timeline',
-            });
-          } else {
-            await moveEntryToPanel(entry.id, p);
-          }
-        },
-      });
+
+      if (p === 'timeline') {
+        // タイムライン: グループ必須
+        if (timelineGroups.length === 0) {
+          result.push({ label: `${PANEL_LABELS[p]} へ`, disabled: true, onClick: () => {} });
+        } else if (timelineGroups.length === 1) {
+          result.push({
+            label: `${PANEL_LABELS[p]} へ`,
+            onClick: async () => {
+              await moveEntryToPanel(entry.id, p);
+              await updateEntry(entry.id, { timelineGroupId: timelineGroups[0].id, type: 'timeline' });
+            },
+          });
+        } else {
+          result.push({
+            label: `${PANEL_LABELS[p]} へ`,
+            submenu: timelineGroups.map((g) => ({
+              label: g.label,
+              onClick: async () => {
+                await moveEntryToPanel(entry.id, p);
+                await updateEntry(entry.id, { timelineGroupId: g.id, type: 'timeline' });
+              },
+            })),
+          });
+        }
+      } else {
+        // free / personal: 常にサブメニュー（未分類 + グループ）
+        const panelGroups = memoGroups.filter((g) => g.panel === p);
+        result.push({
+          label: `${PANEL_LABELS[p]} へ`,
+          submenu: [
+            {
+              label: '未分類',
+              onClick: async () => {
+                await moveEntryToPanel(entry.id, p);
+                await updateEntry(entry.id, { groupId: undefined });
+              },
+            },
+            ...panelGroups.map((g) => ({
+              label: g.label,
+              onClick: async () => {
+                await moveEntryToPanel(entry.id, p);
+                await updateEntry(entry.id, { groupId: g.id });
+              },
+            })),
+          ],
+        });
+      }
     }
 
     // ── グループ移動（同一パネル内） ──
-    if (entry.panel === 'free' || entry.panel === 'personal') {
-      const panelGroups = memoGroups.filter((g) => g.panel === entry.panel);
-      if (panelGroups.length > 0) {
-        result.push({ separator: true as const });
-        // 未分類へ移動（既にグループ所属の場合）
+    const hasGroupSection = (() => {
+      if (entry.panel === 'free' || entry.panel === 'personal') {
+        return memoGroups.filter((g) => g.panel === entry.panel).length > 0;
+      }
+      if (entry.panel === 'timeline') return timelineGroups.length > 1;
+      return false;
+    })();
+
+    if (hasGroupSection) {
+      result.push({ separator: true as const });
+      result.push({ header: true as const, label: 'グループ移動' });
+
+      if (entry.panel === 'free' || entry.panel === 'personal') {
+        const panelGroups = memoGroups.filter((g) => g.panel === entry.panel);
         if (entry.groupId) {
           result.push({
-            label: '未分類へ移動',
+            label: '未分類 へ',
             onClick: () => updateEntry(entry.id, { groupId: undefined }),
           });
         }
-        // 各グループへ移動
         for (const g of panelGroups) {
           if (g.id === entry.groupId) continue;
           result.push({
-            label: `「${g.label}」へ移動`,
+            label: `「${g.label}」へ`,
             onClick: () => updateEntry(entry.id, { groupId: g.id }),
           });
         }
       }
-    }
 
-    if (entry.panel === 'timeline') {
-      if (timelineGroups.length > 1) {
-        result.push({ separator: true as const });
+      if (entry.panel === 'timeline') {
         for (const g of timelineGroups) {
           if (g.id === entry.timelineGroupId) continue;
           result.push({
-            label: `「${g.label}」へ移動`,
+            label: `「${g.label}」へ`,
             onClick: () => updateEntry(entry.id, { timelineGroupId: g.id }),
           });
         }
       }
     }
 
-    // ── 重要度 ──
+    // ── 重要度設定 ──
     if (entry.type !== 'image') {
       result.push({ separator: true as const });
+      result.push({ header: true as const, label: '重要度設定' });
       for (const [key, label] of Object.entries(IMPORTANCE_LABELS)) {
-        const isCurrent = entry.importance === key;
+        if (entry.importance === key) continue;
         result.push({
-          label: isCurrent ? `★ 重要度: ${label}` : `重要度: ${label}`,
-          color: isCurrent ? IMPORTANCE_COLORS[key] : undefined,
-          onClick: () => updateEntry(entry.id, {
-            importance: isCurrent ? undefined : key as MemoEntry['importance'],
-          }),
+          label: `${label} に設定`,
+          onClick: () => updateEntry(entry.id, { importance: key as MemoEntry['importance'] }),
+        });
+      }
+      if (entry.importance) {
+        result.push({
+          label: '設定をはずす',
+          onClick: () => updateEntry(entry.id, { importance: undefined }),
         });
       }
     }
@@ -127,10 +158,7 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
           label: hasTime ? '不明にする' : '時刻を設定',
           onClick: () => {
             if (hasTime) {
-              updateEntry(entry.id, {
-                eventTime: undefined,
-                eventTimeSortKey: undefined,
-              });
+              updateEntry(entry.id, { eventTime: undefined, eventTimeSortKey: undefined });
             } else {
               updateEntry(entry.id, {});
               const { setFocusedEntry } = useStore.getState();
@@ -144,11 +172,7 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
     // ── 削除 ──
     result.push(
       { separator: true as const },
-      {
-        label: '削除',
-        onClick: () => deleteEntry(entry.id),
-        danger: true,
-      },
+      { label: '削除', onClick: () => deleteEntry(entry.id), danger: true },
     );
 
     return result;

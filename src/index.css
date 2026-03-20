@@ -87,7 +87,11 @@ input, textarea, [contenteditable="true"] {
 ::selection { background: var(--accent-glow); color: var(--text-primary); }
 
 /* ─── Focus ─────────────────────────────────────────────────────────────────── */
-:focus-visible {
+/* 入力要素とボタンのみ focus-visible を適用。DnDソータブル要素には適用しない */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible {
   outline: 1.5px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);

@@ -27,11 +27,7 @@ const IMPORTANCE_COLOR: Record<string, string> = {
   low:    'var(--importance-low)',
 };
 
-const IMPORTANCE_LABEL: Record<string, string> = {
-  high:   '!!!',
-  medium: '!!',
-  low:    '!',
-};
+const IMPORTANCE_ICON_SIZE = 14;
 
 export function EntryCard({ entry, hideTime }: EntryCardProps) {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
@@ -68,7 +64,6 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
   };
 
   const importanceColor = entry.importance ? IMPORTANCE_COLOR[entry.importance] : null;
-  const importanceLabel = entry.importance ? IMPORTANCE_LABEL[entry.importance] : null;
 
   return (
     <div
@@ -87,6 +82,21 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         transition: 'background 0.12s',
       }}
     >
+      {/* 重要度グラデーション — 右から左へ薄くフェード */}
+      {importanceColor && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 'inherit',
+            background: `linear-gradient(to left, ${importanceColor}, transparent 60%)`,
+            opacity: hovered ? 0.1 : 0.06,
+            transition: 'opacity 0.12s',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
       {/* 左縦線 — パネルアイデンティティ専用。選択時はアクセント強調 */}
       <div
         style={{
@@ -103,26 +113,26 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         }}
       />
 
-      {/* 重要度マーカー — 右端に表示 */}
-      {importanceColor && importanceLabel && (
-        <div
+      {/* 重要度マーカー — 右端に ⓘ アイコン */}
+      {importanceColor && (
+        <svg
+          width={IMPORTANCE_ICON_SIZE}
+          height={IMPORTANCE_ICON_SIZE}
+          viewBox="0 0 16 16"
+          fill="none"
           style={{
             position: 'absolute',
             right: 6,
             top: 4,
-            fontSize: 10,
-            fontWeight: 700,
-            fontFamily: 'var(--font-mono)',
-            color: importanceColor,
             opacity: hovered ? 0.9 : 0.6,
             transition: 'opacity 0.12s',
             pointerEvents: 'none',
-            lineHeight: 1,
-            letterSpacing: '-0.05em',
           }}
         >
-          {importanceLabel}
-        </div>
+          <circle cx="8" cy="8" r="7" stroke={importanceColor} strokeWidth="1.5" />
+          <line x1="8" y1="7" x2="8" y2="12" stroke={importanceColor} strokeWidth="1.8" strokeLinecap="round" />
+          <circle cx="8" cy="4.5" r="1" fill={importanceColor} />
+        </svg>
       )}
 
       {/* Row 1: Character badges */}

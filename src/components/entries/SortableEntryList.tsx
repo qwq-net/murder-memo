@@ -115,6 +115,7 @@ function SortableEntryCard({ entry, allIds, hideTime }: { entry: MemoEntry; allI
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      tabIndex={-1}
       onClick={(e) => {
         if (e.shiftKey) {
           // Shift+クリック: 選択操作。編集モードに入らないよう伝播停止

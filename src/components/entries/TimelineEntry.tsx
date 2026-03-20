@@ -33,6 +33,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
   const focusTargetRef = useRef<'time' | 'content'>('content');
   const pendingCursorRef = useRef<number | null>(null);
   const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null);
+  const cancelledRef = useRef(false);
 
   const resizeContent = useCallback((el: HTMLTextAreaElement | null) => {
     if (!el) return;
@@ -42,6 +43,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
 
   useLayoutEffect(() => {
     if (!isEditing) return;
+    cancelledRef.current = false;
     resizeContent(contentRef.current);
 
     if (focusTargetRef.current === 'time') {
@@ -71,7 +73,13 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
     }
   }, [entry.content, entry.eventTime, isEditing]);
 
-  const save = useCallback(() => {
+  // onBlurから呼ばれる唯一の保存ポイント
+  const handleBlur = useCallback(() => {
+    if (cancelledRef.current) {
+      cancelledRef.current = false;
+      setFocusedEntry(null);
+      return;
+    }
     const timeTrimmed = autoCompleteTime(draftTime);
     const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
     updateEntry(entry.id, {
@@ -81,12 +89,6 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
     });
     setFocusedEntry(null);
   }, [draftContent, draftTime, entry.id, updateEntry, setFocusedEntry]);
-
-  const cancel = useCallback(() => {
-    setDraftContent(entry.content);
-    setDraftTime(entry.eventTime ?? '');
-    setFocusedEntry(null);
-  }, [entry.content, entry.eventTime, setFocusedEntry]);
 
   if (isEditing) {
     return (
@@ -102,13 +104,25 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
           onChange={(e) => setDraftTime(normalizeTimeInput(e.target.value))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') { e.preventDefault(); contentRef.current?.focus(); }
-            if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              cancelledRef.current = true;
+              setDraftContent(entry.content);
+              setDraftTime(entry.eventTime ?? '');
+              timeRef.current?.blur();
+            }
+            if (e.key === 'Tab') {
+              // Tab: コンテンツ入力へ移動（他の要素には行かない）
+              e.preventDefault();
+              contentRef.current?.focus();
+            }
           }}
           onBlur={(e) => {
             e.currentTarget.style.borderColor = 'var(--border-subtle)';
             setDraftTime((v) => autoCompleteTime(v));
+            // コンテンツtextareaへの移動でなければ保存
             if (!e.relatedTarget || e.relatedTarget !== contentRef.current) {
-              save();
+              handleBlur();
             }
           }}
           onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--panel-timeline-accent)'; }}
@@ -138,10 +152,22 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
             setDraftContent(e.target.value);
             resizeContent(e.target);
           }}
-          onBlur={save}
+          onBlur={handleBlur}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); }
-            if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              contentRef.current?.blur();
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              cancelledRef.current = true;
+              setDraftContent(entry.content);
+              setDraftTime(entry.eventTime ?? '');
+              contentRef.current?.blur();
+            }
+            if (e.key === 'Tab') {
+              e.preventDefault();
+            }
           }}
           rows={1}
           style={{
@@ -202,10 +228,10 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
         {hideTime ? '' : (entry.eventTime ?? '')}
       </span>
 
-      {/* テキスト — クリック/ドラッグ選択でコンテンツにフォーカス */}
+      {/* テキスト */}
       <span
         onMouseUp={(e) => {
-          if (e.shiftKey) return; // Shift中は選択操作なので編集に入らない
+          if (e.shiftKey) return;
           focusTargetRef.current = 'content';
           const sel = window.getSelection();
           if (sel && !sel.isCollapsed && sel.rangeCount > 0) {

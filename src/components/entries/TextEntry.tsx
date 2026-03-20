@@ -28,6 +28,7 @@ export function TextEntry({ entry }: TextEntryProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const pendingCursorRef = useRef<number | null>(null);
   const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null);
+  const cancelledRef = useRef(false);
 
   const resizeTextarea = useCallback((el: HTMLTextAreaElement | null) => {
     if (!el) return;
@@ -37,6 +38,7 @@ export function TextEntry({ entry }: TextEntryProps) {
 
   useLayoutEffect(() => {
     if (!isEditing || !inputRef.current) return;
+    cancelledRef.current = false;
     const el = inputRef.current;
     resizeTextarea(el);
     el.focus();
@@ -58,17 +60,18 @@ export function TextEntry({ entry }: TextEntryProps) {
     if (!isEditing) setDraft(entry.content);
   }, [entry.content, isEditing]);
 
-  const save = useCallback(() => {
+  // onBlurから呼ばれる唯一の保存ポイント
+  const handleBlur = useCallback(() => {
+    if (cancelledRef.current) {
+      cancelledRef.current = false;
+      setFocusedEntry(null);
+      return;
+    }
     if (draft.trim() !== entry.content) {
       updateEntry(entry.id, { content: draft.trim() });
     }
     setFocusedEntry(null);
   }, [draft, entry.id, entry.content, updateEntry, setFocusedEntry]);
-
-  const cancel = useCallback(() => {
-    setDraft(entry.content);
-    setFocusedEntry(null);
-  }, [entry.content, setFocusedEntry]);
 
   if (isEditing) {
     return (
@@ -80,15 +83,22 @@ export function TextEntry({ entry }: TextEntryProps) {
             setDraft(e.target.value);
             resizeTextarea(e.target);
           }}
-          onBlur={save}
+          onBlur={handleBlur}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
-              save();
+              // blurに委譲して保存（二重実行を防止）
+              inputRef.current?.blur();
             }
             if (e.key === 'Escape') {
               e.preventDefault();
-              cancel();
+              cancelledRef.current = true;
+              setDraft(entry.content);
+              inputRef.current?.blur();
+            }
+            if (e.key === 'Tab') {
+              // Tab でフォーカスが他の要素に移動するのを防止
+              e.preventDefault();
             }
           }}
           rows={1}
@@ -102,8 +112,10 @@ export function TextEntry({ entry }: TextEntryProps) {
             fontSize: 13,
             lineHeight: 1.6,
             padding: 0,
+            margin: 0,
             resize: 'none',
             overflow: 'hidden',
+            display: 'block',
           }}
         />
       </div>
@@ -113,7 +125,7 @@ export function TextEntry({ entry }: TextEntryProps) {
   return (
     <div
       onMouseUp={(e) => {
-        if (e.shiftKey) return; // Shift中は選択操作なので編集に入らない
+        if (e.shiftKey) return;
         const sel = window.getSelection();
         if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
           const range = sel.getRangeAt(0);
