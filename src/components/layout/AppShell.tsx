@@ -171,39 +171,65 @@ export function AppShell() {
             {activeSession?.name ?? 'セッションなし'}
           </button>
 
-          {/* 行動順ストリップ */}
+          {/* 行動順ステッパー */}
           {actionOrderChars.length > 0 && (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
                 overflow: 'hidden',
               }}
             >
-              {actionOrderChars.map((char) => (
-                <span
+              {actionOrderChars.map((char, i) => (
+                <div
                   key={char.id}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 5,
-                    fontSize: 12,
-                    color: 'var(--text-secondary)',
-                    whiteSpace: 'nowrap',
                     flexShrink: 0,
                   }}
                 >
-                  <span style={{
-                    display: 'inline-block',
-                    width: 14,
-                    height: 14,
-                    borderRadius: '50%',
-                    background: char.color,
-                    flexShrink: 0,
-                  }} />
-                  {char.name}
-                </span>
+                  {/* Arrow connector */}
+                  {i > 0 && (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      style={{ flexShrink: 0, margin: '0 2px' }}
+                    >
+                      <path
+                        d="M7 5l5 5-5 5"
+                        stroke="var(--text-faint)"
+                        strokeWidth="1.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                  {/* Character step */}
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      fontSize: 12,
+                      color: 'var(--text-secondary)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <span style={{
+                      display: 'inline-block',
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      background: char.color,
+                      boxShadow: `0 0 6px ${char.color}44`,
+                      flexShrink: 0,
+                    }} />
+                    {char.name}
+                  </span>
+                </div>
               ))}
             </div>
           )}
