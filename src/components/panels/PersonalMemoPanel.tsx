@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 
 import { useStore } from '../../store';
-import { EntryCard } from '../entries/EntryCard';
 import { EntryInput } from '../entries/EntryInput';
+import { SortableEntryList } from '../entries/SortableEntryList';
 
 export function PersonalMemoPanel() {
   const allEntries = useStore((s) => s.entries);
+  const reorderEntries = useStore((s) => s.reorderEntries);
   const entries = useMemo(
     () =>
       allEntries
@@ -35,7 +36,10 @@ export function PersonalMemoPanel() {
             ハンドアウトや個人情報をメモ
           </div>
         ) : (
-          entries.map((entry) => <EntryCard key={entry.id} entry={entry} />)
+          <SortableEntryList
+            entries={entries}
+            onReorder={(ids) => reorderEntries('personal', ids)}
+          />
         )}
       </div>
       <EntryInput panel="personal" />

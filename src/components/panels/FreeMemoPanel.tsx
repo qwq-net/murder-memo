@@ -3,8 +3,8 @@ import { nanoid } from 'nanoid';
 
 import { putImage } from '../../lib/idb';
 import { useStore } from '../../store';
-import { EntryCard } from '../entries/EntryCard';
 import { EntryInput } from '../entries/EntryInput';
+import { SortableEntryList } from '../entries/SortableEntryList';
 
 export function FreeMemoPanel() {
   const allEntries = useStore((s) => s.entries);
@@ -13,6 +13,7 @@ export function FreeMemoPanel() {
     [allEntries],
   );
   const addEntry = useStore((s) => s.addEntry);
+  const reorderEntries = useStore((s) => s.reorderEntries);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handlePaste = useCallback(
@@ -62,7 +63,10 @@ export function FreeMemoPanel() {
             メモを書き殴ろう
           </div>
         ) : (
-          entries.map((entry) => <EntryCard key={entry.id} entry={entry} />)
+          <SortableEntryList
+            entries={entries}
+            onReorder={(ids) => reorderEntries('free', ids)}
+          />
         )}
       </div>
       <EntryInput panel="free" />

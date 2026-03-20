@@ -3,8 +3,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { getHourKey, getHourLabel } from '../../lib/time-parser';
 import { useStore } from '../../store';
 import type { MemoEntry, TimelineGroup } from '../../types/memo';
-import { EntryCard } from '../entries/EntryCard';
 import { EntryInput } from '../entries/EntryInput';
+import { SortableEntryList } from '../entries/SortableEntryList';
 
 export function TimelinePanel() {
   const allEntries = useStore((s) => s.entries);
@@ -13,6 +13,7 @@ export function TimelinePanel() {
   const toggleTimelineGroupCollapse = useStore((s) => s.toggleTimelineGroupCollapse);
   const removeTimelineGroup = useStore((s) => s.removeTimelineGroup);
   const updateTimelineGroup = useStore((s) => s.updateTimelineGroup);
+  const reorderEntries = useStore((s) => s.reorderEntries);
 
   const [newGroupLabel, setNewGroupLabel] = useState('');
   const [isAddingGroup, setIsAddingGroup] = useState(false);
@@ -30,7 +31,7 @@ export function TimelinePanel() {
 
       const withTime = groupEntries
         .filter((e) => e.eventTimeSortKey != null)
-        .sort((a, b) => a.eventTimeSortKey! - b.eventTimeSortKey!);
+        .sort((a, b) => a.eventTimeSortKey! - b.eventTimeSortKey! || a.sortOrder - b.sortOrder);
 
       const hourGroups: { hour: number; label: string; entries: MemoEntry[] }[] = [];
       for (const entry of withTime) {
@@ -97,6 +98,7 @@ export function TimelinePanel() {
               onToggleCollapse={toggleTimelineGroupCollapse}
               onRemove={removeTimelineGroup}
               onUpdate={updateTimelineGroup}
+              onReorderEntries={(ids) => reorderEntries('timeline', ids)}
             />
           ))
         )}
@@ -213,6 +215,7 @@ interface TimelineGroupSectionProps {
   onToggleCollapse: (id: string) => void;
   onRemove: (id: string) => Promise<void>;
   onUpdate: (id: string, patch: Partial<Pick<TimelineGroup, 'label' | 'collapsed'>>) => Promise<void>;
+  onReorderEntries: (orderedIds: string[]) => void;
 }
 
 function TimelineGroupSection({
@@ -222,6 +225,7 @@ function TimelineGroupSection({
   onToggleCollapse,
   onRemove,
   onUpdate,
+  onReorderEntries,
 }: TimelineGroupSectionProps) {
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [draftLabel, setDraftLabel] = useState(group.label);
@@ -388,27 +392,26 @@ function TimelineGroupSection({
           />
 
           <div style={{ paddingLeft: 6 }}>
-            {/* 時間帯グループ */}
+            {/* 時間帯グループ — 同一時間帯内でDnDソート可能 */}
             {hourGroups.map((hg) => (
               <div key={hg.hour}>
                 <HourDivider label={hg.label} />
-                {hg.entries.map((entry, i) => (
-                  <EntryCard
-                    key={entry.id}
-                    entry={entry}
-                    hideTime={i > 0 && entry.eventTime === hg.entries[i - 1].eventTime}
-                  />
-                ))}
+                <SortableEntryList
+                  entries={hg.entries}
+                  onReorder={onReorderEntries}
+                  hideTimeDuplicates
+                />
               </div>
             ))}
 
-            {/* 不明グループ */}
+            {/* 不明グループ — DnDで並び替え可能 */}
             {unknownEntries.length > 0 && (
               <div>
                 <HourDivider label="不明" muted />
-                {unknownEntries.map((entry) => (
-                  <EntryCard key={entry.id} entry={entry} />
-                ))}
+                <SortableEntryList
+                  entries={unknownEntries}
+                  onReorder={onReorderEntries}
+                />
               </div>
             )}
 

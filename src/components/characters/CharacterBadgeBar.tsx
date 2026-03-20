@@ -14,8 +14,6 @@ export function CharacterBadgeBar({ entry, indent }: CharacterBadgeBarProps) {
 
   if (characters.length === 0) return null;
 
-  const hasActive = entry.characterTags.length > 0;
-
   return (
     <div
       style={{
@@ -24,11 +22,7 @@ export function CharacterBadgeBar({ entry, indent }: CharacterBadgeBarProps) {
         alignItems: 'center',
         flexShrink: 0,
         padding: indent ? '1px 10px 1px 62px' : '1px 10px 1px',
-        opacity: hasActive ? 1 : 0.5,
-        transition: 'opacity 0.15s',
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.opacity = hasActive ? '1' : '0.5'; }}
     >
       {characters.map((char) => (
         <CharacterBadge

@@ -262,7 +262,7 @@ function SortableCharacterRow({
       ref={setNodeRef}
       style={{
         transform: transformStyle,
-        transition,
+        transition: isDragging ? 'none' : transition,
         opacity: isDragging ? 0.4 : 1,
         zIndex: isDragging ? 10 : undefined,
         position: 'relative',

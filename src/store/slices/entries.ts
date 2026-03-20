@@ -115,8 +115,9 @@ export const createEntriesSlice = (
       if (e.panel !== panel || idx === -1) return e;
       return { ...e, sortOrder: idx, updatedAt: Date.now() };
     });
-    await bulkPutEntries(updated, sessionId);
+    // 同期的にstate更新 → DnDオーバーレイが正しい位置にアニメーションする
     set(() => ({ entries: updated }));
+    await bulkPutEntries(updated, sessionId);
   },
 
   bulkLoadEntries: async (entries, sessionId) => {

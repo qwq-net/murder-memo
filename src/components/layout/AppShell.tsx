@@ -194,7 +194,14 @@ export function AppShell() {
                     flexShrink: 0,
                   }}
                 >
-                  <span style={{ color: char.color, fontSize: 10, lineHeight: 1 }}>●</span>
+                  <span style={{
+                    display: 'inline-block',
+                    width: 14,
+                    height: 14,
+                    borderRadius: '50%',
+                    background: char.color,
+                    flexShrink: 0,
+                  }} />
                   {char.name}
                 </span>
               ))}
