@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 
 // ─── 型定義 ─────────────────────────────────────────────────────────────────
 
@@ -372,10 +372,7 @@ const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
     const localRef = useRef<HTMLDivElement>(null);
 
     // ref を外部にも公開
-    useEffect(() => {
-      if (typeof ref === 'function') ref(localRef.current);
-      else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = localRef.current;
-    });
+    useImperativeHandle(ref, () => localRef.current!, []);
 
     // useLayoutEffect で位置補正 + Safe Triangle rect セット
     // React StrictMode で何度呼ばれても正しく動く（DOM 操作は最小限、props の位置から毎回計算）

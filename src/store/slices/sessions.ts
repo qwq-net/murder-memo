@@ -40,7 +40,7 @@ export const createSessionsSlice = (
     initSessions: () => {
       if (initPromise) return initPromise;
       initPromise = (async () => {
-        let sessions = await getAllSessions();
+        const sessions = await getAllSessions();
 
         // デモセッションが存在しなければ自動作成
         const hasDemo = sessions.some((s) => s.isDemo);
@@ -106,20 +106,17 @@ export const createSessionsSlice = (
       if (!activeSessionId) return;
 
       // デモセッションは初期化不可
-      const current = sessions.find((s) => s.id === activeSessionId);
-      if (current?.isDemo) return;
+      const session = sessions.find((s) => s.id === activeSessionId);
+      if (!session || session.isDemo) return;
 
       await clearSessionData(activeSessionId);
 
       // updatedAt を更新
-      const session = sessions.find((s) => s.id === activeSessionId);
-      if (session) {
-        const updated = { ...session, updatedAt: Date.now() };
-        await putSession(updated);
-        set((s) => ({
-          sessions: s.sessions.map((s2) => (s2.id === activeSessionId ? updated : s2)),
-        }));
-      }
+      const updated = { ...session, updatedAt: Date.now() };
+      await putSession(updated);
+      set((s) => ({
+        sessions: s.sessions.map((s2) => (s2.id === activeSessionId ? updated : s2)),
+      }));
 
       // インメモリ状態をリセット
       set(() => ({

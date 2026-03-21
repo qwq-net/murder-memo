@@ -18,7 +18,9 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { useStore } from '@/store';
 import type { Character, CharacterRole } from '@/types/memo';
+import { ModalFrame } from '@/components/common/modalFrame';
 import { RadioGroup } from '@/components/common/radioGroup';
+import { X } from '@/components/icons';
 import { CharacterColorPalette } from '@/components/characters/characterColorPalette';
 
 const DEFAULT_COLORS = [
@@ -81,8 +83,6 @@ export function CharacterSetupPanel() {
     requestAnimationFrame(() => nameInputRef.current?.focus());
   }, [newName, characters, addCharacter, activeTab]);
 
-  if (!isOpen) return null;
-
   const tabStyle = (tab: CharacterRole): React.CSSProperties => ({
     flex: 1,
     background: activeTab === tab ? 'var(--bg-elevated)' : 'transparent',
@@ -98,39 +98,14 @@ export function CharacterSetupPanel() {
   });
 
   return (
-    <>
-      {/* Backdrop + centering */}
-      <div
-        onClick={() => setOpen(false)}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 50,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'rgba(0, 0, 0, 0.55)',
-          backdropFilter: 'blur(2px)',
-        }}
-      >
-
-      {/* Panel */}
-      <div
-        role="dialog"
-        aria-label="登場人物設定"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 480,
-          maxHeight: '80vh',
-          background: 'var(--bg-panel)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-lg)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-        }}
-      >
+    <ModalFrame
+      open={isOpen}
+      onClose={() => setOpen(false)}
+      width={480}
+      ariaLabel="登場人物設定"
+    >
+      {/* ModalFrame の overflowY: auto 内で、ヘッダー/タブ固定 + リスト部スクロールを実現 */}
+      <div style={{ display: 'flex', flexDirection: 'column', maxHeight: 'calc(80vh - 2px)', overflow: 'hidden' }}>
         {/* Header */}
         <div
           style={{
@@ -139,6 +114,7 @@ export function CharacterSetupPanel() {
             justifyContent: 'space-between',
             padding: '14px 18px',
             borderBottom: '1px solid var(--border-subtle)',
+            flexShrink: 0,
           }}
         >
           <span
@@ -157,28 +133,18 @@ export function CharacterSetupPanel() {
           <button
             onClick={() => setOpen(false)}
             aria-label="閉じる"
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              transition: 'color 0.12s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+            className="modal-close-btn"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <line x1="4" y1="4" x2="14" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              <line x1="14" y1="4" x2="4" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
+            <X size={18} />
           </button>
         </div>
 
         {/* PL / NPC タブ */}
-        <div role="tablist" aria-label="キャラクタータイプ" style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)' }}>
+        <div
+          role="tablist"
+          aria-label="キャラクタータイプ"
+          style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}
+        >
           <button role="tab" aria-selected={activeTab === 'pl'} id="tab-pl" aria-controls="tabpanel-characters" onClick={() => setActiveTab('pl')} style={tabStyle('pl')}>
             PL（{plChars.length}）
           </button>
@@ -231,6 +197,7 @@ export function CharacterSetupPanel() {
             gap: 8,
             padding: '10px 18px',
             borderTop: '1px solid var(--border-subtle)',
+            flexShrink: 0,
           }}
         >
           <input
@@ -245,38 +212,19 @@ export function CharacterSetupPanel() {
             }}
             placeholder={activeTab === 'pl' ? 'PL名を入力' : 'NPC名を入力'}
             aria-label="登場人物の名前"
-            style={{
-              flex: 1,
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-primary)',
-              fontSize: 13,
-              padding: '6px 10px',
-              outline: 'none',
-            }}
+            className="input-base"
+            style={{ flex: 1, padding: '6px 10px' }}
           />
           <button
             onClick={handleAdd}
             disabled={!newName.trim()}
-            style={{
-              background: 'var(--color-settings-accent)',
-              border: 'none',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-primary)',
-              fontSize: 13,
-              padding: '6px 14px',
-              cursor: newName.trim() ? 'pointer' : 'default',
-              opacity: newName.trim() ? 1 : 0.4,
-              transition: 'opacity 0.12s',
-            }}
+            className="btn-primary btn-lg"
           >
             追加
           </button>
         </div>
       </div>
-      </div>
-    </>
+    </ModalFrame>
   );
 }
 

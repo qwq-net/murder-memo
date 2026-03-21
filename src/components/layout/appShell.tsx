@@ -5,7 +5,7 @@ import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel';
 import { useSelection } from '@/components/entries/selectionContext';
-import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Settings, User } from '@/components/icons';
+import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Settings, User } from '@/components/icons';
 import { FreeMemoPanel } from '@/components/panels/freeMemoPanel';
 import { SettingsPanel } from '@/components/settings/settingsPanel';
 import { PersonalMemoPanel } from '@/components/panels/personalMemoPanel';
@@ -56,18 +56,6 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
     }
   };
 
-  const btnStyle = (disabled: boolean): React.CSSProperties => ({
-    background: 'none',
-    border: 'none',
-    color: 'var(--text-muted)',
-    cursor: disabled ? 'default' : 'pointer',
-    opacity: disabled ? 0.3 : 0.7,
-    padding: 2,
-    display: 'flex',
-    alignItems: 'center',
-    transition: 'opacity 0.12s',
-  });
-
   return (
     <>
       <button
@@ -75,9 +63,7 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
         onClick={() => setAll(false)}
         title="すべて開く"
         aria-label="すべてのグループを開く"
-        style={btnStyle(allExpanded)}
-        onMouseEnter={(e) => { if (!allExpanded) e.currentTarget.style.opacity = '1'; }}
-        onMouseLeave={(e) => { if (!allExpanded) e.currentTarget.style.opacity = '0.7'; }}
+        className="flex items-center bg-transparent border-none text-text-muted p-0.5 cursor-pointer opacity-70 transition-opacity duration-150 hover:opacity-100 disabled:opacity-30 disabled:cursor-default disabled:hover:opacity-30"
       >
         <ChevronsUpDown size={14} />
       </button>
@@ -86,9 +72,7 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
         onClick={() => setAll(true)}
         title="すべて閉じる"
         aria-label="すべてのグループを閉じる"
-        style={btnStyle(allCollapsed)}
-        onMouseEnter={(e) => { if (!allCollapsed) e.currentTarget.style.opacity = '1'; }}
-        onMouseLeave={(e) => { if (!allCollapsed) e.currentTarget.style.opacity = '0.7'; }}
+        className="flex items-center bg-transparent border-none text-text-muted p-0.5 cursor-pointer opacity-70 transition-opacity duration-150 hover:opacity-100 disabled:opacity-30 disabled:cursor-default disabled:hover:opacity-30"
       >
         <ChevronsDownUp size={14} />
       </button>
@@ -110,6 +94,8 @@ export function AppShell() {
   const { hasSelection, clearSelection } = useSelection();
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
+
+  const isDemo = sessions.find((s) => s.id === activeSessionId)?.isDemo ?? false;
 
   const { isMobile } = useResponsive(1024);
 
@@ -258,6 +244,7 @@ export function AppShell() {
               <select
                 value={activeSessionId ?? ''}
                 onChange={(e) => switchSession(e.target.value)}
+                aria-label="セッション切替"
                 style={{
                   background: 'var(--bg-elevated)',
                   color: 'var(--text-secondary)',
@@ -318,6 +305,15 @@ export function AppShell() {
             >
               +
             </button>
+            {isDemo && (
+              <span
+                className="flex items-center gap-0.5 text-xs whitespace-nowrap animate-pulse"
+                style={{ color: 'var(--accent)' }}
+              >
+                <ChevronLeft size={14} />
+                こちらから新しいセッションを作成！
+              </span>
+            )}
           </div>
 
           {/* 行動順ステッパー — PL | NPC */}

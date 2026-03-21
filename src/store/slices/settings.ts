@@ -19,11 +19,9 @@ export interface AppSettings {
 
 export interface SettingsSlice {
   settings: AppSettings;
-  isSettingsOpen: boolean;
 
   loadSettings: () => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
-  setSettingsOpen: (open: boolean) => void;
 }
 
 const STORAGE_KEY = 'murder-memo-settings';
@@ -58,7 +56,6 @@ export const createSettingsSlice = (
   set: (fn: (s: StoreState) => Partial<StoreState>) => void,
 ): SettingsSlice => ({
   settings: readSettings(),
-  isSettingsOpen: false,
 
   loadSettings: () => {
     set(() => ({ settings: readSettings() }));
@@ -71,6 +68,4 @@ export const createSettingsSlice = (
       return { settings: updated };
     });
   },
-
-  setSettingsOpen: (open) => set(() => ({ isSettingsOpen: open })),
 });

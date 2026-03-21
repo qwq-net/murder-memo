@@ -6,6 +6,7 @@ export interface UiSlice {
   activePanel: PanelId;
   highlightCharacterId: string | null;
   isCharacterSetupOpen: boolean;
+  isSettingsOpen: boolean;
   isSessionSwitcherOpen: boolean;
   focusedEntryId: string | null;
   /** 未分類グループの折りたたみ状態（パネル別） */
@@ -15,6 +16,7 @@ export interface UiSlice {
   setActivePanel: (panel: PanelId) => void;
   setHighlightCharacter: (id: string | null) => void;
   setCharacterSetupOpen: (open: boolean) => void;
+  setSettingsOpen: (open: boolean) => void;
   setSessionSwitcherOpen: (open: boolean) => void;
   setFocusedEntry: (id: string | null) => void;
   setUncategorizedCollapsed: (panel: string, collapsed: boolean) => void;
@@ -32,6 +34,7 @@ export const createUiSlice = (
   activePanel: 'free',
   highlightCharacterId: null,
   isCharacterSetupOpen: false,
+  isSettingsOpen: false,
   isSessionSwitcherOpen: false,
   focusedEntryId: null,
   uncategorizedCollapsed: {},
@@ -44,6 +47,8 @@ export const createUiSlice = (
   setHighlightCharacter: (id) => set(() => ({ highlightCharacterId: id })),
 
   setCharacterSetupOpen: (open) => set(() => ({ isCharacterSetupOpen: open })),
+
+  setSettingsOpen: (open) => set(() => ({ isSettingsOpen: open })),
 
   setSessionSwitcherOpen: (open) => set(() => ({ isSessionSwitcherOpen: open })),
 

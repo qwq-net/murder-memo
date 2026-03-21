@@ -203,7 +203,7 @@ function TimelineGroupSection({
               onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
               aria-label={`${group.label}を上に移動`}
               className="bg-transparent border-none cursor-pointer p-0 flex items-center transition-colors duration-150"
-              style={{ color: onMoveUp ? 'var(--text-faint)' : 'var(--text-faint)', opacity: onMoveUp ? 1 : 0.3 }}
+              style={{ color: 'var(--text-faint)', opacity: onMoveUp ? 1 : 0.3 }}
               onMouseEnter={(e) => { if (onMoveUp) e.currentTarget.style.color = 'var(--panel-timeline-accent)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
             >
@@ -214,7 +214,7 @@ function TimelineGroupSection({
               onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
               aria-label={`${group.label}を下に移動`}
               className="bg-transparent border-none cursor-pointer p-0 flex items-center transition-colors duration-150"
-              style={{ color: onMoveDown ? 'var(--text-faint)' : 'var(--text-faint)', opacity: onMoveDown ? 1 : 0.3 }}
+              style={{ color: 'var(--text-faint)', opacity: onMoveDown ? 1 : 0.3 }}
               onMouseEnter={(e) => { if (onMoveDown) e.currentTarget.style.color = 'var(--panel-timeline-accent)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
             >

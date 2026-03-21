@@ -12,8 +12,6 @@ import { RadioGroup } from '@/components/common/radioGroup';
 import type { RadioOption } from '@/components/common/radioGroup';
 import { X } from '@/components/icons';
 
-/* RadioGroup は src/components/common/RadioGroup.tsx を使用 */
-
 /* ── Setting Row (一般設定用) ─────────────────────────────────────────────── */
 
 function SettingRow<T extends string>({
@@ -450,18 +448,7 @@ export function SettingsPanel() {
           >
             アプリ設定
           </span>
-          <button
-            onClick={() => setOpen(false)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
+          <button onClick={() => setOpen(false)} className="modal-close-btn">
             <X size={18} />
           </button>
         </div>
@@ -573,19 +560,7 @@ export function SettingsPanel() {
                 <button
                   onClick={() => setShowClearConfirm(true)}
                   disabled={isDemo}
-                  style={{
-                    background: 'none',
-                    border: `1px solid ${isDemo ? 'var(--border-subtle)' : 'var(--danger)'}`,
-                    borderRadius: 'var(--radius-sm)',
-                    color: isDemo ? 'var(--text-faint)' : 'var(--danger)',
-                    fontSize: 13,
-                    padding: '6px 14px',
-                    cursor: isDemo ? 'not-allowed' : 'pointer',
-                    transition: 'background 0.15s, color 0.15s',
-                    opacity: isDemo ? 0.6 : 1,
-                  }}
-                  onMouseEnter={(e) => { if (!isDemo) { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = 'var(--bg-base)'; } }}
-                  onMouseLeave={(e) => { if (!isDemo) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--danger)'; } }}
+                  className="btn-danger btn-lg"
                 >
                   初期化する
                 </button>
@@ -606,19 +581,7 @@ export function SettingsPanel() {
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={isDemo || sessions.length <= 1}
-                  style={{
-                    background: 'none',
-                    border: `1px solid ${isDemo || sessions.length <= 1 ? 'var(--border-subtle)' : 'var(--danger)'}`,
-                    borderRadius: 'var(--radius-sm)',
-                    color: isDemo || sessions.length <= 1 ? 'var(--text-faint)' : 'var(--danger)',
-                    fontSize: 13,
-                    padding: '6px 14px',
-                    cursor: isDemo || sessions.length <= 1 ? 'not-allowed' : 'pointer',
-                    transition: 'background 0.15s, color 0.15s',
-                    opacity: isDemo || sessions.length <= 1 ? 0.6 : 1,
-                  }}
-                  onMouseEnter={(e) => { if (!isDemo && sessions.length > 1) { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = 'var(--bg-base)'; } }}
-                  onMouseLeave={(e) => { if (!isDemo && sessions.length > 1) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--danger)'; } }}
+                  className="btn-danger btn-lg"
                 >
                   セッションを削除
                 </button>
@@ -647,18 +610,7 @@ export function SettingsPanel() {
             <div>
               <button
                 onClick={() => setShowResetAllConfirm(true)}
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--danger)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--danger)',
-                  fontSize: 13,
-                  padding: '6px 14px',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s, color 0.15s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = 'var(--bg-base)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--danger)'; }}
+                className="btn-danger btn-lg"
               >
                 完全リセット
               </button>

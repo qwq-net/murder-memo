@@ -110,14 +110,19 @@ export const createEntriesSlice = (
   reorderEntries: async (panel, orderedIds) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) return;
+    const now = Date.now();
+    const changedEntries: MemoEntry[] = [];
     const updated = get().entries.map((e) => {
       const idx = orderedIds.indexOf(e.id);
       if (e.panel !== panel || idx === -1) return e;
-      return { ...e, sortOrder: idx, updatedAt: Date.now() };
+      const reordered = { ...e, sortOrder: idx, updatedAt: now };
+      changedEntries.push(reordered);
+      return reordered;
     });
     // 同期的にstate更新 → DnDオーバーレイが正しい位置にアニメーションする
     set(() => ({ entries: updated }));
-    await bulkPutEntries(updated, sessionId);
+    // 対象パネルのエントリだけを IndexedDB に書き込む
+    await bulkPutEntries(changedEntries, sessionId);
   },
 
   bulkLoadEntries: async (entries, sessionId) => {

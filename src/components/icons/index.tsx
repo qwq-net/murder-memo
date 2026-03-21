@@ -10,6 +10,7 @@ export {
   ArrowDown,
   ArrowUp,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   ChevronUp,
   ChevronsDownUp,
