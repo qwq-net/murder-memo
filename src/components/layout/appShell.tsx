@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
-
+import { useFilteredCharacters } from '@/hooks/useFilteredCharacters';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useSessionRenaming } from '@/hooks/useSessionRenaming';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 import { CharacterFilterBar } from '@/components/characters/characterFilterBar';
@@ -91,24 +91,13 @@ export function AppShell() {
   const switchSession = useStore((s) => s.switchSession);
   const createSession = useStore((s) => s.createSession);
   const renameSession = useStore((s) => s.renameSession);
-  const characters = useStore((s) => s.characters);
   const { hasSelection, clearSelection } = useSelection();
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState('');
 
   const isDemo = sessions.find((s) => s.id === activeSessionId)?.isDemo ?? false;
 
   const { isMobile } = useResponsive(1024);
-
-  // sortOrder順（DnD順）= 行動順、ロール別
-  const plChars = useMemo(
-    () => characters.filter((c) => c.role === 'pl').sort((a, b) => a.sortOrder - b.sortOrder),
-    [characters],
-  );
-  const npcChars = useMemo(
-    () => characters.filter((c) => c.role === 'npc').sort((a, b) => a.sortOrder - b.sortOrder),
-    [characters],
-  );
+  const { plChars, npcChars } = useFilteredCharacters();
+  const sessionRename = useSessionRenaming({ sessions, activeSessionId, renameSession });
 
   const PANEL_CONTENT: Record<PanelId, React.ReactNode> = {
     free:     <FreeMemoPanel />,
@@ -221,23 +210,13 @@ export function AppShell() {
         <div className="flex items-center justify-between px-[14px] pb-2 gap-3 min-h-[28px]">
           {/* Session switcher */}
           <div className="flex items-center gap-2 min-w-0">
-            {isRenaming ? (
+            {sessionRename.isRenaming ? (
               <input
                 autoFocus
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onBlur={() => {
-                  const trimmed = renameValue.trim();
-                  if (trimmed && activeSessionId) renameSession(activeSessionId, trimmed);
-                  setIsRenaming(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    (e.target as HTMLInputElement).blur();
-                  } else if (e.key === 'Escape') {
-                    setIsRenaming(false);
-                  }
-                }}
+                value={sessionRename.renameValue}
+                onChange={(e) => sessionRename.setRenameValue(e.target.value)}
+                onBlur={sessionRename.handleBlur}
+                onKeyDown={sessionRename.handleKeyDown}
                 style={{
                   background: 'var(--bg-elevated)',
                   color: 'var(--text-primary)',
@@ -286,11 +265,7 @@ export function AppShell() {
             )}
             {/* Rename */}
             <button
-              onClick={() => {
-                const active = sessions.find((s) => s.id === activeSessionId);
-                setRenameValue(active?.name ?? '');
-                setIsRenaming(true);
-              }}
+              onClick={() => sessionRename.startRenaming()}
               title="セッション名を変更"
               className="btn-ghost"
               style={{ width: 26, height: 26, justifyContent: 'center', padding: 0, flexShrink: 0 }}

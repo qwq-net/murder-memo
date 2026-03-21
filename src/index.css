@@ -99,6 +99,14 @@
   --header-h:        44px;
   --panel-header-h:  38px;
   --resize-w:        5px;
+
+  /* タイムラインエントリ — レイアウト座標 */
+  --tl-entry-pad-left: 18px;
+  --tl-time-width: 50px;
+  --tl-time-gap: 8px;
+  /* テキスト開始位置 = pad-left + time-width + time-gap = 72px */
+  /* 左ボーダーは +4px 右にオフセット → 76px にテキスト・バッジが揃う */
+  --tl-content-left: calc(var(--tl-entry-pad-left) + var(--tl-time-width) + var(--tl-time-gap));
 }
 
 /* ─── Reset & Base ──────────────────────────────────────────────────────────── */
@@ -137,8 +145,9 @@ input, textarea, [contenteditable="true"] {
 
 /* ─── Focus ─────────────────────────────────────────────────────────────────── */
 /* 入力要素とボタンのみ focus-visible を適用。DnDソータブル要素には適用しない */
+/* .outline-none を持つ要素（エントリ編集 textarea 等）は除外 */
 input:focus-visible,
-textarea:focus-visible,
+textarea:focus-visible:not(.outline-none),
 select:focus-visible,
 button:focus-visible {
   outline: 1.5px solid var(--accent);

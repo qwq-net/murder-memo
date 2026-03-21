@@ -18,12 +18,21 @@ export function TextEntry({ entry }: TextEntryProps) {
   const [draft, setDraft] = useState(entry.content);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const cancelledRef = useRef(false);
+  const blurHandledRef = useRef(false);
   const { applyPendingCursor, captureFromMouseEvent } = useCaretPosition();
   const { resize } = useAutoResizeTextarea();
 
+  // 編集モードに入った瞬間だけ focus + カーソル復元を行う（毎レンダーでは実行しない）
+  const editInitRef = useRef(false);
   useLayoutEffect(() => {
-    if (!isEditing || !inputRef.current) return;
+    if (!isEditing) {
+      editInitRef.current = false;
+      return;
+    }
+    if (editInitRef.current || !inputRef.current) return;
+    editInitRef.current = true;
     cancelledRef.current = false;
+    blurHandledRef.current = false;
     const el = inputRef.current;
     resize(el);
     el.focus();
@@ -36,8 +45,11 @@ export function TextEntry({ entry }: TextEntryProps) {
     if (!isEditing) setDraft(entry.content);
   }
 
-  // onBlurから呼ばれる唯一の保存ポイント
+  // onBlurから呼ばれる唯一の保存ポイント（二重実行防止付き）
   const handleBlur = useCallback(() => {
+
+    if (blurHandledRef.current) return;
+    blurHandledRef.current = true;
     if (cancelledRef.current) {
       cancelledRef.current = false;
       setFocusedEntry(null);
@@ -47,6 +59,7 @@ export function TextEntry({ entry }: TextEntryProps) {
       updateEntry(entry.id, { content: draft.trim() });
     }
     setFocusedEntry(null);
+
   }, [draft, entry.id, entry.content, updateEntry, setFocusedEntry]);
 
   if (isEditing) {
@@ -61,7 +74,10 @@ export function TextEntry({ entry }: TextEntryProps) {
           }}
           onBlur={handleBlur}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            // 編集中のキーイベントが dnd-kit の KeyboardSensor に到達するのを防止
+            e.stopPropagation();
+
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               // blurに委譲して保存（二重実行を防止）
               inputRef.current?.blur();
@@ -73,12 +89,11 @@ export function TextEntry({ entry }: TextEntryProps) {
               inputRef.current?.blur();
             }
             if (e.key === 'Tab') {
-              // Tab でフォーカスが他の要素に移動するのを防止
               e.preventDefault();
             }
           }}
           rows={1}
-          className="w-full bg-transparent border-none outline-none text-text-primary font-sans text-[13px] leading-[1.6] p-0 m-0 resize-none overflow-hidden block"
+          className="w-full bg-transparent border-none outline-none text-text-primary font-sans text-[13px] leading-[1.2] p-0 m-0 resize-none overflow-hidden block"
         />
       </div>
     );
@@ -88,10 +103,11 @@ export function TextEntry({ entry }: TextEntryProps) {
     <div
       onMouseUp={(e) => {
         if (e.shiftKey) return;
+
         captureFromMouseEvent(e, entry.content.length);
         setFocusedEntry(entry.id);
       }}
-      className="cursor-text pt-px pr-1 pb-0.5 pl-2.5 whitespace-pre-wrap break-words min-h-[22px] text-[13px] leading-[1.6]"
+      className="cursor-text pt-px pr-1 pb-0.5 pl-2.5 whitespace-pre-wrap break-words min-h-[22px] text-[13px] leading-[1.2]"
     >
       {entry.content || (
         <span className="text-text-faint">空のメモ</span>

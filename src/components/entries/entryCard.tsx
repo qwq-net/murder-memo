@@ -73,7 +73,7 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
 
   return (
     <div
-      className="flex flex-col relative p-0 my-[2px] rounded-sm"
+      className="flex flex-col relative p-0 my-[4px] rounded-sm"
       onContextMenu={handleContextMenu}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -100,9 +100,9 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
       <div
         className="absolute rounded-sm pointer-events-none"
         style={{
-          left: entry.type === 'timeline' ? 65 : 4,
-          top: 2,
-          bottom: 2,
+          left: entry.type === 'timeline' ? 'var(--tl-content-left)' : 4,
+          top: entry.type === 'timeline' ? -1 : 2,
+          bottom: entry.type === 'timeline' ? -1 : 2,
           width: selected ? 4 : 3,
           background: selected ? 'var(--accent)' : accent,
           opacity: selected ? 0.9 : (hovered ? 0.6 : 0.45),

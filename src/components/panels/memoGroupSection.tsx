@@ -1,5 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
+import { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
+import { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
 import { useStore } from '@/store';
 import type { MemoEntry, MemoGroup, PanelId } from '@/types/memo';
 import { ConfirmModal } from '@/components/common/confirmModal';
@@ -38,18 +40,19 @@ export function MemoGroupSection({
   const setUncategorizedCollapsed = useStore((s) => s.setUncategorizedCollapsed);
   const collapsed = isUncategorized ? uncategorizedCollapsed : (group?.collapsed ?? false);
 
-  const [isEditingLabel, setIsEditingLabel] = useState(false);
-  const [draftLabel, setDraftLabel] = useState(label);
   const [headerHovered, setHeaderHovered] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
-  const saveLabel = useCallback(() => {
-    const trimmed = draftLabel.trim();
-    if (trimmed && trimmed !== group?.label && group && onUpdate) {
-      onUpdate(group.id, { label: trimmed });
-    }
-    setIsEditingLabel(false);
-  }, [draftLabel, group, onUpdate]);
+  const labelEditor = useGroupLabelEditor({
+    initialLabel: group?.label ?? '',
+    onSave: (newLabel) => {
+      if (group && onUpdate) onUpdate(group.id, { label: newLabel });
+    },
+  });
+
+  const deleteConfirm = useDeleteWithConfirmation(
+    entries.length > 0,
+    () => { if (group && onRemove) onRemove(group.id); },
+  );
 
   const handleToggle = () => {
     if (isUncategorized) {
@@ -65,7 +68,7 @@ export function MemoGroupSection({
       <div
         onMouseEnter={() => setHeaderHovered(true)}
         onMouseLeave={() => setHeaderHovered(false)}
-        onClick={isEditingLabel ? undefined : handleToggle}
+        onClick={labelEditor.isEditing ? undefined : handleToggle}
         className="flex items-center gap-2 px-2.5 py-[7px] cursor-pointer select-none"
         style={{
           background: isUncategorized
@@ -88,20 +91,14 @@ export function MemoGroupSection({
         </span>
 
         {/* ラベル */}
-        {!isUncategorized && isEditingLabel ? (
+        {!isUncategorized && labelEditor.isEditing ? (
           <input
             autoFocus
-            value={draftLabel}
-            onChange={(e) => setDraftLabel(e.target.value)}
-            onBlur={saveLabel}
+            value={labelEditor.draftLabel}
+            onChange={(e) => labelEditor.setDraftLabel(e.target.value)}
+            onBlur={labelEditor.saveLabel}
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') saveLabel();
-              if (e.key === 'Escape') {
-                setDraftLabel(group?.label ?? '');
-                setIsEditingLabel(false);
-              }
-            }}
+            onKeyDown={labelEditor.handleKeyDown}
             aria-label="メモグループ名を編集"
             className="flex-1 bg-bg-base rounded-sm text-sm font-semibold px-1.5 py-px outline-none"
             style={{
@@ -122,7 +119,7 @@ export function MemoGroupSection({
         )}
 
         {/* 並び替え矢印 — ユーザー作成グループのみ、ホバー時表示 */}
-        {!isUncategorized && group && !isEditingLabel && (onMoveUp || onMoveDown) && (
+        {!isUncategorized && group && !labelEditor.isEditing && (onMoveUp || onMoveDown) && (
           <span
             className="flex items-center gap-px"
             style={{ opacity: headerHovered ? 0.8 : 0, transition: 'opacity 0.15s' }}
@@ -153,12 +150,11 @@ export function MemoGroupSection({
         )}
 
         {/* 編集ボタン — ユーザー作成グループのみ、ホバー時表示 */}
-        {!isUncategorized && group && onUpdate && !isEditingLabel && (
+        {!isUncategorized && group && onUpdate && !labelEditor.isEditing && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setDraftLabel(group.label);
-              setIsEditingLabel(true);
+              labelEditor.startEditing();
             }}
             title="メモグループ名を変更"
             aria-label={`${group.label}の名前を変更`}
@@ -178,11 +174,7 @@ export function MemoGroupSection({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (entries.length > 0) {
-                setDeleteModalOpen(true);
-              } else {
-                onRemove(group.id);
-              }
+              deleteConfirm.requestDelete();
             }}
             title="メモグループを削除"
             aria-label={`${group.label}を削除`}
@@ -220,8 +212,8 @@ export function MemoGroupSection({
       {/* 削除確認モーダル */}
       {group && onRemove && (
         <ConfirmModal
-          open={deleteModalOpen}
-          onClose={() => setDeleteModalOpen(false)}
+          open={deleteConfirm.isModalOpen}
+          onClose={deleteConfirm.closeModal}
           title={`「${group.label}」を削除`}
           confirmationLabel={`未分類へメモが ${entries.length}件 移動することを理解しました`}
           actions={[

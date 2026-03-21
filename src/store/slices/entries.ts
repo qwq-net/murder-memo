@@ -45,8 +45,9 @@ export const createEntriesSlice = (
       updatedAt: Date.now(),
       sortOrder: maxOrder + 1,
     };
-    await putEntry(entry, sessionId);
+    // 状態を先に同期更新（後続の addEntry が正しい maxOrder を取得できるように）
     set((s) => ({ entries: [...s.entries, entry] }));
+    await putEntry(entry, sessionId);
     return entry;
   },
 

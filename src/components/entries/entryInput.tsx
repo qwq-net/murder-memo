@@ -28,6 +28,7 @@ export function EntryInput({ panel }: EntryInputProps) {
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
+  const submittingRef = useRef(false);
   const { resize: resizeInput } = useAutoResizeTextarea(120);
 
   const isTimeline = panel === 'timeline';
@@ -52,6 +53,9 @@ export function EntryInput({ panel }: EntryInputProps) {
   }, [value, resizeInput]);
 
   const submit = useCallback(async () => {
+    // 連打による重複送信を防止
+    if (submittingRef.current) return;
+
     const text = value.trim();
     const timeTrimmed = autoCompleteTime(timeValue);
 
@@ -62,31 +66,37 @@ export function EntryInput({ panel }: EntryInputProps) {
     } else {
       if (!text) return;
     }
-    const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
-    const defaultType = isTimeline ? 'timeline' as const : 'text' as const;
-    const memoGroupId = isMemoPanel && selectedGroupId ? selectedGroupId : undefined;
 
-    await addEntry({
-      content: text,
-      panel,
-      type: defaultType,
-      ...(isTimeline ? {
-        timelineGroupId: effectiveGroupId,
-        eventTime: timeTrimmed || undefined,
-        eventTimeSortKey: sortKey,
-      } : {}),
-      ...(memoGroupId ? { groupId: memoGroupId } : {}),
-    });
-    setValue('');
-    setTimeValue('');
+    submittingRef.current = true;
+    try {
+      const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
+      const defaultType = isTimeline ? 'timeline' as const : 'text' as const;
+      const memoGroupId = isMemoPanel && selectedGroupId ? selectedGroupId : undefined;
 
-    requestAnimationFrame(() => {
-      if (isTimeline && timeRef.current) {
-        timeRef.current.focus();
-      } else {
-        inputRef.current?.focus();
-      }
-    });
+      await addEntry({
+        content: text,
+        panel,
+        type: defaultType,
+        ...(isTimeline ? {
+          timelineGroupId: effectiveGroupId,
+          eventTime: timeTrimmed || undefined,
+          eventTimeSortKey: sortKey,
+        } : {}),
+        ...(memoGroupId ? { groupId: memoGroupId } : {}),
+      });
+      setValue('');
+      setTimeValue('');
+
+      requestAnimationFrame(() => {
+        if (isTimeline && timeRef.current) {
+          timeRef.current.focus();
+        } else {
+          inputRef.current?.focus();
+        }
+      });
+    } finally {
+      submittingRef.current = false;
+    }
   }, [value, timeValue, panel, isTimeline, isMemoPanel, effectiveGroupId, selectedGroupId, addEntry]);
 
   const handleAddGroup = useCallback(async () => {
@@ -141,7 +151,7 @@ export function EntryInput({ panel }: EntryInputProps) {
             value={newGroupLabel}
             onChange={(e) => setNewGroupLabel(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddGroup();
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAddGroup();
               if (e.key === 'Escape') {
                 setIsAddingGroup(false);
                 setNewGroupLabel('');
@@ -186,7 +196,7 @@ export function EntryInput({ panel }: EntryInputProps) {
           value={timeValue}
           onChange={(e) => { setTimeValue(normalizeTimeInput(e.target.value)); setTimeError(false); }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               inputRef.current?.focus();
             }
@@ -216,7 +226,7 @@ export function EntryInput({ panel }: EntryInputProps) {
           resizeInput(e.target);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
             submit();
           }
@@ -230,7 +240,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         aria-invalid={textError || undefined}
         aria-describedby={textError ? 'entry-text-error' : undefined}
         rows={1}
-        className="flex-1 min-w-0 bg-transparent border-0 text-text-primary font-sans text-[13px] leading-[1.6] py-px resize-none outline-none overflow-hidden"
+        className="flex-1 min-w-0 bg-transparent border-0 text-text-primary font-sans text-[13px] leading-[1.2] py-px resize-none outline-none overflow-hidden"
         style={{
           borderBottom: textError ? '1px solid var(--importance-high)' : undefined,
           opacity: disabled ? 0.4 : undefined,

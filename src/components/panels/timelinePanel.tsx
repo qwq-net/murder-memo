@@ -1,6 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import { getHourKey, getHourLabel } from '@/lib/timeParser';
+import { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
+import { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
+import { useGroupSwap } from '@/hooks/useGroupSwap';
+import { groupEntriesByTimeline } from '@/lib/grouping';
 import { useStore } from '@/store';
 import type { MemoEntry, TimelineGroup } from '@/types/memo';
 import { ConfirmModal } from '@/components/common/confirmModal';
@@ -21,16 +24,7 @@ export function TimelinePanel() {
   const inputPosition = useStore((s) => s.settings.inputPosition);
   const filterIds = useStore((s) => s.characterFilter.timeline);
 
-  const swapGroup = useCallback(
-    (index: number, direction: -1 | 1) => {
-      const ids = timelineGroups.map((g) => g.id);
-      const target = index + direction;
-      if (target < 0 || target >= ids.length) return;
-      [ids[index], ids[target]] = [ids[target], ids[index]];
-      reorderTimelineGroups(ids);
-    },
-    [timelineGroups, reorderTimelineGroups],
-  );
+  const swapGroup = useGroupSwap(timelineGroups, reorderTimelineGroups);
 
   const timelineEntries = useMemo(() => {
     let result = allEntries.filter((e) => e.panel === 'timeline');
@@ -40,38 +34,10 @@ export function TimelinePanel() {
     return result;
   }, [allEntries, filterIds]);
 
-  const groupedData = useMemo(() => {
-    return timelineGroups.map((group) => {
-      const groupEntries = timelineEntries.filter(
-        (e) => e.timelineGroupId === group.id,
-      );
-
-      const withTime = groupEntries
-        .filter((e) => e.eventTimeSortKey != null)
-        .sort((a, b) => a.eventTimeSortKey! - b.eventTimeSortKey! || a.sortOrder - b.sortOrder);
-
-      // Map で O(1) ルックアップ（find の O(n) を回避）
-      const hourMap = new Map<number, { hour: number; label: string; entries: MemoEntry[] }>();
-      const hourGroups: { hour: number; label: string; entries: MemoEntry[] }[] = [];
-      for (const entry of withTime) {
-        const hour = getHourKey(entry.eventTimeSortKey!);
-        const existing = hourMap.get(hour);
-        if (existing) {
-          existing.entries.push(entry);
-        } else {
-          const group = { hour, label: getHourLabel(entry.eventTimeSortKey!), entries: [entry] };
-          hourMap.set(hour, group);
-          hourGroups.push(group);
-        }
-      }
-
-      const unknown = groupEntries
-        .filter((e) => e.eventTimeSortKey == null)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
-
-      return { group, hourGroups, unknown };
-    });
-  }, [timelineGroups, timelineEntries]);
+  const groupedData = useMemo(
+    () => groupEntriesByTimeline(timelineEntries, timelineGroups),
+    [timelineEntries, timelineGroups],
+  );
 
   const isEmpty = timelineGroups.length === 0;
   const isFiltering = filterIds.length > 0;
@@ -141,19 +107,18 @@ function TimelineGroupSection({
   onMoveUp,
   onMoveDown,
 }: TimelineGroupSectionProps) {
-  const [isEditingLabel, setIsEditingLabel] = useState(false);
-  const [draftLabel, setDraftLabel] = useState(group.label);
   const [headerHovered, setHeaderHovered] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const entryCount = hourGroups.reduce((sum, hg) => sum + hg.entries.length, 0) + unknownEntries.length;
 
-  const saveLabel = useCallback(() => {
-    const label = draftLabel.trim();
-    if (label && label !== group.label) {
-      onUpdate(group.id, { label });
-    }
-    setIsEditingLabel(false);
-  }, [draftLabel, group.id, group.label, onUpdate]);
+  const labelEditor = useGroupLabelEditor({
+    initialLabel: group.label,
+    onSave: (newLabel) => onUpdate(group.id, { label: newLabel }),
+  });
+
+  const deleteConfirm = useDeleteWithConfirmation(
+    entryCount > 0,
+    () => onRemove(group.id),
+  );
 
   return (
     <div>
@@ -161,7 +126,7 @@ function TimelineGroupSection({
       <div
         onMouseEnter={() => setHeaderHovered(true)}
         onMouseLeave={() => setHeaderHovered(false)}
-        onClick={isEditingLabel ? undefined : () => onToggleCollapse(group.id)}
+        onClick={labelEditor.isEditing ? undefined : () => onToggleCollapse(group.id)}
         className="flex items-center gap-2 px-2.5 py-[7px] cursor-pointer select-none"
         style={{
           background: 'color-mix(in srgb, var(--panel-timeline-accent) 5%, transparent)',
@@ -179,20 +144,14 @@ function TimelineGroupSection({
         </span>
 
         {/* ラベル */}
-        {isEditingLabel ? (
+        {labelEditor.isEditing ? (
           <input
             autoFocus
-            value={draftLabel}
-            onChange={(e) => setDraftLabel(e.target.value)}
-            onBlur={saveLabel}
+            value={labelEditor.draftLabel}
+            onChange={(e) => labelEditor.setDraftLabel(e.target.value)}
+            onBlur={labelEditor.saveLabel}
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') saveLabel();
-              if (e.key === 'Escape') {
-                setDraftLabel(group.label);
-                setIsEditingLabel(false);
-              }
-            }}
+            onKeyDown={labelEditor.handleKeyDown}
             aria-label="メモグループ名を編集"
             className="flex-1 bg-bg-base border border-panel-timeline-accent rounded-sm text-panel-timeline-accent text-sm font-semibold px-1.5 py-px outline-none"
           />
@@ -203,7 +162,7 @@ function TimelineGroupSection({
         )}
 
         {/* 並び替え矢印 — ホバー時のみ表示 */}
-        {!isEditingLabel && (onMoveUp || onMoveDown) && (
+        {!labelEditor.isEditing && (onMoveUp || onMoveDown) && (
           <span
             className="flex items-center gap-px"
             style={{ opacity: headerHovered ? 0.8 : 0, transition: 'opacity 0.15s' }}
@@ -234,12 +193,11 @@ function TimelineGroupSection({
         )}
 
         {/* 編集ボタン — ホバー時のみ表示 */}
-        {!isEditingLabel && (
+        {!labelEditor.isEditing && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setDraftLabel(group.label);
-              setIsEditingLabel(true);
+              labelEditor.startEditing();
             }}
             title="メモグループ名を変更"
             aria-label={`${group.label}の名前を変更`}
@@ -258,11 +216,7 @@ function TimelineGroupSection({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (entryCount > 0) {
-              setDeleteModalOpen(true);
-            } else {
-              onRemove(group.id);
-            }
+            deleteConfirm.requestDelete();
           }}
           title="メモグループを削除"
           aria-label={`${group.label}を削除`}
@@ -351,8 +305,8 @@ function TimelineGroupSection({
 
       {/* 削除確認モーダル */}
       <ConfirmModal
-        open={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
+        open={deleteConfirm.isModalOpen}
+        onClose={deleteConfirm.closeModal}
         title={`「${group.label}」を削除`}
         confirmationLabel={`メモが ${entryCount}件 一緒に削除されることを理解しました`}
         actions={[

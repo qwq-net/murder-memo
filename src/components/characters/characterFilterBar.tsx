@@ -4,6 +4,7 @@
  */
 import { useMemo } from 'react';
 
+import { sortCharactersByRole } from '@/lib/characterSort';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 import { CharacterBadge } from '@/components/characters/characterBadge';
@@ -21,13 +22,7 @@ export function CharacterFilterBar({ panelId }: CharacterFilterBarProps) {
 
   // showInEntries が true のキャラのみ。PL → NPC、sortOrder 順
   const visible = useMemo(
-    () =>
-      characters
-        .filter((c) => c.showInEntries)
-        .sort((a, b) => {
-          if (a.role !== b.role) return a.role === 'pl' ? -1 : 1;
-          return a.sortOrder - b.sortOrder;
-        }),
+    () => sortCharactersByRole(characters.filter((c) => c.showInEntries)),
     [characters],
   );
 

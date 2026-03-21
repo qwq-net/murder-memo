@@ -4,6 +4,8 @@
  */
 import { useCallback, useMemo } from 'react';
 
+import { useGroupSwap } from '@/hooks/useGroupSwap';
+import { groupEntriesByMemoGroup } from '@/lib/grouping';
 import { useStore } from '@/store';
 import { EmptyState } from '@/components/common/emptyState';
 import { EntryInput } from '@/components/entries/entryInput';
@@ -40,32 +42,17 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
     return result.sort((a, b) => a.sortOrder - b.sortOrder);
   }, [allEntries, panel, filterIds]);
 
-  const groupedData = useMemo(() => {
-    const grouped = panelGroups.map((group) => ({
-      group,
-      entries: entries.filter((e) => e.groupId === group.id),
-    }));
-    const uncategorized = entries.filter(
-      (e) => !e.groupId || !panelGroups.some((g) => g.id === e.groupId),
-    );
-    return { grouped, uncategorized };
-  }, [panelGroups, entries]);
+  const groupedData = useMemo(
+    () => groupEntriesByMemoGroup(entries, panelGroups),
+    [entries, panelGroups],
+  );
 
   const handleReorder = useCallback(
     (ids: string[]) => reorderEntries(panel, ids),
     [reorderEntries, panel],
   );
 
-  const swapGroup = useCallback(
-    (index: number, direction: -1 | 1) => {
-      const ids = panelGroups.map((g) => g.id);
-      const target = index + direction;
-      if (target < 0 || target >= ids.length) return;
-      [ids[index], ids[target]] = [ids[target], ids[index]];
-      reorderMemoGroups(ids);
-    },
-    [panelGroups, reorderMemoGroups],
-  );
+  const swapGroup = useGroupSwap(panelGroups, reorderMemoGroups);
 
   const hasGroups = panelGroups.length > 0;
   const isFiltering = filterIds.length > 0;

@@ -23,12 +23,21 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
   const timeRef = useRef<HTMLInputElement>(null);
   const focusTargetRef = useRef<'time' | 'content'>('content');
   const cancelledRef = useRef(false);
+  const blurHandledRef = useRef(false);
   const { applyPendingCursor, captureFromMouseEvent } = useCaretPosition();
   const { resize } = useAutoResizeTextarea();
 
+  // 編集モードに入った瞬間だけ focus + カーソル復元を行う（毎レンダーでは実行しない）
+  const editInitRef = useRef(false);
   useLayoutEffect(() => {
-    if (!isEditing) return;
+    if (!isEditing) {
+      editInitRef.current = false;
+      return;
+    }
+    if (editInitRef.current) return;
+    editInitRef.current = true;
     cancelledRef.current = false;
+    blurHandledRef.current = false;
     resize(contentRef.current);
 
     if (focusTargetRef.current === 'time') {
@@ -58,8 +67,11 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
     }
   }
 
-  // onBlurから呼ばれる唯一の保存ポイント
+  // onBlurから呼ばれる唯一の保存ポイント（二重実行防止付き）
   const handleBlur = useCallback(() => {
+
+    if (blurHandledRef.current) return;
+    blurHandledRef.current = true;
     if (cancelledRef.current) {
       cancelledRef.current = false;
       setFocusedEntry(null);
@@ -73,22 +85,25 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
       eventTimeSortKey: sortKey,
     });
     setFocusedEntry(null);
+
   }, [draftContent, draftTime, entry.id, updateEntry, setFocusedEntry]);
 
   if (isEditing) {
     return (
       <div style={{
-        padding: '1px 4px 2px 18px',
+        padding: '1px 4px 2px var(--tl-entry-pad-left)',
         display: 'flex',
-        gap: 12,
-        alignItems: 'center',
+        gap: 'var(--tl-time-gap)',
+        alignItems: 'flex-start',
       }}>
         <input
           ref={timeRef}
           value={draftTime}
           onChange={(e) => setDraftTime(normalizeTimeInput(e.target.value))}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') { e.preventDefault(); contentRef.current?.focus(); }
+            // 編集中のキーイベントが dnd-kit の KeyboardSensor に到達するのを防止
+            e.stopPropagation();
+            if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); contentRef.current?.focus(); }
             if (e.key === 'Escape') {
               e.preventDefault();
               cancelledRef.current = true;
@@ -97,7 +112,6 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
               timeRef.current?.blur();
             }
             if (e.key === 'Tab') {
-              // Tab: コンテンツ入力へ移動（他の要素には行かない）
               e.preventDefault();
               contentRef.current?.focus();
             }
@@ -114,8 +128,9 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
           placeholder="--:--"
           aria-label="時刻"
           style={{
-            width: 44,
+            width: 'var(--tl-time-width)',
             flexShrink: 0,
+            boxSizing: 'border-box',
             background: 'var(--bg-elevated)',
             border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-sm)',
@@ -123,7 +138,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
             color: draftTime ? 'var(--panel-timeline-accent)' : 'var(--text-faint)',
             fontFamily: 'var(--font-mono)',
             fontSize: 13,
-            lineHeight: 1.6,
+            lineHeight: 1.2,
             padding: '2px 4px',
             textAlign: 'center',
             letterSpacing: '0.04em',
@@ -139,7 +154,10 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
           }}
           onBlur={handleBlur}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            // 編集中のキーイベントが dnd-kit の KeyboardSensor に到達するのを防止
+            e.stopPropagation();
+
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               contentRef.current?.blur();
             }
@@ -164,8 +182,8 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
             color: 'var(--text-primary)',
             fontFamily: 'var(--font-sans)',
             fontSize: 13,
-            lineHeight: 1.6,
-            padding: 0,
+            lineHeight: 1.2,
+            padding: '3px 0 0 6px',
             margin: 0,
             resize: 'none',
             overflow: 'hidden',
@@ -180,10 +198,10 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
     <div
       style={{
         cursor: 'text',
-        padding: '1px 4px 2px 18px',
+        padding: '1px 4px 0 var(--tl-entry-pad-left)',
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 12,
+        gap: 'var(--tl-time-gap)',
         minHeight: 22,
       }}
     >
@@ -191,11 +209,12 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
       <span
         onClick={(e) => {
           if (e.shiftKey) return;
+
           focusTargetRef.current = 'time';
           setFocusedEntry(entry.id);
         }}
         style={{
-          width: 44,
+          width: 'var(--tl-time-width)',
           flexShrink: 0,
           border: '1px solid transparent',
           padding: '2px 4px',
@@ -217,18 +236,20 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
       <span
         onMouseUp={(e) => {
           if (e.shiftKey) return;
+
           focusTargetRef.current = 'content';
           captureFromMouseEvent(e, entry.content.length);
           setFocusedEntry(entry.id);
         }}
         style={{
           fontSize: 13,
-          lineHeight: 1.6,
+          lineHeight: 1.2,
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
           flex: 1,
           color: 'var(--text-primary)',
-          paddingTop: 2,
+          paddingTop: 3,
+          paddingLeft: 6,
         }}
       >
         {entry.content || (
