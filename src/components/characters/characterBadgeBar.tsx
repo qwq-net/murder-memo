@@ -1,6 +1,6 @@
-import { useStore } from '../../store';
-import type { CharacterDisplayFormat, CharacterDisplayVisibility, MemoEntry } from '../../types/memo';
-import { CharacterBadge } from './CharacterBadge';
+import { useStore } from '@/store';
+import type { CharacterDisplayFormat, CharacterDisplayVisibility, MemoEntry } from '@/types/memo';
+import { CharacterBadge } from '@/components/characters/characterBadge';
 
 interface CharacterBadgeBarProps {
   entry: MemoEntry;

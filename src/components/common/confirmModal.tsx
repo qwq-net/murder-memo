@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { ModalFrame } from './ModalFrame';
+import { ModalFrame } from '@/components/common/modalFrame';
 
 // ─── 型定義 ─────────────────────────────────────────────────────────────────
 
@@ -36,11 +36,15 @@ export function ConfirmModal({
   cancelLabel = '取り消し',
 }: ConfirmModalProps) {
   const [confirmed, setConfirmed] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(open);
 
   // 開くたびにリセット
-  useEffect(() => {
-    if (open) setConfirmed(false);
-  }, [open]);
+  if (open && !prevOpen) {
+    setConfirmed(false);
+  }
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+  }
 
   return (
     <ModalFrame

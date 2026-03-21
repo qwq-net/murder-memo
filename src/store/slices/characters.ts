@@ -5,9 +5,9 @@ import {
   deleteCharacter,
   getCharactersBySession,
   putCharacter,
-} from '../../lib/idb';
-import type { Character } from '../../types/memo';
-import type { StoreState } from '../index';
+} from '@/lib/idb';
+import type { Character } from '@/types/memo';
+import type { StoreState } from '@/store/index';
 
 export interface CharactersSlice {
   characters: Character[];
@@ -37,6 +37,8 @@ export const createCharactersSlice = (
     if (!sessionId) throw new Error('No active session');
     const maxOrder = get().characters.reduce((m, c) => Math.max(m, c.sortOrder), -1);
     const char: Character = {
+      role: 'pl',
+      showInEntries: true,
       ...partial,
       id: nanoid(),
       sortOrder: maxOrder + 1,

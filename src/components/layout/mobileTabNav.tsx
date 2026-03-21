@@ -1,5 +1,5 @@
-import { useStore } from '../../store';
-import type { PanelId } from '../../types/memo';
+import { useStore } from '@/store';
+import type { PanelId } from '@/types/memo';
 
 const PANEL_LABELS: Record<PanelId, string> = {
   free:     '自由メモ',

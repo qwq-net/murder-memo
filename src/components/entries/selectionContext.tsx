@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 
 interface SelectionState {
   selectedIds: Set<string>;
-  lastClickedId: string | null;
   /** エントリをShift+クリックで選択/選択解除。範囲選択対応 */
   handleSelect: (id: string, shiftKey: boolean, allIds: string[]) => void;
   /** 選択をすべて解除 */
@@ -60,7 +59,6 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<SelectionState>(() => ({
     selectedIds,
-    lastClickedId: lastClickedRef.current,
     handleSelect,
     clearSelection,
     isSelected,
@@ -74,6 +72,7 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSelection() {
   const ctx = useContext(SelectionContext);
   if (!ctx) throw new Error('useSelection must be used within SelectionProvider');

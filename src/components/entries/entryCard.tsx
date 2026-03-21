@@ -1,15 +1,15 @@
 import { useCallback, useState } from 'react';
 
-import { useStore } from '../../store';
-import type { MemoEntry } from '../../types/memo';
-import { CharacterBadgeBar } from '../characters/CharacterBadgeBar';
-import { IconImportance } from '../icons';
-import { BulkContextMenu } from './actions/BulkContextMenu';
-import { EntryContextMenu } from './actions/EntryContextMenu';
-import { ImageEntry } from './ImageEntry';
-import { useSelection } from './selection-context';
-import { TextEntry } from './TextEntry';
-import { TimelineEntry } from './TimelineEntry';
+import { useStore } from '@/store';
+import type { MemoEntry } from '@/types/memo';
+import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
+import { IconImportance } from '@/components/icons';
+import { BulkContextMenu } from '@/components/entries/actions/bulkContextMenu';
+import { EntryContextMenu } from '@/components/entries/actions/entryContextMenu';
+import { ImageEntry } from '@/components/entries/imageEntry';
+import { useSelection } from '@/components/entries/selectionContext';
+import { TextEntry } from '@/components/entries/textEntry';
+import { TimelineEntry } from '@/components/entries/timelineEntry';
 
 interface EntryCardProps {
   entry: MemoEntry;

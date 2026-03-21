@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
 
-import type { Character, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '../types/memo';
+import type { Character, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
 
 // ─── スキーマ ────────────────────────────────────────────────────────────────
 
@@ -203,7 +203,8 @@ export async function bulkPutEntries(
 export async function getCharactersBySession(sessionId: string): Promise<Character[]> {
   const db = await getDb();
   const rows = await db.getAllFromIndex('characters', 'by-session', sessionId);
-  return rows.map(({ sessionId: _sid, ...c }) => ({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  return rows.map(({ sessionId, ...c }) => ({
     role: 'pl' as const,
     showInEntries: true,
     ...(c as Omit<Character, 'role' | 'showInEntries'> & Partial<Pick<Character, 'role' | 'showInEntries'>>),

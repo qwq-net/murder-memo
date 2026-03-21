@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 
-import { putImage } from '../lib/idb';
+import { putImage } from '@/lib/idb';
 
 /**
  * クリップボードからの画像ペーストを検知するフック。

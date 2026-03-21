@@ -1,4 +1,4 @@
-import type { CharacterDisplayFormat } from '../../types/memo';
+import type { CharacterDisplayFormat } from '@/types/memo';
 
 interface CharacterBadgeProps {
   color: string;

@@ -5,9 +5,9 @@ import {
   deleteTimelineGroup,
   getTimelineGroupsBySession,
   putTimelineGroup,
-} from '../../lib/idb';
-import type { TimelineGroup } from '../../types/memo';
-import type { StoreState } from '../index';
+} from '@/lib/idb';
+import type { TimelineGroup } from '@/types/memo';
+import type { StoreState } from '@/store/index';
 
 export interface TimelineGroupsSlice {
   timelineGroups: TimelineGroup[];

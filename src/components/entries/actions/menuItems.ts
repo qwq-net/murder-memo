@@ -10,8 +10,8 @@ import type {
   MemoGroup,
   PanelId,
   TimelineGroup,
-} from '../../../types/memo';
-import type { ContextMenuEntry } from '../../common/ContextMenu';
+} from '@/types/memo';
+import type { ContextMenuEntry } from '@/components/common/contextMenu';
 
 // ─── ラベル定数 ─────────────────────────────────────────────────────────────
 

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAutoResizeTextarea } from '../../hooks/useAutoResizeTextarea';
-import { useLocalStorage } from '../../hooks/useLocalStorage';
-import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '../../lib/time-parser';
-import { useStore } from '../../store';
-import type { PanelId } from '../../types/memo';
-import { IconPlusSm } from '../icons';
+import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '@/lib/timeParser';
+import { useStore } from '@/store';
+import type { PanelId } from '@/types/memo';
+import { IconPlusSm } from '@/components/icons';
 
 interface EntryInputProps {
   panel: PanelId;
@@ -87,7 +87,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         inputRef.current?.focus();
       }
     });
-  }, [value, timeValue, panel, isTimeline, isMemoPanel, effectiveGroupId, validSelectedId, addEntry]);
+  }, [value, timeValue, panel, isTimeline, isMemoPanel, effectiveGroupId, selectedGroupId, addEntry]);
 
   const handleAddGroup = useCallback(async () => {
     const label = newGroupLabel.trim();

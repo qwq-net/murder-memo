@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
-import { useAutoResizeTextarea } from '../../hooks/useAutoResizeTextarea';
-import { useCaretPosition } from '../../hooks/useCaretPosition';
-import { useStore } from '../../store';
-import type { MemoEntry } from '../../types/memo';
+import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
+import { useCaretPosition } from '@/hooks/useCaretPosition';
+import { useStore } from '@/store';
+import type { MemoEntry } from '@/types/memo';
 
 interface TextEntryProps {
   entry: MemoEntry;
@@ -30,9 +30,11 @@ export function TextEntry({ entry }: TextEntryProps) {
     applyPendingCursor(el);
   }, [isEditing, resize, applyPendingCursor]);
 
-  useEffect(() => {
+  const [prevSyncKey, setPrevSyncKey] = useState({ content: entry.content, isEditing });
+  if (entry.content !== prevSyncKey.content || isEditing !== prevSyncKey.isEditing) {
+    setPrevSyncKey({ content: entry.content, isEditing });
     if (!isEditing) setDraft(entry.content);
-  }, [entry.content, isEditing]);
+  }
 
   // onBlurから呼ばれる唯一の保存ポイント
   const handleBlur = useCallback(() => {

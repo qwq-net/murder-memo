@@ -1,16 +1,16 @@
 import { useMemo } from 'react';
 
-import { useStore } from '../../../store';
-import type { MemoEntry } from '../../../types/memo';
-import type { ContextMenuEntry } from '../../common/ContextMenu';
-import { ContextMenu } from '../../common/ContextMenu';
+import { useStore } from '@/store';
+import type { MemoEntry } from '@/types/memo';
+import type { ContextMenuEntry } from '@/components/common/contextMenu';
+import { ContextMenu } from '@/components/common/contextMenu';
 import {
   buildCategoryMoveItems,
   buildDeleteItems,
   buildDisplayItems,
   buildGroupMoveItems,
   buildImportanceItems,
-} from './menu-items';
+} from '@/components/entries/actions/menuItems';
 
 interface EntryContextMenuProps {
   entry: MemoEntry;

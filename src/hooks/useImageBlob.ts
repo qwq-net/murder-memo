@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { getImage } from '../lib/idb';
+import { getImage } from '@/lib/idb';
 
 /**
  * IndexedDB から画像 blob を読み込み、Object URL として返すフック。

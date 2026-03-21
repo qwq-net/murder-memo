@@ -1,8 +1,8 @@
 import { nanoid } from 'nanoid';
 
-import { clearSessionData, deleteSession, getAllSessions, putSession } from '../../lib/idb';
-import type { GameSession } from '../../types/memo';
-import type { StoreState } from '../index';
+import { clearSessionData, deleteSession, getAllSessions, putSession } from '@/lib/idb';
+import type { GameSession } from '@/types/memo';
+import type { StoreState } from '@/store/index';
 
 export interface SessionsSlice {
   sessions: GameSession[];

@@ -1,15 +1,15 @@
 import { useCallback, useState } from 'react';
 
-import { useStore } from '../../store';
-import type { AppSettings } from '../../store/slices/settings';
-import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '../../types/memo';
-import { CharacterBadge } from '../characters/CharacterBadge';
-import { MinimalSlot } from '../characters/CharacterBadgeBar';
-import { ConfirmModal } from '../common/ConfirmModal';
-import { ModalFrame } from '../common/ModalFrame';
-import { RadioGroup } from '../common/RadioGroup';
-import type { RadioOption } from '../common/RadioGroup';
-import { IconCloseLg } from '../icons';
+import { useStore } from '@/store';
+import type { AppSettings } from '@/store/slices/settings';
+import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
+import { CharacterBadge } from '@/components/characters/characterBadge';
+import { MinimalSlot } from '@/components/characters/characterBadgeBar';
+import { ConfirmModal } from '@/components/common/confirmModal';
+import { ModalFrame } from '@/components/common/modalFrame';
+import { RadioGroup } from '@/components/common/radioGroup';
+import type { RadioOption } from '@/components/common/radioGroup';
+import { IconCloseLg } from '@/components/icons';
 
 /* RadioGroup は src/components/common/RadioGroup.tsx を使用 */
 

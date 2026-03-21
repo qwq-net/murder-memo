@@ -1,21 +1,21 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
-import { getEntriesBySession } from '../lib/idb';
-import type { CharactersSlice } from './slices/characters';
-import { createCharactersSlice } from './slices/characters';
-import type { EntriesSlice } from './slices/entries';
-import { createEntriesSlice } from './slices/entries';
-import type { MemoGroupsSlice } from './slices/memo-groups';
-import { createMemoGroupsSlice } from './slices/memo-groups';
-import type { SessionsSlice } from './slices/sessions';
-import { createSessionsSlice } from './slices/sessions';
-import type { SettingsSlice } from './slices/settings';
-import { createSettingsSlice } from './slices/settings';
-import type { TimelineGroupsSlice } from './slices/timeline-groups';
-import { createTimelineGroupsSlice } from './slices/timeline-groups';
-import type { UiSlice } from './slices/ui';
-import { createUiSlice } from './slices/ui';
+import { getEntriesBySession } from '@/lib/idb';
+import type { CharactersSlice } from '@/store/slices/characters';
+import { createCharactersSlice } from '@/store/slices/characters';
+import type { EntriesSlice } from '@/store/slices/entries';
+import { createEntriesSlice } from '@/store/slices/entries';
+import type { MemoGroupsSlice } from '@/store/slices/memoGroups';
+import { createMemoGroupsSlice } from '@/store/slices/memoGroups';
+import type { SessionsSlice } from '@/store/slices/sessions';
+import { createSessionsSlice } from '@/store/slices/sessions';
+import type { SettingsSlice } from '@/store/slices/settings';
+import { createSettingsSlice } from '@/store/slices/settings';
+import type { TimelineGroupsSlice } from '@/store/slices/timelineGroups';
+import { createTimelineGroupsSlice } from '@/store/slices/timelineGroups';
+import type { UiSlice } from '@/store/slices/ui';
+import { createUiSlice } from '@/store/slices/ui';
 
 export type StoreState = SessionsSlice &
   EntriesSlice &

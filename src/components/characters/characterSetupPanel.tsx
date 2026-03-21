@@ -14,12 +14,12 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { useStore } from '../../store';
-import type { Character, CharacterRole } from '../../types/memo';
-import { RadioGroup } from '../common/RadioGroup';
-import { CharacterColorPalette } from './CharacterColorPalette';
+import { useStore } from '@/store';
+import type { Character, CharacterRole } from '@/types/memo';
+import { RadioGroup } from '@/components/common/radioGroup';
+import { CharacterColorPalette } from '@/components/characters/characterColorPalette';
 
 const DEFAULT_COLORS = [
   '#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6',
@@ -338,11 +338,14 @@ function CharacterRow({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [localName, setLocalName] = useState(char.name);
+  const [prevCharName, setPrevCharName] = useState(char.name);
   const composingRef = useRef(false);
 
-  useEffect(() => {
-    if (!composingRef.current) setLocalName(char.name);
-  }, [char.name]);
+  // char.name は blur 時にのみ更新されるため、IME composition 中には変わらない
+  if (char.name !== prevCharName) {
+    setPrevCharName(char.name);
+    setLocalName(char.name);
+  }
 
   return (
     <div

@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
-import { useAutoResizeTextarea } from '../../hooks/useAutoResizeTextarea';
-import { useCaretPosition } from '../../hooks/useCaretPosition';
-import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '../../lib/time-parser';
-import { useStore } from '../../store';
-import type { MemoEntry } from '../../types/memo';
+import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
+import { useCaretPosition } from '@/hooks/useCaretPosition';
+import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '@/lib/timeParser';
+import { useStore } from '@/store';
+import type { MemoEntry } from '@/types/memo';
 
 interface TimelineEntryProps {
   entry: MemoEntry;
@@ -41,12 +41,22 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
     }
   }, [isEditing, resize, applyPendingCursor]);
 
-  useEffect(() => {
+  const [prevSyncKey, setPrevSyncKey] = useState({
+    content: entry.content,
+    eventTime: entry.eventTime,
+    isEditing,
+  });
+  if (
+    entry.content !== prevSyncKey.content ||
+    entry.eventTime !== prevSyncKey.eventTime ||
+    isEditing !== prevSyncKey.isEditing
+  ) {
+    setPrevSyncKey({ content: entry.content, eventTime: entry.eventTime, isEditing });
     if (!isEditing) {
       setDraftContent(entry.content);
       setDraftTime(entry.eventTime ?? '');
     }
-  }, [entry.content, entry.eventTime, isEditing]);
+  }
 
   // onBlurから呼ばれる唯一の保存ポイント
   const handleBlur = useCallback(() => {

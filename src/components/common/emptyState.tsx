@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { IconPlus } from '../icons';
+import { IconPlus } from '@/components/icons';
 
 interface EmptyStateProps {
   accentColor: string;

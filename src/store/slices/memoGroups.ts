@@ -5,9 +5,9 @@ import {
   deleteMemoGroup,
   getMemoGroupsBySession,
   putMemoGroup,
-} from '../../lib/idb';
-import type { MemoGroup } from '../../types/memo';
-import type { StoreState } from '../index';
+} from '@/lib/idb';
+import type { MemoGroup } from '@/types/memo';
+import type { StoreState } from '@/store/index';
 
 export interface MemoGroupsSlice {
   memoGroups: MemoGroup[];

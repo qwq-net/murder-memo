@@ -1,8 +1,8 @@
 import { nanoid } from 'nanoid';
 
-import { bulkPutEntries, deleteEntry, deleteImage, putEntry } from '../../lib/idb';
-import type { MemoEntry, MemoEntryType, PanelId } from '../../types/memo';
-import type { StoreState } from '../index';
+import { bulkPutEntries, deleteEntry, deleteImage, putEntry } from '@/lib/idb';
+import type { MemoEntry, MemoEntryType, PanelId } from '@/types/memo';
+import type { StoreState } from '@/store/index';
 
 export interface EntriesSlice {
   entries: MemoEntry[];

@@ -1,18 +1,18 @@
 import { useMemo, useState } from 'react';
 
-import { useResponsive } from '../../hooks/useResponsive';
-import { useStore } from '../../store';
-import type { PanelId } from '../../types/memo';
-import { CharacterSetupPanel } from '../characters/CharacterSetupPanel';
-import { useSelection } from '../entries/selection-context';
-import { IconChevronRightLg } from '../icons';
-import { FreeMemoPanel } from '../panels/FreeMemoPanel';
-import { SettingsPanel } from '../settings/SettingsPanel';
-import { PersonalMemoPanel } from '../panels/PersonalMemoPanel';
-import { TimelinePanel } from '../panels/TimelinePanel';
-import { MobileTabNav } from './MobileTabNav';
-import { Panel } from './Panel';
-import { PanelContainer } from './PanelContainer';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useStore } from '@/store';
+import type { PanelId } from '@/types/memo';
+import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel';
+import { useSelection } from '@/components/entries/selectionContext';
+import { IconChevronRightLg } from '@/components/icons';
+import { FreeMemoPanel } from '@/components/panels/freeMemoPanel';
+import { SettingsPanel } from '@/components/settings/settingsPanel';
+import { PersonalMemoPanel } from '@/components/panels/personalMemoPanel';
+import { TimelinePanel } from '@/components/panels/timelinePanel';
+import { MobileTabNav } from '@/components/layout/mobileTabNav';
+import { Panel } from '@/components/layout/panel';
+import { PanelContainer } from '@/components/layout/panelContainer';
 
 const PANEL_CONTENT: Record<PanelId, React.ReactNode> = {
   free:     <FreeMemoPanel />,

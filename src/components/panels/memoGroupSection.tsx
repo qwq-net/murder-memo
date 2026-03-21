@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react';
 
-import type { MemoEntry, MemoGroup } from '../../types/memo';
-import { ConfirmModal } from '../common/ConfirmModal';
-import { SortableEntryList } from '../entries/SortableEntryList';
-import { IconChevronDown, IconClose, IconEditSquare } from '../icons';
+import type { MemoEntry, MemoGroup } from '@/types/memo';
+import { ConfirmModal } from '@/components/common/confirmModal';
+import { SortableEntryList } from '@/components/entries/sortableEntryList';
+import { IconChevronDown, IconClose, IconEditSquare } from '@/components/icons';
 
 interface MemoGroupSectionProps {
   group: MemoGroup | null; // null = 未分類

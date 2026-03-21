@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 /**
  * モーダルフレーム共通コンポーネント。

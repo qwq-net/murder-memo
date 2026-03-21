@@ -1,6 +1,6 @@
-import { useImageBlob } from '../../hooks/useImageBlob';
-import { useStore } from '../../store';
-import type { MemoEntry } from '../../types/memo';
+import { useImageBlob } from '@/hooks/useImageBlob';
+import { useStore } from '@/store';
+import type { MemoEntry } from '@/types/memo';
 
 interface ImageEntryProps {
   entry: MemoEntry;

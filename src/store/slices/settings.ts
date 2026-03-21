@@ -1,5 +1,5 @@
-import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '../../types/memo';
-import type { StoreState } from '../index';
+import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
+import type { StoreState } from '@/store/index';
 
 export interface AppSettings {
   /** 入力欄の位置: 'top' | 'bottom' */

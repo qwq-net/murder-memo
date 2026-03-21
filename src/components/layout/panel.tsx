@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import type { PanelId } from '../../types/memo';
+import type { PanelId } from '@/types/memo';
 
 interface PanelProps {
   panelId: PanelId;

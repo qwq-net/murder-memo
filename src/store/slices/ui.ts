@@ -1,5 +1,5 @@
-import type { PanelId, PanelLayoutConfig } from '../../types/memo';
-import type { StoreState } from '../index';
+import type { PanelId, PanelLayoutConfig } from '@/types/memo';
+import type { StoreState } from '@/store/index';
 
 export interface UiSlice {
   layout: PanelLayoutConfig;

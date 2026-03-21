@@ -1,8 +1,8 @@
 import { useCallback, useRef } from 'react';
 
-import { useStore } from '../../store';
-import type { PanelId } from '../../types/memo';
-import { ResizeHandle } from './ResizeHandle';
+import { useStore } from '@/store';
+import type { PanelId } from '@/types/memo';
+import { ResizeHandle } from '@/components/layout/resizeHandle';
 
 interface PanelContainerProps {
   panels: {

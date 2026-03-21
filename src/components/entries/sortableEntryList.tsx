@@ -19,9 +19,9 @@ import {
 import { memo, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import type { MemoEntry } from '../../types/memo';
-import { EntryCard } from './EntryCard';
-import { useSelection } from './selection-context';
+import type { MemoEntry } from '@/types/memo';
+import { EntryCard } from '@/components/entries/entryCard';
+import { useSelection } from '@/components/entries/selectionContext';
 
 interface SortableEntryListProps {
   entries: MemoEntry[];

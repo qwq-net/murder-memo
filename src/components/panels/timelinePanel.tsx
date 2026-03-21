@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { getHourKey, getHourLabel } from '../../lib/time-parser';
-import { useStore } from '../../store';
-import type { MemoEntry, TimelineGroup } from '../../types/memo';
-import { ConfirmModal } from '../common/ConfirmModal';
-import { EmptyState } from '../common/EmptyState';
-import { EntryInput } from '../entries/EntryInput';
-import { SortableEntryList } from '../entries/SortableEntryList';
-import { IconChevronDown, IconClose, IconEditSquare } from '../icons';
+import { getHourKey, getHourLabel } from '@/lib/timeParser';
+import { useStore } from '@/store';
+import type { MemoEntry, TimelineGroup } from '@/types/memo';
+import { ConfirmModal } from '@/components/common/confirmModal';
+import { EmptyState } from '@/components/common/emptyState';
+import { EntryInput } from '@/components/entries/entryInput';
+import { SortableEntryList } from '@/components/entries/sortableEntryList';
+import { IconChevronDown, IconClose, IconEditSquare } from '@/components/icons';
 
 export function TimelinePanel() {
   const allEntries = useStore((s) => s.entries);

@@ -1,4 +1,4 @@
-import { MemoPanel } from './MemoPanel';
+import { MemoPanel } from '@/components/panels/memoPanel';
 
 export function PersonalMemoPanel() {
   return (

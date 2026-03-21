@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 
-import { AppShell } from './components/layout/AppShell';
-import { SelectionProvider } from './components/entries/selection-context';
-import { useStore } from './store';
+import { AppShell } from '@/components/layout/appShell';
+import { SelectionProvider } from '@/components/entries/selectionContext';
+import { useStore } from '@/store';
 
 export default function App() {
   const initSessions = useStore((s) => s.initSessions);

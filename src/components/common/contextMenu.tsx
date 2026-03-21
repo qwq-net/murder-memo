@@ -125,7 +125,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   const [subPos, setSubPos] = useState({ x: 0, y: 0 });
 
   // Safe Triangle 状態（レンダリング不要なので ref）
-  const st = useRef<SafeTriangleState>({
+  const stRef = useRef<SafeTriangleState>({
     rect: null,
     direction: 'right',
     prev: null,
@@ -133,7 +133,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     idleTimer: null,
     lastTime: 0,
     triggerRect: null,
-  }).current;
+  });
 
   // ── 親メニュー画面外補正 ──
   useEffect(() => {
@@ -175,6 +175,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 
   // ── Safe Triangle: pointermove ──
   useEffect(() => {
+    const st = stRef.current;
     if (openIndex === null) {
       if (st.idleTimer) clearTimeout(st.idleTimer);
       st.rect = null;
@@ -227,7 +228,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       document.removeEventListener('pointermove', handler);
       if (st.idleTimer) clearTimeout(st.idleTimer);
     };
-  }, [openIndex, st]);
+  }, [openIndex]);
 
   // ── サブメニュークリック開閉 ──
   // 位置と方向を事前計算し、React state として渡す（DOM 直接操作しない）
@@ -257,12 +258,13 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 
     setSubPos({ x: posX, y: itemRect.top - 4 });
 
+    const st = stRef.current;
     st.direction = dir;
     st.rect = null;
     st.prev = null;
     st.invalidCount = 0;
     st.triggerRect = el.getBoundingClientRect();
-  }, [st]);
+  }, []);
 
   // ── レンダリング ──
   const openSubmenuItem = openIndex !== null ? items[openIndex] : null;
@@ -348,7 +350,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
           y={subPos.y}
           items={openSubmenuItem.submenu}
           onClose={onClose}
-          safeTriangle={st}
+          safeTriangleRef={stRef}
         />
       )}
     </>
@@ -362,11 +364,11 @@ interface SubMenuProps {
   y: number;
   items: ContextMenuEntry[];
   onClose: () => void;
-  safeTriangle: SafeTriangleState;
+  safeTriangleRef: React.RefObject<SafeTriangleState>;
 }
 
 const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
-  function SubMenu({ x, y, items, onClose, safeTriangle }, ref) {
+  function SubMenu({ x, y, items, onClose, safeTriangleRef }, ref) {
     const localRef = useRef<HTMLDivElement>(null);
 
     // ref を外部にも公開
@@ -393,11 +395,12 @@ const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
       }
 
       // 確定位置で Safe Triangle をセット
-      safeTriangle.rect = el.getBoundingClientRect();
+      const st = safeTriangleRef.current;
+      st.rect = el.getBoundingClientRect();
       // direction は toggleSubmenu で事前セット済み（ここでは変更しない）
-      safeTriangle.prev = null;
-      safeTriangle.invalidCount = 0;
-    }, [x, y, safeTriangle]);
+      st.prev = null;
+      st.invalidCount = 0;
+    }, [x, y, safeTriangleRef]);
 
     return (
       <div

@@ -4,10 +4,10 @@
  */
 import { useCallback, useMemo } from 'react';
 
-import { useStore } from '../../store';
-import { EmptyState } from '../common/EmptyState';
-import { EntryInput } from '../entries/EntryInput';
-import { MemoGroupSection } from './MemoGroupSection';
+import { useStore } from '@/store';
+import { EmptyState } from '@/components/common/emptyState';
+import { EntryInput } from '@/components/entries/entryInput';
+import { MemoGroupSection } from '@/components/panels/memoGroupSection';
 
 interface MemoPanelProps {
   panel: 'free' | 'personal';
