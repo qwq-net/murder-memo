@@ -3,7 +3,7 @@ import type { DBSchema, IDBPDatabase } from 'idb';
 
 import type { Character, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '../types/memo';
 
-// ─── Schema ──────────────────────────────────────────────────────────────────
+// ─── スキーマ ────────────────────────────────────────────────────────────────
 
 interface MurderMemoDB extends DBSchema {
   entries: {
@@ -52,24 +52,24 @@ export function getDb(): Promise<IDBPDatabase<MurderMemoDB>> {
     dbPromise = openDB<MurderMemoDB>(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
-          // entries
+          // エントリ
           const entriesStore = db.createObjectStore('entries', { keyPath: 'id' });
           entriesStore.createIndex('by-session', 'sessionId');
           entriesStore.createIndex('by-panel', 'panel');
 
-          // characters
+          // キャラクター
           const charsStore = db.createObjectStore('characters', { keyPath: 'id' });
           charsStore.createIndex('by-session', 'sessionId');
 
-          // sessions
+          // セッション
           db.createObjectStore('sessions', { keyPath: 'id' });
 
-          // images (Blob)
+          // 画像 (Blob)
           db.createObjectStore('images', { keyPath: 'key' });
         }
 
         if (oldVersion < 2) {
-          // timeline-groups
+          // タイムライングループ
           const groupsStore = db.createObjectStore('timeline-groups', { keyPath: 'id' });
           groupsStore.createIndex('by-session', 'sessionId');
         }
@@ -85,7 +85,7 @@ export function getDb(): Promise<IDBPDatabase<MurderMemoDB>> {
   return dbPromise;
 }
 
-// ─── Sessions ────────────────────────────────────────────────────────────────
+// ─── セッション ──────────────────────────────────────────────────────────────
 
 export async function getAllSessions(): Promise<GameSession[]> {
   const db = await getDb();
@@ -166,7 +166,7 @@ export async function clearSessionData(id: string): Promise<void> {
   await tx.done;
 }
 
-// ─── Entries ─────────────────────────────────────────────────────────────────
+// ─── エントリ ────────────────────────────────────────────────────────────────
 
 export async function getEntriesBySession(sessionId: string): Promise<MemoEntry[]> {
   const db = await getDb();
@@ -198,7 +198,7 @@ export async function bulkPutEntries(
   await tx.done;
 }
 
-// ─── Characters ──────────────────────────────────────────────────────────────
+// ─── キャラクター ────────────────────────────────────────────────────────────
 
 export async function getCharactersBySession(sessionId: string): Promise<Character[]> {
   const db = await getDb();
@@ -230,7 +230,7 @@ export async function bulkPutCharacters(
   await tx.done;
 }
 
-// ─── Timeline Groups ────────────────────────────────────────────────────────
+// ─── タイムライングループ ────────────────────────────────────────────────────
 
 export async function getTimelineGroupsBySession(
   sessionId: string,
@@ -258,7 +258,7 @@ export async function bulkPutTimelineGroups(
   await tx.done;
 }
 
-// ─── Memo Groups ────────────────────────────────────────────────────────────
+// ─── メモグループ ───────────────────────────────────────────────────────────
 
 export async function getMemoGroupsBySession(
   sessionId: string,
@@ -284,7 +284,7 @@ export async function bulkPutMemoGroups(groups: MemoGroup[]): Promise<void> {
   await tx.done;
 }
 
-// ─── Images ──────────────────────────────────────────────────────────────────
+// ─── 画像 ───────────────────────────────────────────────────────────────────
 
 export async function putImage(key: string, blob: Blob): Promise<void> {
   const db = await getDb();

@@ -11,7 +11,7 @@ interface PanelContainerProps {
   }[];
 }
 
-// Must match --resize-w in index.css
+// index.css の --resize-w と一致させる
 const HANDLE_PX = 5;
 
 export function PanelContainer({ panels }: PanelContainerProps) {
@@ -22,7 +22,7 @@ export function PanelContainer({ panels }: PanelContainerProps) {
   const handleDelta = useCallback(
     (index: 0 | 1, dx: number) => {
       const containerW = containerRef.current?.offsetWidth ?? window.innerWidth;
-      // Read current state directly to avoid stale closure on rapid drags
+      // 高速ドラッグ中のstaleクロージャを回避するため直接state参照
       const currentSizes = useStore.getState().layout.sizes;
       const totalGrow = currentSizes.reduce((a, b) => a + b, 0);
       const availableW = containerW - HANDLE_PX * (panels.length - 1);

@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// ─── 型定義 ─────────────────────────────────────────────────────────────────
 
 export interface ContextMenuItem {
   label: string;
@@ -40,7 +40,7 @@ function isHeader(item: ContextMenuEntry): item is ContextMenuHeader {
   return 'header' in item && (item as ContextMenuHeader).header === true;
 }
 
-// ─── Safe Triangle ──────────────────────────────────────────────────────────
+// ─── 安全三角形（サブメニューへのポインタ移動判定） ──────────────────────────
 
 const TOLERANCE_RAD = (15 * Math.PI) / 180;
 const THROTTLE_MS = 16;
@@ -93,7 +93,7 @@ function isInsideRect(x: number, y: number, r: DOMRect): boolean {
   return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 }
 
-// ─── Shared style ───────────────────────────────────────────────────────────
+// ─── 共通スタイル ───────────────────────────────────────────────────────────
 
 const ITEM_STYLE: React.CSSProperties = {
   display: 'block',
@@ -108,7 +108,7 @@ const ITEM_STYLE: React.CSSProperties = {
   transition: 'background 0.1s',
 };
 
-// ─── ContextMenu ────────────────────────────────────────────────────────────
+// ─── コンテキストメニュー ────────────────────────────────────────────────────
 
 interface ContextMenuProps {
   x: number;
@@ -357,7 +357,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   );
 }
 
-// ─── SubMenu ────────────────────────────────────────────────────────────────
+// ─── サブメニュー ───────────────────────────────────────────────────────────
 
 interface SubMenuProps {
   x: number;

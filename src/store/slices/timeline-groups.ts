@@ -84,7 +84,7 @@ export const createTimelineGroupsSlice = (
     const group = get().timelineGroups.find((g) => g.id === id);
     if (!group) return;
     const updated = { ...group, collapsed: !group.collapsed };
-    // fire-and-forget persistence
+    // 非同期で永続化（結果を待たない）
     putTimelineGroup(updated);
     set((s) => ({
       timelineGroups: s.timelineGroups.map((g) => (g.id === id ? updated : g)),

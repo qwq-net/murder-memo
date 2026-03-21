@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// ─── 型定義 ─────────────────────────────────────────────────────────────────
 
 export interface ConfirmModalAction {
   label: string;
@@ -24,7 +24,7 @@ export interface ConfirmModalProps {
   cancelLabel?: string;
 }
 
-// ─── Component ──────────────────────────────────────────────────────────────
+// ─── コンポーネント ─────────────────────────────────────────────────────────
 
 export function ConfirmModal({
   open,
