@@ -18,7 +18,12 @@ export function EntryInput({ panel }: EntryInputProps) {
 
   const [value, setValue] = useState('');
   const [timeValue, setTimeValue] = useState('');
-  const [selectedGroupId, setSelectedGroupId] = useState('');
+  const groupStorageKey = `murder-memo-selected-group-${panel}`;
+  const [selectedGroupId, setSelectedGroupId] = useState(() => {
+    try { return localStorage.getItem(groupStorageKey) ?? ''; } catch { return ''; }
+  });
+  const [timeError, setTimeError] = useState(false);
+  const [textError, setTextError] = useState(false);
   const [newGroupLabel, setNewGroupLabel] = useState('');
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -34,9 +39,12 @@ export function EntryInput({ panel }: EntryInputProps) {
     return [];
   }, [isTimeline, isMemoPanel, timelineGroups, memoGroups, panel]);
 
-  const effectiveGroupId = isTimeline && timelineGroups.length === 1 && !selectedGroupId
+  // selectedGroupId が現存するグループに含まれなければリセット
+  const validSelectedId = groups.some((g) => g.id === selectedGroupId) ? selectedGroupId : '';
+
+  const effectiveGroupId = isTimeline && timelineGroups.length === 1 && !validSelectedId
     ? timelineGroups[0].id
-    : selectedGroupId;
+    : validSelectedId;
 
   const MAX_INPUT_HEIGHT = 120;
 
@@ -52,12 +60,23 @@ export function EntryInput({ panel }: EntryInputProps) {
     resizeInput(inputRef.current);
   }, [value, resizeInput]);
 
+  const persistGroupId = useCallback((id: string) => {
+    setSelectedGroupId(id);
+    try { localStorage.setItem(groupStorageKey, id); } catch { /* noop */ }
+  }, [groupStorageKey]);
+
   const submit = useCallback(async () => {
     const text = value.trim();
-    if (!text) return;
-    if (isTimeline && !effectiveGroupId) return;
-
     const timeTrimmed = autoCompleteTime(timeValue);
+
+    if (isTimeline) {
+      if (!text && !timeTrimmed) return;
+      if (!timeTrimmed && text) { setTimeError(true); return; }
+      if (timeTrimmed && !text) { setTextError(true); return; }
+      if (!effectiveGroupId) return;
+    } else {
+      if (!text) return;
+    }
     const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
     const defaultType = isTimeline ? 'timeline' as const : 'text' as const;
     const memoGroupId = isMemoPanel && selectedGroupId ? selectedGroupId : undefined;
@@ -83,21 +102,21 @@ export function EntryInput({ panel }: EntryInputProps) {
         inputRef.current?.focus();
       }
     });
-  }, [value, timeValue, panel, isTimeline, isMemoPanel, effectiveGroupId, selectedGroupId, addEntry]);
+  }, [value, timeValue, panel, isTimeline, isMemoPanel, effectiveGroupId, validSelectedId, addEntry]);
 
   const handleAddGroup = useCallback(async () => {
     const label = newGroupLabel.trim();
     if (!label) return;
     if (isTimeline) {
       const group = await addTimelineGroup(label);
-      setSelectedGroupId(group.id);
+      persistGroupId(group.id);
     } else if (isMemoPanel) {
       const group = await addMemoGroup(label, panel as 'free' | 'personal');
-      setSelectedGroupId(group.id);
+      persistGroupId(group.id);
     }
     setNewGroupLabel('');
     setIsAddingGroup(false);
-  }, [newGroupLabel, isTimeline, isMemoPanel, panel, addTimelineGroup, addMemoGroup]);
+  }, [newGroupLabel, isTimeline, isMemoPanel, panel, addTimelineGroup, addMemoGroup, persistGroupId]);
 
   const disabled = isTimeline && timelineGroups.length === 0;
   const isTop = inputPosition === 'top';
@@ -108,7 +127,7 @@ export function EntryInput({ panel }: EntryInputProps) {
       {/* グループセレクタ */}
       <select
         value={effectiveGroupId}
-        onChange={(e) => setSelectedGroupId(e.target.value)}
+        onChange={(e) => persistGroupId(e.target.value)}
         aria-label="追加先グループ"
         style={{
           flex: 1,
@@ -231,7 +250,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         <input
           ref={timeRef}
           value={timeValue}
-          onChange={(e) => setTimeValue(normalizeTimeInput(e.target.value))}
+          onChange={(e) => { setTimeValue(normalizeTimeInput(e.target.value)); setTimeError(false); }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -246,7 +265,7 @@ export function EntryInput({ panel }: EntryInputProps) {
             flexShrink: 0,
             background: 'transparent',
             border: 'none',
-            borderBottom: '1px solid var(--border-default)',
+            borderBottom: timeError ? '1px solid #e05252' : '1px solid var(--border-default)',
             color: 'var(--panel-timeline-accent)',
             fontFamily: 'var(--font-mono)',
             fontSize: 12,
@@ -270,6 +289,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
+          setTextError(false);
           resizeInput(e.target);
         }}
         onKeyDown={(e) => {
@@ -290,6 +310,7 @@ export function EntryInput({ panel }: EntryInputProps) {
           minWidth: 0,
           background: 'transparent',
           border: 'none',
+          borderBottom: textError ? '1px solid #e05252' : undefined,
           color: 'var(--text-primary)',
           fontFamily: 'var(--font-sans)',
           fontSize: 13,

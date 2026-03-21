@@ -18,23 +18,39 @@ interface CharacterBadgeBarProps {
 export function MinimalSlot({
   revealed,
   isActive,
+  isFirst,
   children,
 }: {
   revealed: boolean;
   isActive: boolean;
+  isFirst: boolean;
   children: React.ReactNode;
 }) {
-  // 選択済みバッジは常に表示
-  if (isActive) return <>{children}</>;
+  // 選択済みバッジは常に表示（gap=0 なので自前でマージン）
+  if (isActive) {
+    return <span style={{ display: 'inline-flex', marginLeft: isFirst ? 0 : 4 }}>{children}</span>;
+  }
 
   return (
     <span
-      style={{
+      style={revealed ? {
         display: 'inline-flex',
-        maxWidth: revealed ? 120 : 0,
-        opacity: revealed ? 1 : 0,
+        maxWidth: 120,
+        marginLeft: isFirst ? 0 : 4,
+        opacity: 1,
         overflow: 'hidden',
-        transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out',
+        transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out, margin-left 0.2s ease-out',
+      } : {
+        display: 'inline-flex',
+        maxWidth: 0,
+        minWidth: 0,
+        width: 0,
+        marginLeft: 0,
+        padding: 0,
+        opacity: 0,
+        overflow: 'hidden',
+        flex: '0 0 0',
+        transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out, margin-left 0.2s ease-out',
       }}
     >
       {children}
@@ -50,26 +66,33 @@ export function CharacterBadgeBar({ entry, indent, format, visibility, isEntryHo
   if (visibility === 'off') return null;
 
   const isMinimal = visibility === 'minimal';
-
-  // ミニマル: 常に全キャラをDOMに配置（アニメーション用）
-  // 選択済みが0件かつ非ホバーなら何も表示しない
-  if (isMinimal && !isEntryHovered && !characters.some((c) => entry.characterTags.includes(c.id))) {
-    return null;
-  }
+  const hasActive = characters.some((c) => entry.characterTags.includes(c.id));
+  // ミニマル: 選択済みが0件かつ非ホバーなら高さを畳む（DOMは維持してアニメーション可能に）
+  const collapsed = isMinimal && !isEntryHovered && !hasActive;
 
   return (
     <div
       style={{
         display: 'flex',
-        gap: isMinimal && !isEntryHovered ? 4 : 4,
+        gap: isMinimal ? 0 : 4,
         alignItems: 'center',
         flexShrink: 0,
         flexWrap: 'wrap',
         padding: indent ? '1px 10px 1px 62px' : '1px 10px 1px',
+        opacity: collapsed ? 0 : 1,
+        height: collapsed ? 0 : 'auto',
+        transition: 'opacity 0.15s ease-out',
       }}
     >
-      {characters.map((char) => {
+      {characters.map((char, i) => {
         const isActive = entry.characterTags.includes(char.id);
+        const revealed = isEntryHovered || isActive;
+        // 最初に「表示される」バッジかどうか（ホバー時は0番目、非ホバー時は最初のアクティブ）
+        const isFirstVisible = isMinimal && (
+          isEntryHovered
+            ? i === 0
+            : characters.findIndex((c) => entry.characterTags.includes(c.id)) === i
+        );
         const badge = (
           <CharacterBadge
             key={char.id}
@@ -83,7 +106,7 @@ export function CharacterBadgeBar({ entry, indent, format, visibility, isEntryHo
 
         if (isMinimal) {
           return (
-            <MinimalSlot key={char.id} revealed={isEntryHovered || isActive} isActive={isActive}>
+            <MinimalSlot key={char.id} revealed={revealed} isActive={isActive} isFirst={isFirstVisible}>
               {badge}
             </MinimalSlot>
           );
