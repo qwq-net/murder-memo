@@ -1,9 +1,21 @@
 import { useMemo } from 'react';
 
 import { useStore } from '../../../store';
-import type { MemoEntry, PanelId } from '../../../types/memo';
+import type { CharacterDisplayFormat, CharacterDisplayVisibility, MemoEntry, PanelId } from '../../../types/memo';
 import type { ContextMenuEntry } from '../../common/ContextMenu';
 import { ContextMenu } from '../../common/ContextMenu';
+
+const FORMAT_LABELS: Record<CharacterDisplayFormat, string> = {
+  full: 'フル',
+  badge: 'バッジ',
+  text: 'テキスト',
+};
+
+const VISIBILITY_LABELS: Record<CharacterDisplayVisibility, string> = {
+  always: '常時',
+  minimal: 'ミニマル',
+  off: 'オフ',
+};
 
 const PANEL_LABELS: Record<PanelId, string> = {
   free: '自由メモ',
@@ -31,6 +43,7 @@ export function BulkContextMenu({ entries, x, y, onClose, onDone }: BulkContextM
   const deleteEntry = useStore((s) => s.deleteEntry);
   const timelineGroups = useStore((s) => s.timelineGroups);
   const memoGroups = useStore((s) => s.memoGroups);
+  const settings = useStore((s) => s.settings);
 
   const commonPanel = entries.every((e) => e.panel === entries[0].panel) ? entries[0].panel : null;
 
@@ -186,6 +199,65 @@ export function BulkContextMenu({ entries, x, y, onClose, onDone }: BulkContextM
       });
     }
 
+    // ── 役職表示形式 ──
+    {
+      result.push({ separator: true as const });
+      result.push({ header: true as const, label: `役職表示形式 (${count}件)` });
+
+      for (const fmt of ['full', 'badge', 'text'] as CharacterDisplayFormat[]) {
+        result.push({
+          label: `${FORMAT_LABELS[fmt]} へ変更`,
+          onClick: async () => {
+            for (const entry of entries) {
+              await updateEntry(entry.id, { characterDisplayFormat: fmt });
+            }
+            onDone();
+          },
+        });
+      }
+
+      // ── 役職表示モード ──
+      result.push({ separator: true as const });
+      result.push({ header: true as const, label: `役職表示モード (${count}件)` });
+
+      for (const vis of ['always', 'minimal', 'off'] as CharacterDisplayVisibility[]) {
+        result.push({
+          label: `${VISIBILITY_LABELS[vis]} へ変更`,
+          onClick: async () => {
+            for (const entry of entries) {
+              await updateEntry(entry.id, { characterDisplayVisibility: vis });
+            }
+            onDone();
+          },
+        });
+      }
+
+      // ── 役職表示設定 ──
+      result.push({ separator: true as const });
+      result.push({ header: true as const, label: `役職表示設定 (${count}件)` });
+
+      const hasAnyExplicit = entries.some(
+        (e) => e.characterDisplayFormat != null || e.characterDisplayVisibility != null,
+      );
+      result.push({
+        label: 'デフォルトに戻す',
+        disabled: !hasAnyExplicit,
+        onClick: hasAnyExplicit
+          ? async () => {
+              for (const entry of entries) {
+                if (entry.characterDisplayFormat != null || entry.characterDisplayVisibility != null) {
+                  await updateEntry(entry.id, {
+                    characterDisplayFormat: undefined,
+                    characterDisplayVisibility: undefined,
+                  });
+                }
+              }
+              onDone();
+            }
+          : () => {},
+      });
+    }
+
     // ── 削除 ──
     result.push(
       { separator: true as const },
@@ -200,7 +272,7 @@ export function BulkContextMenu({ entries, x, y, onClose, onDone }: BulkContextM
     );
 
     return result;
-  }, [entries, commonPanel, moveEntryToPanel, updateEntry, deleteEntry, timelineGroups, memoGroups, onDone]);
+  }, [entries, commonPanel, moveEntryToPanel, updateEntry, deleteEntry, timelineGroups, memoGroups, settings, onDone]);
 
   return <ContextMenu x={x} y={y} items={items} onClose={onClose} />;
 }

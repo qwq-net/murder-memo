@@ -37,7 +37,14 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
 
   const { isSelected, selectedIds, clearSelection } = useSelection();
   const entries = useStore((s) => s.entries);
+  const settings = useStore((s) => s.settings);
+  const focusedEntryId = useStore((s) => s.focusedEntryId);
   const selected = isSelected(entry.id);
+  const isEditing = focusedEntryId === entry.id;
+
+  const panelDefault = settings.defaultCharacterDisplay[entry.panel];
+  const effectiveFormat = entry.characterDisplayFormat ?? panelDefault.format;
+  const effectiveVisibility = entry.characterDisplayVisibility ?? panelDefault.visibility;
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -136,7 +143,13 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
       )}
 
       {/* Row 1: Character badges */}
-      <CharacterBadgeBar entry={entry} indent={entry.type === 'timeline'} />
+      <CharacterBadgeBar
+        entry={entry}
+        indent={entry.type === 'timeline'}
+        format={effectiveFormat}
+        visibility={effectiveVisibility}
+        isEntryHovered={(hovered && !ctxMenu && !bulkCtxMenu) || isEditing}
+      />
 
       {/* Row 2: Content */}
       <div style={{ minWidth: 0 }}>

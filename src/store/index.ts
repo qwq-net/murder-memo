@@ -10,6 +10,8 @@ import type { MemoGroupsSlice } from './slices/memo-groups';
 import { createMemoGroupsSlice } from './slices/memo-groups';
 import type { SessionsSlice } from './slices/sessions';
 import { createSessionsSlice } from './slices/sessions';
+import type { SettingsSlice } from './slices/settings';
+import { createSettingsSlice } from './slices/settings';
 import type { TimelineGroupsSlice } from './slices/timeline-groups';
 import { createTimelineGroupsSlice } from './slices/timeline-groups';
 import type { UiSlice } from './slices/ui';
@@ -20,6 +22,7 @@ export type StoreState = SessionsSlice &
   CharactersSlice &
   TimelineGroupsSlice &
   MemoGroupsSlice &
+  SettingsSlice &
   UiSlice;
 
 export const useStore = create<StoreState>()(
@@ -29,8 +32,29 @@ export const useStore = create<StoreState>()(
   ...createCharactersSlice(set as Parameters<typeof createCharactersSlice>[0], get),
   ...createTimelineGroupsSlice(set as Parameters<typeof createTimelineGroupsSlice>[0], get),
   ...createMemoGroupsSlice(set as Parameters<typeof createMemoGroupsSlice>[0], get),
+  ...createSettingsSlice(set as Parameters<typeof createSettingsSlice>[0]),
     ...createUiSlice(set as Parameters<typeof createUiSlice>[0]),
   })),
+);
+
+// ─── 設定のパネル順を layout.order に反映 ─────────────────────────────────────
+
+// 初期同期
+{
+  const { settings, setLayout } = useStore.getState();
+  if (settings.panelOrder) {
+    setLayout({ order: settings.panelOrder });
+  }
+}
+
+// 設定変更時の同期
+useStore.subscribe(
+  (state) => state.settings.panelOrder,
+  (panelOrder) => {
+    if (panelOrder) {
+      useStore.getState().setLayout({ order: panelOrder });
+    }
+  },
 );
 
 // ─── セッション切替時にエントリ・キャラクター・タイムライングループを再ロード ──

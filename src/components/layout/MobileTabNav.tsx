@@ -1,11 +1,11 @@
 import { useStore } from '../../store';
 import type { PanelId } from '../../types/memo';
 
-const TABS: { id: PanelId; label: string }[] = [
-  { id: 'free',     label: '自由メモ' },
-  { id: 'personal', label: '自分用'   },
-  { id: 'timeline', label: 'タイムライン' },
-];
+const PANEL_LABELS: Record<PanelId, string> = {
+  free:     '自由メモ',
+  personal: '自分用',
+  timeline: 'タイムライン',
+};
 
 const PANEL_ACCENT: Record<PanelId, string> = {
   free:     'var(--panel-free-accent)',
@@ -16,6 +16,7 @@ const PANEL_ACCENT: Record<PanelId, string> = {
 export function MobileTabNav() {
   const active = useStore((s) => s.activePanel);
   const setActivePanel = useStore((s) => s.setActivePanel);
+  const order = useStore((s) => s.layout.order);
 
   return (
     <nav
@@ -27,13 +28,13 @@ export function MobileTabNav() {
         flexShrink: 0,
       }}
     >
-      {TABS.map((tab) => {
-        const isActive = active === tab.id;
-        const accent = PANEL_ACCENT[tab.id];
+      {order.map((id) => {
+        const isActive = active === id;
+        const accent = PANEL_ACCENT[id];
         return (
           <button
-            key={tab.id}
-            onClick={() => setActivePanel(tab.id)}
+            key={id}
+            onClick={() => setActivePanel(id)}
             style={{
               flex: 1,
               display: 'flex',
@@ -64,7 +65,7 @@ export function MobileTabNav() {
                 }}
               />
             )}
-            <span style={{ fontSize: 12 }}>{tab.label}</span>
+            <span style={{ fontSize: 12 }}>{PANEL_LABELS[id]}</span>
           </button>
         );
       })}

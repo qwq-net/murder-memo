@@ -10,14 +10,11 @@ import { SortableEntryList } from '../entries/SortableEntryList';
 export function TimelinePanel() {
   const allEntries = useStore((s) => s.entries);
   const timelineGroups = useStore((s) => s.timelineGroups);
-  const addTimelineGroup = useStore((s) => s.addTimelineGroup);
   const toggleTimelineGroupCollapse = useStore((s) => s.toggleTimelineGroupCollapse);
   const removeTimelineGroup = useStore((s) => s.removeTimelineGroup);
   const updateTimelineGroup = useStore((s) => s.updateTimelineGroup);
   const reorderEntries = useStore((s) => s.reorderEntries);
-
-  const [newGroupLabel, setNewGroupLabel] = useState('');
-  const [isAddingGroup, setIsAddingGroup] = useState(false);
+  const inputPosition = useStore((s) => s.settings.inputPosition);
 
   const timelineEntries = useMemo(
     () => allEntries.filter((e) => e.panel === 'timeline'),
@@ -57,18 +54,13 @@ export function TimelinePanel() {
     });
   }, [timelineGroups, timelineEntries]);
 
-  const handleAddGroup = useCallback(async () => {
-    const label = newGroupLabel.trim();
-    if (!label) return;
-    await addTimelineGroup(label);
-    setNewGroupLabel('');
-    setIsAddingGroup(false);
-  }, [newGroupLabel, addTimelineGroup]);
-
   const isEmpty = timelineGroups.length === 0;
+
+  const entryInput = <EntryInput panel="timeline" />;
 
   return (
     <>
+      {inputPosition === 'top' && entryInput}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         {isEmpty ? (
           <div
@@ -87,7 +79,7 @@ export function TimelinePanel() {
               <line x1="9" y1="16" x2="18" y2="16" stroke="var(--panel-timeline-accent)" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
               <line x1="9" y1="20" x2="14" y2="20" stroke="var(--panel-timeline-accent)" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
             </svg>
-            日付グループを追加して<br />タイムラインを整理しよう
+            メモグループを追加して<br />タイムラインを整理しよう
           </div>
         ) : (
           groupedData.map(({ group, hourGroups, unknown }) => (
@@ -104,111 +96,8 @@ export function TimelinePanel() {
           ))
         )}
 
-        {/* グループ追加 */}
-        <div style={{ padding: '6px 10px 10px' }}>
-          {isAddingGroup ? (
-            <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-              <input
-                autoFocus
-                value={newGroupLabel}
-                onChange={(e) => setNewGroupLabel(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddGroup();
-                  if (e.key === 'Escape') {
-                    setIsAddingGroup(false);
-                    setNewGroupLabel('');
-                  }
-                }}
-                onBlur={() => {
-                  if (!newGroupLabel.trim()) {
-                    setIsAddingGroup(false);
-                    setNewGroupLabel('');
-                  }
-                }}
-                placeholder="当日、前日、3年前 等"
-                aria-label="タイムライングループ名"
-                style={{
-                  flex: 1,
-                  background: 'var(--bg-base)',
-                  border: '1px solid var(--panel-timeline-accent)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--text-primary)',
-                  fontSize: 12,
-                  padding: '4px 8px',
-                  outline: 'none',
-                }}
-              />
-              <button
-                onClick={handleAddGroup}
-                style={{
-                  background: 'var(--panel-timeline-accent)',
-                  border: 'none',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--bg-base)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '5px 12px',
-                  cursor: 'pointer',
-                }}
-              >
-                追加
-              </button>
-              <button
-                onClick={() => {
-                  setIsAddingGroup(false);
-                  setNewGroupLabel('');
-                }}
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--text-muted)',
-                  fontSize: 12,
-                  padding: '4px 10px',
-                  cursor: 'pointer',
-                }}
-              >
-                取消
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setIsAddingGroup(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                background: 'none',
-                border: '1px dashed var(--border-default)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--text-muted)',
-                fontSize: 12,
-                padding: '5px 10px',
-                cursor: 'pointer',
-                width: '100%',
-                justifyContent: 'center',
-                transition: 'border-color 0.15s, color 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--panel-timeline-accent)';
-                e.currentTarget.style.color = 'var(--panel-timeline-accent)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-default)';
-                e.currentTarget.style.color = 'var(--text-muted)';
-              }}
-            >
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                <line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              </svg>
-              グループを追加
-            </button>
-          )}
-        </div>
       </div>
-
-      <EntryInput panel="timeline" />
+      {inputPosition === 'bottom' && entryInput}
     </>
   );
 }

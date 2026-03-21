@@ -135,7 +135,7 @@ export function ConfirmModal({
                 flexShrink: 0,
                 marginTop: 1,
                 borderRadius: 9,
-                background: confirmed ? 'var(--accent)' : 'var(--border-strong)',
+                background: confirmed ? '#c45a2a' : 'var(--border-strong)',
                 transition: 'background 0.2s',
               }}
             >
@@ -206,7 +206,7 @@ export function ConfirmModal({
 
           {actions.map((action, i) => {
             const disabled = action.requiresConfirmation && confirmationLabel && !confirmed;
-            const color = action.color ?? 'var(--accent)';
+            const color = action.color ?? '#c45a2a';
             return (
               <button
                 key={i}

@@ -1,9 +1,21 @@
 import { useMemo } from 'react';
 
 import { useStore } from '../../../store';
-import type { MemoEntry, PanelId } from '../../../types/memo';
+import type { CharacterDisplayFormat, CharacterDisplayVisibility, MemoEntry, PanelId } from '../../../types/memo';
 import type { ContextMenuEntry } from '../../common/ContextMenu';
 import { ContextMenu } from '../../common/ContextMenu';
+
+const FORMAT_LABELS: Record<CharacterDisplayFormat, string> = {
+  full: 'フル',
+  badge: 'バッジ',
+  text: 'テキスト',
+};
+
+const VISIBILITY_LABELS: Record<CharacterDisplayVisibility, string> = {
+  always: '常時',
+  minimal: 'ミニマル',
+  off: 'オフ',
+};
 
 const PANEL_LABELS: Record<PanelId, string> = {
   free: '自由メモ',
@@ -30,6 +42,7 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
   const deleteEntry = useStore((s) => s.deleteEntry);
   const timelineGroups = useStore((s) => s.timelineGroups);
   const memoGroups = useStore((s) => s.memoGroups);
+  const settings = useStore((s) => s.settings);
 
   const items = useMemo<ContextMenuEntry[]>(() => {
     const result: ContextMenuEntry[] = [];
@@ -149,6 +162,55 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
       }
     }
 
+    // ── 役職表示形式 ──
+    {
+      const panelDefault = settings.defaultCharacterDisplay[entry.panel];
+      const currentFormat = entry.characterDisplayFormat ?? panelDefault.format;
+      const currentVisibility = entry.characterDisplayVisibility ?? panelDefault.visibility;
+
+      result.push({ separator: true as const });
+      result.push({ header: true as const, label: `役職表示形式（現在: ${FORMAT_LABELS[currentFormat]}）` });
+
+      for (const fmt of ['full', 'badge', 'text'] as CharacterDisplayFormat[]) {
+        const isCurrent = fmt === currentFormat;
+        result.push({
+          label: isCurrent ? FORMAT_LABELS[fmt] : `${FORMAT_LABELS[fmt]} へ変更`,
+          disabled: isCurrent,
+          onClick: isCurrent ? () => {} : () => updateEntry(entry.id, { characterDisplayFormat: fmt }),
+        });
+      }
+
+      // ── 役職表示モード ──
+      result.push({ separator: true as const });
+      result.push({ header: true as const, label: `役職表示モード（現在: ${VISIBILITY_LABELS[currentVisibility]}）` });
+
+      for (const vis of ['always', 'minimal', 'off'] as CharacterDisplayVisibility[]) {
+        const isCurrent = vis === currentVisibility;
+        result.push({
+          label: isCurrent ? VISIBILITY_LABELS[vis] : `${VISIBILITY_LABELS[vis]} へ変更`,
+          disabled: isCurrent,
+          onClick: isCurrent ? () => {} : () => updateEntry(entry.id, { characterDisplayVisibility: vis }),
+        });
+      }
+
+      // ── 役職表示設定 ──
+      result.push({ separator: true as const });
+      result.push({ header: true as const, label: '役職表示設定' });
+
+      const hasExplicit = entry.characterDisplayFormat != null || entry.characterDisplayVisibility != null;
+      result.push({
+        label: 'デフォルトに戻す',
+        disabled: !hasExplicit,
+        onClick: hasExplicit
+          ? () =>
+              updateEntry(entry.id, {
+                characterDisplayFormat: undefined,
+                characterDisplayVisibility: undefined,
+              })
+          : () => {},
+      });
+    }
+
     // ── タイムライン固有: 時刻トグル ──
     if (entry.panel === 'timeline') {
       const hasTime = entry.eventTime != null;
@@ -176,7 +238,7 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
     );
 
     return result;
-  }, [entry, moveEntryToPanel, updateEntry, deleteEntry, timelineGroups, memoGroups]);
+  }, [entry, moveEntryToPanel, updateEntry, deleteEntry, timelineGroups, memoGroups, settings]);
 
   return <ContextMenu x={x} y={y} items={items} onClose={onClose} />;
 }

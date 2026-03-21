@@ -5,6 +5,7 @@ import type { PanelId } from '../../types/memo';
 import { CharacterSetupPanel } from '../characters/CharacterSetupPanel';
 import { useSelection } from '../entries/selection-context';
 import { FreeMemoPanel } from '../panels/FreeMemoPanel';
+import { SettingsPanel } from '../settings/SettingsPanel';
 import { PersonalMemoPanel } from '../panels/PersonalMemoPanel';
 import { TimelinePanel } from '../panels/TimelinePanel';
 import { MobileTabNav } from './MobileTabNav';
@@ -27,6 +28,7 @@ export function AppShell() {
   const order = useStore((s) => s.layout.order);
   const activePanel = useStore((s) => s.activePanel);
   const setCharacterSetupOpen = useStore((s) => s.setCharacterSetupOpen);
+  const setSettingsOpen = useStore((s) => s.setSettingsOpen);
   const setSessionSwitcherOpen = useStore((s) => s.setSessionSwitcherOpen);
   const sessions = useStore((s) => s.sessions);
   const activeSessionId = useStore((s) => s.activeSessionId);
@@ -87,12 +89,12 @@ export function AppShell() {
           {/* Logo / title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <rect x="1" y="1" width="16" height="16" rx="2" stroke="var(--accent)" strokeWidth="1.2"/>
-              <line x1="4" y1="5.5" x2="14" y2="5.5" stroke="var(--accent)" strokeWidth="1" strokeLinecap="round"/>
+              <rect x="1" y="1" width="16" height="16" rx="2" stroke="#c45a2a" strokeWidth="1.2"/>
+              <line x1="4" y1="5.5" x2="14" y2="5.5" stroke="#c45a2a" strokeWidth="1" strokeLinecap="round"/>
               <line x1="4" y1="8.5" x2="11" y2="8.5" stroke="var(--text-muted)" strokeWidth="1" strokeLinecap="round"/>
               <line x1="4" y1="11.5" x2="13" y2="11.5" stroke="var(--text-muted)" strokeWidth="1" strokeLinecap="round"/>
-              <circle cx="14" cy="13" r="2.5" fill="var(--bg-surface)" stroke="var(--accent)" strokeWidth="1"/>
-              <line x1="13.3" y1="12.3" x2="14.7" y2="13.7" stroke="var(--accent)" strokeWidth="0.8"/>
+              <circle cx="14" cy="13" r="2.5" fill="var(--bg-surface)" stroke="#c45a2a" strokeWidth="1"/>
+              <line x1="13.3" y1="12.3" x2="14.7" y2="13.7" stroke="#c45a2a" strokeWidth="0.8"/>
             </svg>
             <span
               style={{
@@ -102,11 +104,12 @@ export function AppShell() {
                 fontWeight: 600,
               }}
             >
-              Murder Memo
+              マダめもくん
             </span>
           </div>
 
-          {/* 登場人物設定ボタン */}
+          {/* 右側ボタン群 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button
             onClick={() => setCharacterSetupOpen(true)}
             style={{
@@ -114,9 +117,9 @@ export function AppShell() {
               alignItems: 'center',
               gap: 6,
               background: 'none',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
               borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-muted)',
+              color: 'var(--text-secondary)',
               fontSize: 12,
               padding: '4px 10px',
               cursor: 'pointer',
@@ -125,11 +128,11 @@ export function AppShell() {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.borderColor = 'var(--border-default)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-muted)';
-              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.color = 'var(--text-secondary)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
             }}
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
@@ -138,6 +141,40 @@ export function AppShell() {
             </svg>
             登場人物設定
           </button>
+
+          {/* アプリ設定ボタン */}
+          <button
+            onClick={() => setSettingsOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'none',
+              border: '1px solid rgba(196, 90, 42, 0.4)',
+              borderRadius: 'var(--radius-sm)',
+              color: '#c45a2a',
+              fontSize: 12,
+              padding: '4px 10px',
+              cursor: 'pointer',
+              transition: 'color 0.15s, border-color 0.15s',
+              letterSpacing: '0.02em',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#d9683a';
+              e.currentTarget.style.borderColor = 'rgba(196, 90, 42, 0.7)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#c45a2a';
+              e.currentTarget.style.borderColor = 'rgba(196, 90, 42, 0.4)';
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.76 2.76l1.06 1.06M10.18 10.18l1.06 1.06M2.76 11.24l1.06-1.06M10.18 3.82l1.06-1.06" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+            </svg>
+            アプリ設定
+          </button>
+          </div>
         </div>
 
         {/* ── Row 2: Session (left) + Action order strip (right) ── */}
@@ -255,6 +292,7 @@ export function AppShell() {
 
       {/* Modals */}
       <CharacterSetupPanel />
+      <SettingsPanel />
     </div>
   );
 }

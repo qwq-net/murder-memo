@@ -216,7 +216,7 @@ export function CharacterSetupPanel() {
             onClick={handleAdd}
             disabled={!newName.trim()}
             style={{
-              background: 'var(--accent-dim)',
+              background: '#c45a2a',
               border: 'none',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--text-primary)',
