@@ -43,7 +43,7 @@ export function PersonalMemoPanel() {
   return (
     <>
       {inputPosition === 'top' && entryInput}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 60 }}>
         {isEmpty ? (
           <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-faint)', fontSize: 12 }}>
             ハンドアウトや個人情報をメモ

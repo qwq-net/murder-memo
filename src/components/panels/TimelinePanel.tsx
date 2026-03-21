@@ -61,7 +61,7 @@ export function TimelinePanel() {
   return (
     <>
       {inputPosition === 'top' && entryInput}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 60 }}>
         {isEmpty ? (
           <div
             style={{

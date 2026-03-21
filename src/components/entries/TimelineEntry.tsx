@@ -251,6 +251,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
           wordBreak: 'break-word',
           flex: 1,
           color: 'var(--text-primary)',
+          paddingTop: 2,
         }}
       >
         {entry.content || (

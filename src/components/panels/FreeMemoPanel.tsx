@@ -72,7 +72,7 @@ export function FreeMemoPanel() {
       {inputPosition === 'top' && entryInput}
       <div
         ref={scrollRef}
-        style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}
+        style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 60 }}
       >
         {isEmpty ? (
           <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-faint)', fontSize: 12 }}>

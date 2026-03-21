@@ -290,6 +290,29 @@ export function AppShell() {
         </div>
       )}
 
+      {/* Footer */}
+      <footer
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '6px 14px',
+          borderTop: '1px solid var(--border-subtle)',
+          background: 'var(--bg-surface)',
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 10,
+            color: 'var(--text-faint)',
+            letterSpacing: '0.04em',
+          }}
+        >
+          &copy; 2026 マダめもくん
+        </span>
+      </footer>
+
       {/* Modals */}
       <CharacterSetupPanel />
       <SettingsPanel />
