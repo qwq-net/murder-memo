@@ -11,67 +11,29 @@ export function ImageEntry({ entry }: ImageEntryProps) {
   const deleteEntry = useStore((s) => s.deleteEntry);
 
   return (
-    <div style={{ padding: '6px 8px', position: 'relative' }}>
+    <div className="relative px-2 py-1.5">
       {src ? (
         <img
           src={src}
           alt=""
-          style={{
-            maxWidth: '100%',
-            maxHeight: 300,
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--border-subtle)',
-            display: 'block',
-          }}
+          className="block max-w-full rounded-sm border border-border-subtle"
+          style={{ maxHeight: 300 }}
         />
       ) : (
-        <div
-          style={{
-            padding: '12px',
-            color: 'var(--text-muted)',
-            fontSize: 12,
-            textAlign: 'center',
-          }}
-        >
+        <div className="p-3 text-text-muted text-xs text-center">
           画像を読み込み中…
         </div>
       )}
       {entry.content && (
-        <div
-          style={{
-            marginTop: 4,
-            fontSize: 12,
-            color: 'var(--text-secondary)',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-          }}
-        >
+        <div className="mt-1 text-xs text-text-secondary whitespace-pre-wrap break-words">
           {entry.content}
         </div>
       )}
       <button
         onClick={() => deleteEntry(entry.id)}
         title="画像を削除"
-        style={{
-          position: 'absolute',
-          top: 8,
-          right: 10,
-          width: 20,
-          height: 20,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'rgba(0,0,0,0.6)',
-          border: 'none',
-          borderRadius: 'var(--radius-sm)',
-          color: 'var(--text-secondary)',
-          fontSize: 12,
-          cursor: 'pointer',
-          opacity: 0,
-          transition: 'opacity 0.15s',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.opacity = '0'; }}
+        className="absolute top-2 right-2.5 w-5 h-5 flex items-center justify-center border-none rounded-sm text-text-secondary text-xs cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-150"
+        style={{ background: 'rgba(0,0,0,0.6)' }}
       >
         ×
       </button>

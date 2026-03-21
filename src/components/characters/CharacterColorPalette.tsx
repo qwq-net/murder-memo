@@ -21,21 +21,18 @@ interface CharacterColorPaletteProps {
 
 export function CharacterColorPalette({ value, onChange }: CharacterColorPaletteProps) {
   return (
-    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+    <div className="flex gap-1 flex-wrap items-center">
       {PRESET_COLORS.map((color) => (
         <button
           key={color}
           onClick={() => onChange(color)}
+          className="shrink-0 cursor-pointer rounded-full transition-[border-color,transform] duration-100"
           style={{
             width: 20,
             height: 20,
-            borderRadius: '50%',
             background: color,
             border: value === color ? '2px solid var(--text-primary)' : '2px solid transparent',
-            cursor: 'pointer',
-            transition: 'border-color 0.12s, transform 0.12s',
             transform: value === color ? 'scale(1.15)' : 'scale(1)',
-            flexShrink: 0,
           }}
           title={color}
         />
@@ -44,14 +41,8 @@ export function CharacterColorPalette({ value, onChange }: CharacterColorPalette
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        style={{
-          width: 20,
-          height: 20,
-          border: 'none',
-          padding: 0,
-          background: 'none',
-          cursor: 'pointer',
-        }}
+        className="cursor-pointer border-none p-0 bg-transparent"
+        style={{ width: 20, height: 20 }}
         title="カスタムカラー"
       />
     </div>

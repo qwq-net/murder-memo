@@ -85,14 +85,7 @@ export function SortableEntryList({ entries, onReorder, hideTimeDuplicates }: So
       {createPortal(
         <DragOverlay dropAnimation={dropAnimation}>
           {activeEntry && (
-            <div
-              style={{
-                background: 'var(--bg-elevated)',
-                borderRadius: 'var(--radius-sm)',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-                opacity: 0.95,
-              }}
-            >
+            <div className="bg-bg-elevated rounded-sm shadow-[0_4px_16px_rgba(0,0,0,0.4)] opacity-95">
               <EntryCard entry={activeEntry} />
             </div>
           )}
@@ -141,12 +134,11 @@ const SortableEntryCard = memo(function SortableEntryCard({ entry, allIds, hideT
           e.stopPropagation();
         }
       }}
+      className="touch-none rounded-sm"
       style={{
         transform: transform ? `translate3d(0, ${transform.y}px, 0)` : undefined,
         transition: isDragging ? 'none' : transition,
         opacity: isDragging ? 0 : 1,
-        touchAction: 'none',
-        borderRadius: 'var(--radius-sm)',
         background: selected ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : undefined,
       }}
     >

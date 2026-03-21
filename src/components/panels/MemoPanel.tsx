@@ -59,7 +59,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
   return (
     <>
       {inputPosition === 'top' && entryInput}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 60 }}>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[60px]">
         {isEmpty ? (
           <EmptyState
             accentColor={accentColor}

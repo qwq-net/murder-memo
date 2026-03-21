@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useState } from 'react';
+
+import { ModalFrame } from './ModalFrame';
 
 // ─── 型定義 ─────────────────────────────────────────────────────────────────
 
@@ -35,79 +36,27 @@ export function ConfirmModal({
   cancelLabel = '取り消し',
 }: ConfirmModalProps) {
   const [confirmed, setConfirmed] = useState(false);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const firstFocusRef = useRef<HTMLButtonElement>(null);
 
   // 開くたびにリセット
   useEffect(() => {
-    if (open) {
-      setConfirmed(false);
-      requestAnimationFrame(() => firstFocusRef.current?.focus());
-    }
+    if (open) setConfirmed(false);
   }, [open]);
 
-  // ESC で閉じる
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [open, onClose]);
-
-  // オーバーレイクリックで閉じる
-  const handleOverlayClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.target === overlayRef.current) onClose();
-    },
-    [onClose],
-  );
-
-  if (!open) return null;
-
-  return createPortal(
-    <div
-      ref={overlayRef}
-      onClick={handleOverlayClick}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 100,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.55)',
-        backdropFilter: 'blur(2px)',
-      }}
+  return (
+    <ModalFrame
+      open={open}
+      onClose={onClose}
+      ariaLabel={title}
+      role="alertdialog"
+      zIndex={100}
     >
       <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-label={title}
         aria-describedby={confirmationLabel ? 'confirm-modal-desc' : undefined}
-        style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '20px 22px 16px',
-          minWidth: 300,
-          maxWidth: 400,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-        }}
+        className="flex flex-col gap-4 p-5"
+        style={{ minWidth: 300, maxWidth: 400 }}
       >
         {/* タイトル */}
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--text-primary)',
-            lineHeight: 1.5,
-          }}
-        >
+        <div className="text-sm font-semibold leading-normal text-text-primary">
           {title}
         </div>
 
@@ -115,57 +64,33 @@ export function ConfirmModal({
         {confirmationLabel && (
           <label
             id="confirm-modal-desc"
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 8,
-              cursor: 'pointer',
-              fontSize: 12,
-              lineHeight: 1.6,
-              color: confirmed ? 'var(--text-secondary)' : 'var(--text-muted)',
-              transition: 'color 0.15s',
-              userSelect: 'none',
-            }}
+            className="flex items-start gap-2 cursor-pointer text-xs leading-relaxed select-none transition-colors"
+            style={{ color: confirmed ? 'var(--text-secondary)' : 'var(--text-muted)' }}
           >
             {/* トグル */}
             <span
+              className="relative inline-block shrink-0 mt-px transition-colors duration-200"
               style={{
-                position: 'relative',
-                display: 'inline-block',
                 width: 32,
                 height: 18,
-                flexShrink: 0,
-                marginTop: 1,
                 borderRadius: 9,
-                background: confirmed ? '#c45a2a' : 'var(--border-strong)',
-                transition: 'background 0.2s',
+                background: confirmed ? 'var(--color-settings-accent)' : 'var(--border-strong)',
               }}
             >
               <input
-                ref={firstFocusRef as React.RefObject<HTMLInputElement>}
                 type="checkbox"
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
-                style={{
-                  position: 'absolute',
-                  opacity: 0,
-                  width: '100%',
-                  height: '100%',
-                  cursor: 'pointer',
-                  margin: 0,
-                }}
+                className="absolute opacity-0 w-full h-full cursor-pointer m-0"
               />
               <span
+                className="absolute rounded-full pointer-events-none transition-[left] duration-200"
                 style={{
-                  position: 'absolute',
                   top: 2,
                   left: confirmed ? 16 : 2,
                   width: 14,
                   height: 14,
-                  borderRadius: '50%',
                   background: 'var(--text-primary)',
-                  transition: 'left 0.2s',
-                  pointerEvents: 'none',
                 }}
               />
             </span>
@@ -174,33 +99,13 @@ export function ConfirmModal({
         )}
 
         {/* ボタン群 */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 8,
-          }}
-        >
+        <div className="flex items-center justify-end gap-2">
           <button
             onClick={onClose}
+            className="btn-ghost btn-lg"
             style={{
-              background: 'none',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-sm)',
+              borderColor: 'var(--border-subtle)',
               color: 'var(--text-muted)',
-              fontSize: 12,
-              padding: '6px 14px',
-              cursor: 'pointer',
-              transition: 'color 0.15s, border-color 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.borderColor = 'var(--border-default)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-muted)';
-              e.currentTarget.style.borderColor = 'var(--border-subtle)';
             }}
           >
             {cancelLabel}
@@ -208,7 +113,7 @@ export function ConfirmModal({
 
           {actions.map((action, i) => {
             const disabled = action.requiresConfirmation && confirmationLabel && !confirmed;
-            const color = action.color ?? '#c45a2a';
+            const color = action.color ?? 'var(--color-settings-accent)';
             return (
               <button
                 key={i}
@@ -217,14 +122,12 @@ export function ConfirmModal({
                   onClose();
                 }}
                 disabled={!!disabled}
+                className="btn-lg"
                 style={{
                   background: disabled ? 'var(--border-subtle)' : color,
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
                   color: disabled ? 'var(--text-faint)' : 'var(--bg-base)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '6px 14px',
                   cursor: disabled ? 'not-allowed' : 'pointer',
                   transition: 'background 0.15s, color 0.15s, opacity 0.15s',
                   opacity: disabled ? 0.7 : 1,
@@ -236,7 +139,6 @@ export function ConfirmModal({
           })}
         </div>
       </div>
-    </div>,
-    document.body,
+    </ModalFrame>
   );
 }

@@ -36,21 +36,8 @@ export function ResizeHandle({ onDelta }: ResizeHandleProps) {
   return (
     <div
       onMouseDown={onMouseDown}
-      style={{
-        width: 'var(--resize-w)',
-        flexShrink: 0,
-        cursor: 'col-resize',
-        background: 'var(--border-subtle)',
-        position: 'relative',
-        transition: 'background 0.15s',
-        zIndex: 10,
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-dim)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = 'var(--border-subtle)';
-      }}
+      className="shrink-0 cursor-col-resize relative z-10 transition-colors duration-150 bg-border-subtle hover:bg-accent-dim"
+      style={{ width: 'var(--resize-w)' }}
     />
   );
 }

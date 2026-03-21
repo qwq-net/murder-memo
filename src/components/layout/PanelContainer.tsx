@@ -41,22 +41,13 @@ export function PanelContainer({ panels }: PanelContainerProps) {
   );
 
   return (
-    <div
-      ref={containerRef}
-      style={{ display: 'flex', flex: 1, overflow: 'hidden', height: '100%', minHeight: 0 }}
-    >
+    <div ref={containerRef} className="flex flex-1 overflow-hidden h-full min-h-0">
       {panels.flatMap((panel, i) => {
         const items: React.ReactNode[] = [
           <div
             key={panel.id}
-            style={{
-              flex: `${sizes[i]} 1 0`,
-              minWidth: 120,
-              height: '100%',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
+            className="h-full overflow-hidden flex flex-col"
+            style={{ flex: `${sizes[i]} 1 0`, minWidth: 120 }}
           >
             {panel.node}
           </div>,

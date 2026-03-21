@@ -108,7 +108,8 @@
 }
 
 /* ─── Reset & Base ──────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Tailwind CSS 4 の preflight が box-sizing/margin/padding をリセット済み。
+   ここでは追加のリセットのみ行う。 */
 
 html, body, #root { height: 100%; overflow: hidden; }
 

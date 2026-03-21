@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
 
+import { IconPlus } from '../icons';
+
 interface EmptyStateProps {
   accentColor: string;
   message: string;
@@ -20,21 +22,9 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
   }, [label, onAddGroup]);
 
   return (
-    <div
-      style={{
-        padding: '40px 20px',
-        textAlign: 'center',
-        color: 'var(--text-faint)',
-        fontSize: 12,
-        lineHeight: 2,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 14,
-      }}
-    >
-      {/* Icon */}
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ opacity: 0.4 }}>
+    <div className="flex flex-col items-center gap-3 py-10 px-5 text-center text-xs text-text-faint leading-8">
+      {/* アイコン */}
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" className="opacity-40">
         <rect x="4" y="2" width="20" height="24" rx="3" stroke={accentColor} strokeWidth="1.2" />
         <line x1="9" y1="8" x2="19" y2="8" stroke={accentColor} strokeWidth="1" strokeLinecap="round" />
         <line x1="9" y1="12" x2="16" y2="12" stroke={accentColor} strokeWidth="1" strokeLinecap="round" opacity="0.5" />
@@ -44,9 +34,9 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
 
       <span>{message}</span>
 
-      {/* Add group */}
+      {/* グループ追加 */}
       {isAdding ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="flex items-center gap-2">
           <input
             autoFocus
             value={label}
@@ -56,28 +46,17 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
               else if (e.key === 'Escape') { setIsAdding(false); setLabel(''); }
             }}
             placeholder="メモグループ名"
-            style={{
-              background: 'var(--bg-elevated)',
-              color: 'var(--text-primary)',
-              border: `1px solid ${accentColor}`,
-              borderRadius: 'var(--radius-sm)',
-              fontSize: 12,
-              padding: '4px 8px',
-              outline: 'none',
-              width: 140,
-            }}
+            className="input-base"
+            style={{ border: `1px solid ${accentColor}`, width: 140 }}
           />
           <button
             onClick={handleSubmit}
+            className="btn-sm shrink-0 cursor-pointer font-semibold"
             style={{
               background: accentColor,
               border: 'none',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--bg-base)',
-              fontSize: 11,
-              fontWeight: 600,
-              padding: '5px 10px',
-              cursor: 'pointer',
             }}
           >
             追加
@@ -86,26 +65,18 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
       ) : (
         <button
           onClick={() => setIsAdding(true)}
+          className="flex items-center gap-1 text-xs cursor-pointer transition-[border-color,background] duration-150"
           style={{
             background: 'none',
             border: `1px solid ${accentColor}55`,
             borderRadius: 'var(--radius-sm)',
             color: accentColor,
-            fontSize: 11,
             padding: '5px 12px',
-            cursor: 'pointer',
-            transition: 'border-color 0.15s, background 0.15s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
           }}
           onMouseEnter={(e) => { e.currentTarget.style.borderColor = accentColor; e.currentTarget.style.background = `${accentColor}15`; }}
           onMouseLeave={(e) => { e.currentTarget.style.borderColor = `${accentColor}55`; e.currentTarget.style.background = 'none'; }}
         >
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-            <line x1="8" y1="3" x2="8" y2="13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-            <line x1="3" y1="8" x2="13" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-          </svg>
+          <IconPlus size={12} />
           メモグループを作成
         </button>
       )}

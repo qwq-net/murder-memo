@@ -5,6 +5,7 @@ import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '../../lib/time-parser';
 import { useStore } from '../../store';
 import type { PanelId } from '../../types/memo';
+import { IconPlusSm } from '../icons';
 
 interface EntryInputProps {
   panel: PanelId;
@@ -107,22 +108,13 @@ export function EntryInput({ panel }: EntryInputProps) {
 
   // ── グループセレクタ + 追加ボタン行（常に表示） ──
   const groupRow = (
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center', minHeight: 24 }}>
+    <div className="flex gap-1 items-center min-h-6">
       {/* グループセレクタ */}
       <select
         value={effectiveGroupId}
         onChange={(e) => persistGroupId(e.target.value)}
         aria-label="追加先メモグループ"
-        style={{
-          flex: 1,
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-sm)',
-          color: 'var(--text-secondary)',
-          fontSize: 12,
-          padding: '3px 6px',
-          outline: 'none',
-        }}
+        className="flex-1 bg-bg-elevated border border-border-subtle rounded-sm text-text-secondary text-xs px-1.5 py-[3px] outline-none"
       >
         {isTimeline ? (
           <>
@@ -143,7 +135,7 @@ export function EntryInput({ panel }: EntryInputProps) {
 
       {/* グループ追加 */}
       {isAddingGroup ? (
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        <div className="flex gap-1 items-center">
           <input
             autoFocus
             value={newGroupLabel}
@@ -163,30 +155,11 @@ export function EntryInput({ panel }: EntryInputProps) {
             }}
             placeholder={isTimeline ? '当日、前日 等' : 'メモグループ名'}
             aria-label="メモグループ名"
-            style={{
-              flex: 1,
-              minWidth: 60,
-              background: 'var(--bg-base)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-primary)',
-              fontSize: 12,
-              padding: '3px 6px',
-              outline: 'none',
-            }}
+            className="flex-1 min-w-[60px] bg-bg-base border border-border-default rounded-sm text-text-primary text-xs px-1.5 py-[3px] outline-none"
           />
           <button
             onClick={handleAddGroup}
-            style={{
-              background: '#c45a2a',
-              border: 'none',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-primary)',
-              fontSize: 11,
-              fontWeight: 600,
-              padding: '4px 8px',
-              cursor: 'pointer',
-            }}
+            className="btn-primary btn-sm text-[11px]"
           >
             追加
           </button>
@@ -195,32 +168,9 @@ export function EntryInput({ panel }: EntryInputProps) {
         <button
           onClick={() => setIsAddingGroup(true)}
           title="メモグループを追加"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            background: 'none',
-            border: '1px dashed var(--border-default)',
-            borderRadius: 'var(--radius-sm)',
-            color: 'var(--text-muted)',
-            fontSize: 11,
-            padding: '3px 8px',
-            cursor: 'pointer',
-            transition: 'border-color 0.15s, color 0.15s',
-            whiteSpace: 'nowrap',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--border-strong)';
-            e.currentTarget.style.color = 'var(--text-secondary)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--border-default)';
-            e.currentTarget.style.color = 'var(--text-muted)';
-          }}
+          className="flex items-center bg-transparent border border-dashed border-border-default rounded-sm text-text-muted text-[11px] px-2 py-[3px] cursor-pointer transition-[border-color,color] duration-150 whitespace-nowrap hover:border-border-strong hover:text-text-secondary"
         >
-          <svg width="8" height="8" viewBox="0 0 10 10" fill="none" style={{ marginRight: 4 }}>
-            <line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            <line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
+          <IconPlusSm className="mr-1" />
           メモグループ
         </button>
       )}
@@ -229,7 +179,7 @@ export function EntryInput({ panel }: EntryInputProps) {
 
   // ── 入力行 ──
   const inputRow = (
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center', minHeight: 24 }}>
+    <div className="flex gap-1 items-center min-h-6">
       {isTimeline && (
         <input
           ref={timeRef}
@@ -246,25 +196,12 @@ export function EntryInput({ panel }: EntryInputProps) {
           aria-label="時刻"
           aria-invalid={timeError || undefined}
           aria-describedby={timeError ? 'entry-time-error' : undefined}
+          className="w-11 shrink-0 bg-transparent border-0 border-b text-panel-timeline-accent font-mono text-xs px-0.5 py-px outline-none text-center tracking-wide transition-[border-color] duration-150 focus:border-b-panel-timeline-accent"
           style={{
-            width: 44,
-            flexShrink: 0,
-            background: 'transparent',
-            border: 'none',
-            borderBottom: timeError ? '1px solid var(--importance-high)' : '1px solid var(--border-default)',
-            color: 'var(--panel-timeline-accent)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
-            padding: '1px 2px',
-            outline: 'none',
-            textAlign: 'center',
-            letterSpacing: '0.05em',
-            transition: 'border-color 0.15s',
-            opacity: disabled ? 0.4 : 1,
+            borderBottomColor: timeError ? 'var(--importance-high)' : undefined,
+            opacity: disabled ? 0.4 : undefined,
           }}
-          onFocus={(e) => { e.currentTarget.style.borderBottomColor = 'var(--panel-timeline-accent)'; }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderBottomColor = 'var(--border-default)';
+          onBlur={() => {
             setTimeValue((v) => autoCompleteTime(v));
           }}
         />
@@ -293,21 +230,10 @@ export function EntryInput({ panel }: EntryInputProps) {
         aria-invalid={textError || undefined}
         aria-describedby={textError ? 'entry-text-error' : undefined}
         rows={1}
+        className="flex-1 min-w-0 bg-transparent border-0 text-text-primary font-sans text-[13px] leading-[1.6] py-px resize-none outline-none overflow-hidden"
         style={{
-          flex: 1,
-          minWidth: 0,
-          background: 'transparent',
-          border: 'none',
           borderBottom: textError ? '1px solid var(--importance-high)' : undefined,
-          color: 'var(--text-primary)',
-          fontFamily: 'var(--font-sans)',
-          fontSize: 13,
-          lineHeight: 1.6,
-          padding: '1px 0',
-          resize: 'none',
-          outline: 'none',
-          overflow: 'hidden',
-          opacity: disabled ? 0.4 : 1,
+          opacity: disabled ? 0.4 : undefined,
         }}
       />
     </div>
@@ -315,16 +241,9 @@ export function EntryInput({ panel }: EntryInputProps) {
 
   return (
     <div
-      style={{
-        padding: '6px 10px 8px',
-        borderTop: isTop ? undefined : '1px solid var(--border-subtle)',
-        borderBottom: isTop ? '1px solid var(--border-subtle)' : undefined,
-        background: 'var(--bg-surface)',
-        flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-      }}
+      className={`px-2.5 pt-1.5 pb-2 bg-bg-surface shrink-0 flex flex-col gap-1 ${
+        isTop ? 'border-b border-border-subtle' : 'border-t border-border-subtle'
+      }`}
     >
       {groupRow}
       {inputRow}

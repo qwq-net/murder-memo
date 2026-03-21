@@ -7,6 +7,7 @@ import { ConfirmModal } from '../common/ConfirmModal';
 import { EmptyState } from '../common/EmptyState';
 import { EntryInput } from '../entries/EntryInput';
 import { SortableEntryList } from '../entries/SortableEntryList';
+import { IconChevronDown, IconClose, IconEditSquare } from '../icons';
 
 export function TimelinePanel() {
   const allEntries = useStore((s) => s.entries);
@@ -63,7 +64,7 @@ export function TimelinePanel() {
   return (
     <>
       {inputPosition === 'top' && entryInput}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 60 }}>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[60px]">
         {isEmpty ? (
           <EmptyState
             accentColor="var(--panel-timeline-accent)"
@@ -133,31 +134,20 @@ function TimelineGroupSection({
         onMouseEnter={() => setHeaderHovered(true)}
         onMouseLeave={() => setHeaderHovered(false)}
         onClick={isEditingLabel ? undefined : () => onToggleCollapse(group.id)}
+        className="flex items-center gap-2 px-2.5 py-[7px] cursor-pointer select-none"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '7px 10px',
           background: 'color-mix(in srgb, var(--panel-timeline-accent) 5%, transparent)',
           borderBottom: '1px solid color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
-          cursor: 'pointer',
-          userSelect: 'none',
         }}
       >
         {/* 折りたたみ矢印 */}
         <span
+          className="flex items-center shrink-0 text-panel-timeline-accent transition-transform duration-150"
           style={{
-            color: 'var(--panel-timeline-accent)',
-            display: 'flex',
-            alignItems: 'center',
-            transition: 'transform 0.15s',
             transform: group.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-            flexShrink: 0,
           }}
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <IconChevronDown />
         </span>
 
         {/* ラベル */}
@@ -176,28 +166,10 @@ function TimelineGroupSection({
               }
             }}
             aria-label="メモグループ名を編集"
-            style={{
-              flex: 1,
-              background: 'var(--bg-base)',
-              border: '1px solid var(--panel-timeline-accent)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--panel-timeline-accent)',
-              fontSize: 12,
-              fontWeight: 600,
-              padding: '1px 6px',
-              outline: 'none',
-            }}
+            className="flex-1 bg-bg-base border border-panel-timeline-accent rounded-sm text-panel-timeline-accent text-[12px] font-semibold px-1.5 py-px outline-none"
           />
         ) : (
-          <span
-            style={{
-              flex: 1,
-              fontSize: 12,
-              fontWeight: 600,
-              color: 'var(--panel-timeline-accent)',
-              letterSpacing: '0.06em',
-            }}
-          >
+          <span className="flex-1 text-[12px] font-semibold text-panel-timeline-accent tracking-[0.06em]">
             {group.label}
           </span>
         )}
@@ -212,23 +184,14 @@ function TimelineGroupSection({
             }}
             title="メモグループ名を変更"
             aria-label={`${group.label}の名前を変更`}
+            className="bg-transparent border-none text-text-faint cursor-pointer px-0.5 flex items-center transition-[color,opacity] duration-150"
             style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-faint)',
-              cursor: 'pointer',
-              padding: '0 2px',
-              display: 'flex',
-              alignItems: 'center',
-              transition: 'color 0.15s, opacity 0.15s',
               opacity: headerHovered ? 0.8 : 0,
             }}
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--panel-timeline-accent)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
           >
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
-              <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <IconEditSquare />
           </button>
         )}
 
@@ -244,38 +207,18 @@ function TimelineGroupSection({
           }}
           title="メモグループを削除"
           aria-label={`${group.label}を削除`}
+          className="bg-transparent border-none text-text-faint cursor-pointer px-0.5 flex items-center transition-[color,opacity] duration-150"
           style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-faint)',
-            cursor: 'pointer',
-            padding: '0 2px',
-            display: 'flex',
-            alignItems: 'center',
-            transition: 'color 0.15s, opacity 0.15s',
             opacity: headerHovered ? 1 : 0,
           }}
           onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <line x1="3" y1="3" x2="9" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            <line x1="9" y1="3" x2="3" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
+          <IconClose />
         </button>
 
         {/* エントリ数 — 常に右端 */}
-        <span
-          style={{
-            fontSize: 12,
-            color: 'var(--text-muted)',
-            fontFamily: 'var(--font-mono)',
-            minWidth: 16,
-            textAlign: 'right',
-            opacity: 0.7,
-            flexShrink: 0,
-          }}
-        >
+        <span className="text-[12px] text-text-muted font-mono min-w-4 text-right opacity-70 shrink-0">
           {entryCount}
         </span>
       </div>
@@ -284,41 +227,36 @@ function TimelineGroupSection({
       {!group.collapsed && (
         // --tl-spine-x: 縦線・ドットの中心X座標の単一の真実の情報源
         // 縦線・HourDividerドットはともにこの値から位置を計算するため、値を変えれば両方追従する
-        <div style={{ position: 'relative', '--tl-spine-x': '15px', padding: '16px 0' } as React.CSSProperties}>
+        <div className="relative py-4" style={{ '--tl-spine-x': '15px' } as React.CSSProperties}>
           {/* 縦線 — 上下余白部分は破線、中央は実線 */}
           <div
-            style={{
-              position: 'absolute',
-              left: 'var(--tl-spine-x)',
-              top: 0,
-              bottom: 0,
-              width: 0,
-            }}
+            className="absolute top-0 bottom-0 w-0"
+            style={{ left: 'var(--tl-spine-x)' }}
           >
             {/* 上部破線 */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              height: 16,
-              borderLeft: '1px dashed color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
-            }} />
+            <div
+              className="absolute top-0 h-4"
+              style={{
+                borderLeft: '1px dashed color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
+              }}
+            />
             {/* 中央実線 */}
-            <div style={{
-              position: 'absolute',
-              top: 16,
-              bottom: 16,
-              borderLeft: '1px solid color-mix(in srgb, var(--panel-timeline-accent) 15%, transparent)',
-            }} />
+            <div
+              className="absolute top-4 bottom-4"
+              style={{
+                borderLeft: '1px solid color-mix(in srgb, var(--panel-timeline-accent) 15%, transparent)',
+              }}
+            />
             {/* 下部破線 */}
-            <div style={{
-              position: 'absolute',
-              bottom: 0,
-              height: 16,
-              borderLeft: '1px dashed color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
-            }} />
+            <div
+              className="absolute bottom-0 h-4"
+              style={{
+                borderLeft: '1px dashed color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
+              }}
+            />
           </div>
 
-          <div style={{ paddingLeft: 6 }}>
+          <div className="pl-1.5">
             {/* 時間帯グループ — 同一時間帯内でDnDソート可能 */}
             {hourGroups.map((hg) => (
               <div key={hg.hour}>
@@ -344,14 +282,7 @@ function TimelineGroupSection({
 
             {/* 空の場合 */}
             {hourGroups.length === 0 && unknownEntries.length === 0 && (
-              <div
-                style={{
-                  padding: '14px 12px',
-                  fontSize: 12,
-                  color: 'var(--text-faint)',
-                  textAlign: 'center',
-                }}
-              >
+              <div className="px-3 py-3.5 text-[12px] text-text-faint text-center">
                 メモを追加してください
               </div>
             )}
@@ -385,30 +316,18 @@ function HourDivider({ label, muted }: { label: string; muted?: boolean }) {
     : 'color-mix(in srgb, var(--panel-timeline-accent) 15%, transparent)';
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '4px 8px 2px 0',
-      }}
-    >
+    <div className="flex items-center gap-2 pt-1 pr-2 pb-0.5 pl-0">
       {/* 左ライン — 縦線とクロスする */}
-      <span style={{ flex: 1, height: 1, background: lineColor }} />
+      <span className="flex-1 h-px" style={{ background: lineColor }} />
       <span
-        style={{
-          fontSize: 11,
-          fontFamily: 'var(--font-mono)',
-          color: muted ? 'var(--text-faint)' : 'var(--text-muted)',
-          letterSpacing: '0.06em',
-          flexShrink: 0,
-          opacity: 0.8,
-        }}
+        className={`text-[11px] font-mono tracking-[0.06em] shrink-0 opacity-80 ${
+          muted ? 'text-text-faint' : 'text-text-muted'
+        }`}
       >
         {label}
       </span>
       {/* 右ライン */}
-      <span style={{ flex: 1, height: 1, background: lineColor }} />
+      <span className="flex-1 h-px" style={{ background: lineColor }} />
     </div>
   );
 }

@@ -123,7 +123,6 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [subPos, setSubPos] = useState({ x: 0, y: 0 });
-  const [subDir, setSubDir] = useState<'right' | 'left'>('right');
 
   // Safe Triangle 状態（レンダリング不要なので ref）
   const st = useRef<SafeTriangleState>({
@@ -257,7 +256,6 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     }
 
     setSubPos({ x: posX, y: itemRect.top - 4 });
-    setSubDir(dir);
 
     st.direction = dir;
     st.rect = null;

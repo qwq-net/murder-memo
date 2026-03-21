@@ -18,53 +18,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useStore } from '../../store';
 import type { Character, CharacterRole } from '../../types/memo';
+import { RadioGroup } from '../common/RadioGroup';
 import { CharacterColorPalette } from './CharacterColorPalette';
-
-/* ── 共通ラジオグループ（アプリ設定と同一デザイン） ── */
-function ToggleGroup<T extends string>({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div
-      style={{
-        display: 'inline-flex',
-        borderRadius: 'var(--radius-sm)',
-        border: '1px solid var(--border-default)',
-        overflow: 'hidden',
-      }}
-    >
-      {options.map((opt, i) => {
-        const active = value === opt.value;
-        return (
-          <button
-            key={opt.value}
-            onClick={() => onChange(opt.value)}
-            style={{
-              background: active ? 'rgba(196, 90, 42, 0.15)' : 'transparent',
-              border: 'none',
-              borderLeft: i > 0 ? '1px solid var(--border-default)' : 'none',
-              color: active ? '#c45a2a' : 'var(--text-secondary)',
-              fontSize: 10,
-              fontWeight: active ? 600 : 400,
-              padding: '3px 8px',
-              cursor: 'pointer',
-              transition: 'background 0.12s, color 0.12s',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 const DEFAULT_COLORS = [
   '#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6',
@@ -132,7 +87,7 @@ export function CharacterSetupPanel() {
     flex: 1,
     background: activeTab === tab ? 'var(--bg-elevated)' : 'transparent',
     border: 'none',
-    borderBottom: activeTab === tab ? '2px solid #c45a2a' : '2px solid transparent',
+    borderBottom: activeTab === tab ? '2px solid var(--color-settings-accent)' : '2px solid transparent',
     color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
     fontSize: 12,
     fontWeight: activeTab === tab ? 600 : 400,
@@ -305,7 +260,7 @@ export function CharacterSetupPanel() {
             onClick={handleAdd}
             disabled={!newName.trim()}
             style={{
-              background: '#c45a2a',
+              background: 'var(--color-settings-accent)',
               border: 'none',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--text-primary)',
@@ -463,13 +418,13 @@ function CharacterRow({
         />
 
         {/* エントリ表示トグル */}
-        <ToggleGroup
+        <RadioGroup
           options={[
             { value: 'show', label: '表示' },
             { value: 'hide', label: '非表示' },
           ]}
           value={char.showInEntries ? 'show' : 'hide'}
-          onChange={(v) => onUpdate(char.id, { showInEntries: v === 'show' })}
+          onChange={(v: string) => onUpdate(char.id, { showInEntries: v === 'show' })}
         />
 
         {/* Delete */}

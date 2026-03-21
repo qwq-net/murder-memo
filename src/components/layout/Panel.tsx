@@ -19,67 +19,30 @@ export function Panel({ panelId, title, actions, children }: PanelProps) {
   const accent = PANEL_ACCENT[panelId];
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        background: 'var(--bg-panel)',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Panel header */}
+    <div className="flex flex-col h-full bg-bg-panel overflow-hidden">
+      {/* パネルヘッダー */}
       <div
-        style={{
-          height: 'var(--panel-header-h)',
-          minHeight: 'var(--panel-header-h)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 12px',
-          borderBottom: '1px solid var(--border-subtle)',
-          background: 'var(--bg-surface)',
-          gap: 8,
-        }}
+        className="flex items-center justify-between gap-2 px-3 border-b border-border-subtle bg-bg-surface select-none"
+        style={{ height: 'var(--panel-header-h)', minHeight: 'var(--panel-header-h)' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="flex items-center gap-2">
           <span
-            style={{
-              width: 3,
-              height: 14,
-              borderRadius: 'var(--radius-sm)',
-              background: accent,
-              flexShrink: 0,
-            }}
+            className="shrink-0"
+            style={{ width: 3, height: 14, borderRadius: 'var(--radius-sm)', background: accent }}
           />
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 500,
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.06em',
-              userSelect: 'none',
-            }}
-          >
+          <span className="text-xs font-medium text-text-secondary tracking-wide">
             {title}
           </span>
         </div>
         {actions && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className="flex items-center gap-1">
             {actions}
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div
-        style={{
-          flex: 1,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+      {/* コンテンツ */}
+      <div className="flex-1 overflow-hidden flex flex-col">
         {children}
       </div>
     </div>

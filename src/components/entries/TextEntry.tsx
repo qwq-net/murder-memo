@@ -49,7 +49,7 @@ export function TextEntry({ entry }: TextEntryProps) {
 
   if (isEditing) {
     return (
-      <div style={{ padding: '1px 10px 2px' }}>
+      <div className="px-2.5 pt-px pb-0.5">
         <textarea
           ref={inputRef}
           value={draft}
@@ -76,21 +76,7 @@ export function TextEntry({ entry }: TextEntryProps) {
             }
           }}
           rows={1}
-          style={{
-            width: '100%',
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            color: 'var(--text-primary)',
-            fontFamily: 'var(--font-sans)',
-            fontSize: 13,
-            lineHeight: 1.6,
-            padding: 0,
-            margin: 0,
-            resize: 'none',
-            overflow: 'hidden',
-            display: 'block',
-          }}
+          className="w-full bg-transparent border-none outline-none text-text-primary font-sans text-[13px] leading-[1.6] p-0 m-0 resize-none overflow-hidden block"
         />
       </div>
     );
@@ -103,18 +89,10 @@ export function TextEntry({ entry }: TextEntryProps) {
         captureFromMouseEvent(e, entry.content.length);
         setFocusedEntry(entry.id);
       }}
-      style={{
-        cursor: 'text',
-        padding: '1px 4px 2px 10px',
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-        minHeight: 22,
-        fontSize: 13,
-        lineHeight: 1.6,
-      }}
+      className="cursor-text pt-px pr-1 pb-0.5 pl-2.5 whitespace-pre-wrap break-words min-h-[22px] text-[13px] leading-[1.6]"
     >
       {entry.content || (
-        <span style={{ color: 'var(--text-faint)' }}>空のメモ</span>
+        <span className="text-text-faint">空のメモ</span>
       )}
     </div>
   );

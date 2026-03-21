@@ -5,6 +5,7 @@ import { useStore } from '../../store';
 import type { PanelId } from '../../types/memo';
 import { CharacterSetupPanel } from '../characters/CharacterSetupPanel';
 import { useSelection } from '../entries/selection-context';
+import { IconChevronRightLg } from '../icons';
 import { FreeMemoPanel } from '../panels/FreeMemoPanel';
 import { SettingsPanel } from '../settings/SettingsPanel';
 import { PersonalMemoPanel } from '../panels/PersonalMemoPanel';
@@ -64,51 +65,25 @@ export function AppShell() {
   return (
     <div
       onClick={() => { if (hasSelection) clearSelection(); }}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        background: 'var(--bg-base)',
-      }}
+      className="flex flex-col h-full bg-bg-base"
     >
       {/* ── Global Header ── */}
-      <header
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          background: 'var(--bg-surface)',
-          borderBottom: '1px solid var(--border-subtle)',
-          zIndex: 20,
-          flexShrink: 0,
-        }}
-      >
+      <header className="flex flex-col bg-bg-surface border-b border-border-subtle z-20 shrink-0">
         {/* ── Row 1: Logo + 登場人物設定 ── */}
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 14px',
-            height: 'var(--header-h)',
-          }}
+          className="flex items-center justify-between px-[14px]"
+          style={{ height: 'var(--header-h)' }}
         >
           {/* Logo / title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="flex items-center gap-2">
             <img src="/logo.svg" alt="マダめもくん" width="20" height="20" />
-            <span
-              style={{
-                fontSize: 13,
-                color: 'var(--text-primary)',
-                letterSpacing: '0.08em',
-                fontWeight: 600,
-              }}
-            >
+            <span className="text-[13px] text-text-primary tracking-[0.08em] font-semibold">
               マダめもくん
             </span>
           </div>
 
           {/* 右側ボタン群 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="flex items-center gap-2">
           <button
             onClick={() => setCharacterSetupOpen(true)}
             style={{
@@ -177,18 +152,9 @@ export function AppShell() {
         </div>
 
         {/* ── Row 2: Session (left) + Action order strip (right) ── */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 14px 8px',
-            gap: 12,
-            minHeight: 28,
-          }}
-        >
+        <div className="flex items-center justify-between px-[14px] pb-2 gap-3 min-h-[28px]">
           {/* Session switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <div className="flex items-center gap-2 min-w-0">
             {isRenaming ? (
               <input
                 autoFocus
@@ -286,27 +252,15 @@ export function AppShell() {
 
           {/* 行動順ステッパー — PL | NPC */}
           {(plChars.length > 0 || npcChars.length > 0) && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                overflow: 'hidden',
-                gap: 8,
-              }}
-            >
+            <div className="flex items-center overflow-hidden gap-2">
               {/* PL */}
               {plChars.map((char, i) => (
-                <div
-                  key={char.id}
-                  style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
-                >
+                <div key={char.id} className="flex items-center shrink-0">
                   {i > 0 && (
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, margin: '0 2px' }}>
-                      <path d="M7 5l5 5-5 5" stroke="var(--text-faint)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <IconChevronRightLg className="shrink-0 mx-0.5 text-text-faint" />
                   )}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: char.color, boxShadow: `0 0 6px ${char.color}44`, flexShrink: 0 }} />
+                  <span className="flex items-center gap-1 text-xs text-text-secondary whitespace-nowrap">
+                    <span className="inline-block size-2.5 rounded-full shrink-0" style={{ background: char.color, boxShadow: `0 0 6px ${char.color}44` }} />
                     {char.name}
                   </span>
                 </div>
@@ -314,22 +268,17 @@ export function AppShell() {
 
               {/* セパレータ */}
               {plChars.length > 0 && npcChars.length > 0 && (
-                <span style={{ color: 'var(--text-faint)', fontSize: 11, margin: '0 4px', flexShrink: 0 }}>|</span>
+                <span className="text-text-faint text-[11px] mx-1 shrink-0">|</span>
               )}
 
               {/* NPC */}
               {npcChars.map((char, i) => (
-                <div
-                  key={char.id}
-                  style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
-                >
+                <div key={char.id} className="flex items-center shrink-0">
                   {i > 0 && (
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, margin: '0 2px' }}>
-                      <path d="M7 5l5 5-5 5" stroke="var(--text-faint)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <IconChevronRightLg className="shrink-0 mx-0.5 text-text-faint" />
                   )}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: char.color, boxShadow: `0 0 6px ${char.color}44`, flexShrink: 0, opacity: 0.7 }} />
+                  <span className="flex items-center gap-1 text-xs text-text-muted whitespace-nowrap">
+                    <span className="inline-block size-2.5 rounded-full shrink-0 opacity-70" style={{ background: char.color, boxShadow: `0 0 6px ${char.color}44` }} />
                     {char.name}
                   </span>
                 </div>
@@ -342,36 +291,20 @@ export function AppShell() {
       {/* ── Panels ── */}
       {isMobile ? (
         <>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
+          <div className="flex-1 overflow-hidden">
             {orderedPanels.find((p) => p.id === activePanel)?.node}
           </div>
           <MobileTabNav />
         </>
       ) : (
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <div className="flex-1 min-h-0 overflow-hidden">
           <PanelContainer panels={orderedPanels} />
         </div>
       )}
 
       {/* Footer */}
-      <footer
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '6px 14px',
-          borderTop: '1px solid var(--border-subtle)',
-          background: 'var(--bg-surface)',
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            color: 'var(--text-faint)',
-            letterSpacing: '0.04em',
-          }}
-        >
+      <footer className="flex items-center justify-center px-[14px] py-1.5 border-t border-border-subtle bg-bg-surface shrink-0">
+        <span className="text-[11px] text-text-faint tracking-[0.04em]">
           &copy; 2026 マダめもくん
         </span>
       </footer>

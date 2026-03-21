@@ -6,69 +6,12 @@ import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from
 import { CharacterBadge } from '../characters/CharacterBadge';
 import { MinimalSlot } from '../characters/CharacterBadgeBar';
 import { ConfirmModal } from '../common/ConfirmModal';
+import { ModalFrame } from '../common/ModalFrame';
+import { RadioGroup } from '../common/RadioGroup';
+import type { RadioOption } from '../common/RadioGroup';
+import { IconCloseLg } from '../icons';
 
-/* ── Segmented Control ────────────────────────────────────────────────────── */
-
-interface RadioOption<T extends string> {
-  value: T;
-  label: string;
-  disabled?: boolean;
-}
-
-function RadioGroup<T extends string>({
-  options,
-  value,
-  onChange,
-  stretch,
-}: {
-  options: RadioOption<T>[];
-  value: T;
-  onChange: (v: T) => void;
-  /** true: 均等幅で親を埋める / false: コンテンツ幅（デフォルト） */
-  stretch?: boolean;
-}) {
-  return (
-    <div
-      style={{
-        display: stretch ? 'flex' : 'inline-flex',
-        borderRadius: 'var(--radius-sm)',
-        border: '1px solid var(--border-default)',
-        overflow: 'hidden',
-      }}
-    >
-      {options.map((opt, i) => {
-        const active = value === opt.value;
-        return (
-          <button
-            key={opt.value}
-            disabled={opt.disabled}
-            onClick={() => onChange(opt.value)}
-            style={{
-              flex: stretch ? 1 : undefined,
-              background: active ? 'rgba(196, 90, 42, 0.15)' : 'transparent',
-              border: 'none',
-              borderLeft: i > 0 ? '1px solid var(--border-default)' : 'none',
-              color: opt.disabled
-                ? 'var(--text-muted)'
-                : active
-                  ? '#c45a2a'
-                  : 'var(--text-secondary)',
-              fontSize: 12,
-              fontWeight: active ? 600 : 400,
-              padding: stretch ? '5px 0' : '5px 14px',
-              cursor: opt.disabled ? 'not-allowed' : 'pointer',
-              transition: 'background 0.12s, color 0.12s',
-              whiteSpace: 'nowrap',
-              textAlign: 'center',
-            }}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+/* RadioGroup は src/components/common/RadioGroup.tsx を使用 */
 
 /* ── Setting Row (一般設定用) ─────────────────────────────────────────────── */
 
@@ -457,8 +400,6 @@ export function SettingsPanel() {
     setOpen(false);
   }, [activeSessionId, removeSession, setOpen]);
 
-  if (!isOpen) return null;
-
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     updateSettings({ [key]: value });
   };
@@ -473,31 +414,13 @@ export function SettingsPanel() {
   };
 
   return (
-    <div
-      onClick={() => { if (!showClearConfirm && !showDeleteConfirm) setOpen(false); }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.55)',
-        backdropFilter: 'blur(2px)',
-      }}
+    <>
+    <ModalFrame
+      open={isOpen}
+      onClose={() => { if (!showClearConfirm && !showDeleteConfirm) setOpen(false); }}
+      width={480}
+      ariaLabel="アプリ設定"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--bg-panel)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-lg)',
-          width: 480,
-          maxHeight: '80vh',
-          overflowY: 'auto',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-        }}
-      >
         {/* header */}
         <div
           style={{
@@ -530,10 +453,7 @@ export function SettingsPanel() {
               alignItems: 'center',
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <line x1="4" y1="4" x2="14" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              <line x1="14" y1="4" x2="4" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
+            <IconCloseLg />
           </button>
         </div>
 
@@ -695,33 +615,33 @@ export function SettingsPanel() {
             </div>
           </div>
         </div>
-      </div>
+    </ModalFrame>
 
-      <ConfirmModal
-        open={showClearConfirm}
-        onClose={() => setShowClearConfirm(false)}
-        title="現在のセッションを初期化しますか？"
-        confirmationLabel="すべてのメモ・登場人物・画像データが削除されます。この操作は取り消せません。"
-        actions={[{
-          label: '初期化する',
-          color: 'var(--danger)',
-          requiresConfirmation: true,
-          onClick: handleClearSession,
-        }]}
-      />
+    <ConfirmModal
+      open={showClearConfirm}
+      onClose={() => setShowClearConfirm(false)}
+      title="現在のセッションを初期化しますか？"
+      confirmationLabel="すべてのメモ・登場人物・画像データが削除されます。この操作は取り消せません。"
+      actions={[{
+        label: '初期化する',
+        color: 'var(--danger)',
+        requiresConfirmation: true,
+        onClick: handleClearSession,
+      }]}
+    />
 
-      <ConfirmModal
-        open={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        title="現在のセッションを削除しますか？"
-        confirmationLabel="セッションとそのすべてのデータが完全に削除されます。この操作は取り消せません。"
-        actions={[{
-          label: '削除する',
-          color: 'var(--danger)',
-          requiresConfirmation: true,
-          onClick: handleDeleteSession,
-        }]}
-      />
-    </div>
+    <ConfirmModal
+      open={showDeleteConfirm}
+      onClose={() => setShowDeleteConfirm(false)}
+      title="現在のセッションを削除しますか？"
+      confirmationLabel="セッションとそのすべてのデータが完全に削除されます。この操作は取り消せません。"
+      actions={[{
+        label: '削除する',
+        color: 'var(--danger)',
+        requiresConfirmation: true,
+        onClick: handleDeleteSession,
+      }]}
+    />
+    </>
   );
 }
