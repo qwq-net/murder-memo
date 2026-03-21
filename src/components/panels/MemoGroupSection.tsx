@@ -42,17 +42,26 @@ export function MemoGroupSection({
     setIsEditingLabel(false);
   }, [draftLabel, group, onUpdate]);
 
+  const handleToggle = () => {
+    if (isUncategorized) {
+      setUncategorizedCollapsed((v) => !v);
+    } else if (group && onToggleCollapse) {
+      onToggleCollapse(group.id);
+    }
+  };
+
   return (
     <div>
       {/* グループヘッダー */}
       <div
         onMouseEnter={() => setHeaderHovered(true)}
         onMouseLeave={() => setHeaderHovered(false)}
+        onClick={isEditingLabel ? undefined : handleToggle}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          padding: '6px 10px',
+          padding: '7px 10px',
           background: isUncategorized
             ? 'color-mix(in srgb, var(--text-muted) 5%, transparent)'
             : `color-mix(in srgb, ${accentColor} 5%, transparent)`,
@@ -62,42 +71,22 @@ export function MemoGroupSection({
           cursor: 'pointer',
           userSelect: 'none',
         }}
-        onClick={() => {
-          if (isUncategorized) {
-            setUncategorizedCollapsed((v) => !v);
-          } else if (group && onToggleCollapse) {
-            onToggleCollapse(group.id);
-          }
-        }}
       >
         {/* 折りたたみ矢印 */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isUncategorized) {
-              setUncategorizedCollapsed((v) => !v);
-            } else if (group && onToggleCollapse) {
-              onToggleCollapse(group.id);
-            }
-          }}
-          aria-label={collapsed ? '展開' : '折りたたみ'}
-          aria-expanded={!collapsed}
+        <span
           style={{
-            background: 'none',
-            border: 'none',
             color: isUncategorized ? 'var(--text-muted)' : accentColor,
-            cursor: 'pointer',
-            padding: 0,
             display: 'flex',
             alignItems: 'center',
             transition: 'transform 0.15s',
             transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            flexShrink: 0,
           }}
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </button>
+        </span>
 
         {/* ラベル */}
         {!isUncategorized && isEditingLabel ? (
@@ -129,13 +118,6 @@ export function MemoGroupSection({
           />
         ) : (
           <span
-            onClick={(e) => {
-              if (!isUncategorized && group) {
-                e.stopPropagation();
-                setDraftLabel(group.label);
-                setIsEditingLabel(true);
-              }
-            }}
             style={{
               flex: 1,
               fontSize: 12,
@@ -148,21 +130,37 @@ export function MemoGroupSection({
           </span>
         )}
 
-        {/* エントリ数 */}
-        <span
-          style={{
-            fontSize: 12,
-            color: 'var(--text-muted)',
-            fontFamily: 'var(--font-mono)',
-            minWidth: 16,
-            textAlign: 'center',
-            opacity: 0.7,
-          }}
-        >
-          {entries.length}
-        </span>
+        {/* 編集ボタン — ユーザー作成グループのみ、ホバー時表示 */}
+        {!isUncategorized && group && onUpdate && !isEditingLabel && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setDraftLabel(group.label);
+              setIsEditingLabel(true);
+            }}
+            title="グループ名を変更"
+            aria-label={`${group.label}の名前を変更`}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-faint)',
+              cursor: 'pointer',
+              padding: '0 2px',
+              display: 'flex',
+              alignItems: 'center',
+              transition: 'color 0.15s, opacity 0.15s',
+              opacity: headerHovered ? 0.8 : 0,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = accentColor; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
+          >
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+              <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
 
-        {/* 削除ボタン — ユーザー作成グループのみ */}
+        {/* 削除ボタン — ユーザー作成グループのみ、ホバー時表示 */}
         {!isUncategorized && group && onRemove && (
           <button
             onClick={(e) => {
@@ -195,6 +193,21 @@ export function MemoGroupSection({
             </svg>
           </button>
         )}
+
+        {/* エントリ数 — 常に右端 */}
+        <span
+          style={{
+            fontSize: 12,
+            color: 'var(--text-muted)',
+            fontFamily: 'var(--font-mono)',
+            minWidth: 16,
+            textAlign: 'right',
+            opacity: 0.7,
+            flexShrink: 0,
+          }}
+        >
+          {entries.length}
+        </span>
       </div>
 
       {/* エントリリスト */}

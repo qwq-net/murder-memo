@@ -78,7 +78,7 @@ export function CharacterBadgeBar({ entry, indent, format, visibility, isEntryHo
         alignItems: 'center',
         flexShrink: 0,
         flexWrap: 'wrap',
-        padding: indent ? '1px 10px 1px 62px' : '1px 10px 1px',
+        padding: indent ? '1px 10px 1px 74px' : '1px 10px 1px',
         opacity: collapsed ? 0 : 1,
         height: collapsed ? 0 : 'auto',
         transition: 'opacity 0.15s ease-out',

@@ -71,7 +71,6 @@ export function EntryInput({ panel }: EntryInputProps) {
 
     if (isTimeline) {
       if (!text && !timeTrimmed) return;
-      if (!timeTrimmed && text) { setTimeError(true); return; }
       if (timeTrimmed && !text) { setTextError(true); return; }
       if (!effectiveGroupId) return;
     } else {

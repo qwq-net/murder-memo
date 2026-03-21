@@ -81,7 +81,8 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        padding: '1px 0',
+        padding: '0',
+        margin: '2px 0',
         borderRadius: 'var(--radius-sm)',
         background: hovered
           ? 'color-mix(in srgb, var(--bg-hover) 50%, transparent)'
@@ -108,7 +109,7 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
       <div
         style={{
           position: 'absolute',
-          left: entry.type === 'timeline' ? 57 : 4,
+          left: entry.type === 'timeline' ? 65 : 4,
           top: 2,
           bottom: 2,
           width: selected ? 3 : 2,
@@ -120,7 +121,47 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         }}
       />
 
-      {/* 重要度マーカー — 右端に ⓘ アイコン */}
+      {/* タイムラインマーカー — ドット + 水平ティック */}
+      {entry.type === 'timeline' && !!entry.eventTime && !hideTime && (
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              left: 'calc(var(--tl-spine-x) - 6px)',
+              top: 12,
+              transform: 'translateX(-50%)',
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: selected
+                ? 'var(--accent)'
+                : 'var(--panel-timeline-accent)',
+              opacity: selected ? 1 : (hovered ? 0.8 : 0.45),
+              transition: 'opacity 0.12s',
+              pointerEvents: 'none',
+            }}
+          />
+          {/* 水平ティック — ドットから右へ伸びる接続線 */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 'calc(var(--tl-spine-x) - 6px + 3px)',
+              top: 14,
+              width: 8,
+              height: 1,
+              background: selected
+                ? 'var(--accent)'
+                : 'var(--panel-timeline-accent)',
+              opacity: selected ? 0.8 : (hovered ? 0.5 : 0.2),
+              transition: 'opacity 0.12s',
+              pointerEvents: 'none',
+            }}
+          />
+        </>
+      )}
+
+
+      {/* 重要度マーカー — エントリ全体の右端・上下中央 */}
       {importanceColor && (
         <svg
           width={IMPORTANCE_ICON_SIZE}
@@ -129,8 +170,9 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
           fill="none"
           style={{
             position: 'absolute',
-            right: 6,
-            top: 4,
+            right: 4,
+            top: '50%',
+            transform: 'translateY(-50%)',
             opacity: hovered ? 0.9 : 0.6,
             transition: 'opacity 0.12s',
             pointerEvents: 'none',
@@ -142,7 +184,12 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         </svg>
       )}
 
-      {/* Row 1: Character badges */}
+      {/* Row 1: Content */}
+      <div style={{ minWidth: 0, paddingRight: importanceColor ? 20 : 0 }}>
+        {renderContent()}
+      </div>
+
+      {/* Row 2: Character badges */}
       <CharacterBadgeBar
         entry={entry}
         indent={entry.type === 'timeline'}
@@ -150,11 +197,6 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         visibility={effectiveVisibility}
         isEntryHovered={(hovered && !ctxMenu && !bulkCtxMenu) || isEditing}
       />
-
-      {/* Row 2: Content */}
-      <div style={{ minWidth: 0 }}>
-        {renderContent()}
-      </div>
 
       {/* 単体コンテキストメニュー */}
       {ctxMenu && (

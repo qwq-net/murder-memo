@@ -60,7 +60,7 @@ export function parseEventTime(input: string): number | undefined {
  */
 export function getHourLabel(sortKey: number): string {
   const h = Math.floor(sortKey / 60);
-  return `${h}時台`;
+  return `${h}:00`;
 }
 
 /**

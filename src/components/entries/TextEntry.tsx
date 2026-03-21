@@ -139,7 +139,7 @@ export function TextEntry({ entry }: TextEntryProps) {
       }}
       style={{
         cursor: 'text',
-        padding: '1px 10px 2px',
+        padding: '1px 4px 2px 10px',
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-word',
         minHeight: 22,

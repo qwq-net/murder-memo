@@ -93,9 +93,9 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
   if (isEditing) {
     return (
       <div style={{
-        padding: '1px 10px 2px',
+        padding: '1px 4px 2px 18px',
         display: 'flex',
-        gap: 8,
+        gap: 12,
         alignItems: 'center',
       }}>
         <input
@@ -195,10 +195,10 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
     <div
       style={{
         cursor: 'text',
-        padding: '1px 10px 2px',
+        padding: '1px 4px 2px 18px',
         display: 'flex',
-        alignItems: 'center',
-        gap: 8,
+        alignItems: 'flex-start',
+        gap: 10,
         minHeight: 22,
       }}
     >
