@@ -102,7 +102,7 @@ export function CharacterBadgeBar({ entry, indent, format, visibility, isEntryHo
             color={char.color}
             name={char.name}
             isActive={isActive}
-            onClick={() => toggleCharacterTag(entry.id, char.id)}
+            onClick={(e) => { if (!e.shiftKey) toggleCharacterTag(entry.id, char.id); }}
             format={format}
           />
         );

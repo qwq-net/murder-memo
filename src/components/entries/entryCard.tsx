@@ -103,9 +103,9 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
           left: entry.type === 'timeline' ? 65 : 4,
           top: 2,
           bottom: 2,
-          width: selected ? 3 : 2,
+          width: selected ? 4 : 3,
           background: selected ? 'var(--accent)' : accent,
-          opacity: selected ? 0.9 : (hovered ? 0.45 : 0.2),
+          opacity: selected ? 0.9 : (hovered ? 0.6 : 0.45),
           transition: 'opacity 0.12s, width 0.12s, background 0.12s',
         }}
       />

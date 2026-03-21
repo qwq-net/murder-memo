@@ -4,7 +4,7 @@ interface CharacterBadgeProps {
   color: string;
   name: string;
   isActive: boolean;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;
   format: CharacterDisplayFormat;
 }
 

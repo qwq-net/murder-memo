@@ -97,7 +97,7 @@ function MarkerPreview({
               color={c.color}
               name={c.name}
               isActive={c.active}
-              onClick={() => {}}
+              onClick={() => { /* プレビュー用: 操作なし */ }}
               format={format}
             />
           );
@@ -179,7 +179,7 @@ function SectionHeader({
 /* ── Panel Order Editor ───────────────────────────────────────────────────── */
 
 const PANEL_ORDER_LABELS: Record<PanelId, string> = {
-  free: '自由メモ',
+  free: 'フリーメモ',
   timeline: 'タイムライン',
   personal: '自分用メモ',
 };
@@ -543,7 +543,7 @@ export function SettingsPanel() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {([
-              { panel: 'free' as PanelId, label: '自由メモ' },
+              { panel: 'free' as PanelId, label: 'フリーメモ' },
               { panel: 'timeline' as PanelId, label: 'タイムライン' },
               { panel: 'personal' as PanelId, label: '自分用メモ' },
             ]).map(({ panel, label }) => (

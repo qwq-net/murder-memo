@@ -28,7 +28,7 @@ export const VISIBILITY_LABELS: Record<CharacterDisplayVisibility, string> = {
 };
 
 export const PANEL_LABELS: Record<PanelId, string> = {
-  free: '自由メモ',
+  free: 'フリーメモ',
   personal: '自分用メモ',
   timeline: 'タイムライン',
 };

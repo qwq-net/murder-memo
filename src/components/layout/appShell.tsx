@@ -21,7 +21,7 @@ const PANEL_CONTENT: Record<PanelId, React.ReactNode> = {
 };
 
 const PANEL_TITLES: Record<PanelId, string> = {
-  free:     '自由メモ',
+  free:     'フリーメモ',
   personal: '自分用メモ',
   timeline: 'タイムライン',
 };
