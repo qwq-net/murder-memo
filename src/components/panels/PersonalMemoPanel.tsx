@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import { useStore } from '../../store';
+import { EmptyState } from '../common/EmptyState';
 import { EntryInput } from '../entries/EntryInput';
 import { MemoGroupSection } from './MemoGroupSection';
 
@@ -10,6 +11,7 @@ export function PersonalMemoPanel() {
   const toggleMemoGroupCollapse = useStore((s) => s.toggleMemoGroupCollapse);
   const removeMemoGroup = useStore((s) => s.removeMemoGroup);
   const updateMemoGroup = useStore((s) => s.updateMemoGroup);
+  const addMemoGroup = useStore((s) => s.addMemoGroup);
   const reorderEntries = useStore((s) => s.reorderEntries);
   const inputPosition = useStore((s) => s.settings.inputPosition);
 
@@ -45,9 +47,11 @@ export function PersonalMemoPanel() {
       {inputPosition === 'top' && entryInput}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 60 }}>
         {isEmpty ? (
-          <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-faint)', fontSize: 12 }}>
-            ハンドアウトや個人情報をメモ
-          </div>
+          <EmptyState
+            accentColor="var(--panel-personal-accent)"
+            message="ハンドアウトや個人情報をメモ"
+            onAddGroup={(label) => addMemoGroup(label, 'personal')}
+          />
         ) : hasGroups ? (
           <>
             {groupedData.uncategorized.length > 0 && (

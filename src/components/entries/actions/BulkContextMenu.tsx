@@ -131,7 +131,7 @@ export function BulkContextMenu({ entries, x, y, onClose, onDone }: BulkContextM
 
     if (hasGroupSection) {
       result.push({ separator: true as const });
-      result.push({ header: true as const, label: `グループ移動 (${count}件)` });
+      result.push({ header: true as const, label: `メモグループ移動 (${count}件)` });
 
       if (commonPanel === 'free' || commonPanel === 'personal') {
         const panelGroups = memoGroups.filter((g) => g.panel === commonPanel);

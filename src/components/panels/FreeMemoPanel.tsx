@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 
 import { putImage } from '../../lib/idb';
 import { useStore } from '../../store';
+import { EmptyState } from '../common/EmptyState';
 import { EntryInput } from '../entries/EntryInput';
 import { MemoGroupSection } from './MemoGroupSection';
 
@@ -13,6 +14,7 @@ export function FreeMemoPanel() {
   const removeMemoGroup = useStore((s) => s.removeMemoGroup);
   const updateMemoGroup = useStore((s) => s.updateMemoGroup);
   const addEntry = useStore((s) => s.addEntry);
+  const addMemoGroup = useStore((s) => s.addMemoGroup);
   const reorderEntries = useStore((s) => s.reorderEntries);
   const inputPosition = useStore((s) => s.settings.inputPosition);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -75,9 +77,11 @@ export function FreeMemoPanel() {
         style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 60 }}
       >
         {isEmpty ? (
-          <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-faint)', fontSize: 12 }}>
-            メモを書き殴ろう
-          </div>
+          <EmptyState
+            accentColor="var(--panel-free-accent)"
+            message="メモを書き殴ろう"
+            onAddGroup={(label) => addMemoGroup(label, 'free')}
+          />
         ) : hasGroups ? (
           <>
             {groupedData.uncategorized.length > 0 && (

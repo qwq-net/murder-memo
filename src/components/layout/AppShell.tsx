@@ -29,12 +29,15 @@ export function AppShell() {
   const activePanel = useStore((s) => s.activePanel);
   const setCharacterSetupOpen = useStore((s) => s.setCharacterSetupOpen);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
-  const setSessionSwitcherOpen = useStore((s) => s.setSessionSwitcherOpen);
   const sessions = useStore((s) => s.sessions);
   const activeSessionId = useStore((s) => s.activeSessionId);
+  const switchSession = useStore((s) => s.switchSession);
+  const createSession = useStore((s) => s.createSession);
+  const renameSession = useStore((s) => s.renameSession);
   const characters = useStore((s) => s.characters);
-  const activeSession = sessions.find((s) => s.id === activeSessionId);
   const { hasSelection, clearSelection } = useSelection();
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   useEffect(() => {
@@ -89,14 +92,7 @@ export function AppShell() {
         >
           {/* Logo / title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <rect x="1" y="1" width="16" height="16" rx="2" stroke="#c45a2a" strokeWidth="1.2"/>
-              <line x1="4" y1="5.5" x2="14" y2="5.5" stroke="#c45a2a" strokeWidth="1" strokeLinecap="round"/>
-              <line x1="4" y1="8.5" x2="11" y2="8.5" stroke="var(--text-muted)" strokeWidth="1" strokeLinecap="round"/>
-              <line x1="4" y1="11.5" x2="13" y2="11.5" stroke="var(--text-muted)" strokeWidth="1" strokeLinecap="round"/>
-              <circle cx="14" cy="13" r="2.5" fill="var(--bg-surface)" stroke="#c45a2a" strokeWidth="1"/>
-              <line x1="13.3" y1="12.3" x2="14.7" y2="13.7" stroke="#c45a2a" strokeWidth="0.8"/>
-            </svg>
+            <img src="/logo.svg" alt="マダめもくん" width="20" height="20" />
             <span
               style={{
                 fontSize: 13,
@@ -190,27 +186,131 @@ export function AppShell() {
           }}
         >
           {/* Session switcher */}
-          <button
-            onClick={() => setSessionSwitcherOpen(true)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              fontSize: 12,
-              padding: '0',
-              cursor: 'pointer',
-              textAlign: 'left',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              maxWidth: 200,
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
-          >
-            {activeSession?.name ?? 'セッションなし'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            {isRenaming ? (
+              <input
+                autoFocus
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={() => {
+                  const trimmed = renameValue.trim();
+                  if (trimmed && activeSessionId) renameSession(activeSessionId, trimmed);
+                  setIsRenaming(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    (e.target as HTMLInputElement).blur();
+                  } else if (e.key === 'Escape') {
+                    setIsRenaming(false);
+                  }
+                }}
+                style={{
+                  background: 'var(--bg-elevated)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid #c45a2a',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: 12,
+                  padding: '3px 8px',
+                  minWidth: 0,
+                  maxWidth: 200,
+                  outline: 'none',
+                }}
+              />
+            ) : (
+              <select
+                value={activeSessionId ?? ''}
+                onChange={(e) => switchSession(e.target.value)}
+                style={{
+                  background: 'var(--bg-elevated)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: 12,
+                  padding: '3px 24px 3px 8px',
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a89f8a' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  minWidth: 0,
+                  maxWidth: 200,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  transition: 'border-color 0.15s',
+                  outline: 'none',
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+              >
+                {sessions.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            )}
+            {/* Rename */}
+            <button
+              onClick={() => {
+                const active = sessions.find((s) => s.id === activeSessionId);
+                setRenameValue(active?.name ?? '');
+                setIsRenaming(true);
+              }}
+              title="セッション名を変更"
+              style={{
+                background: 'none',
+                border: '1px solid var(--border-default)',
+                borderRadius: 'var(--radius-sm)',
+                color: 'var(--text-secondary)',
+                width: 26,
+                height: 26,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                transition: 'color 0.15s, border-color 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M11.5 1.5a2.121 2.121 0 0 1 3 3L5 14l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {/* New session */}
+            <button
+              onClick={() => {
+                const nums = sessions
+                  .map((s) => s.name.match(/^セッション (\d+)$/))
+                  .filter(Boolean)
+                  .map((m) => Number(m![1]));
+                const next = nums.length > 0 ? Math.max(...nums) + 1 : sessions.length + 1;
+                createSession(`セッション ${next}`);
+              }}
+              title="新しいセッション"
+              style={{
+                background: 'none',
+                border: '1px solid var(--border-default)',
+                borderRadius: 'var(--radius-sm)',
+                color: 'var(--text-secondary)',
+                fontSize: 14,
+                width: 26,
+                height: 26,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                transition: 'color 0.15s, border-color 0.15s',
+                lineHeight: 1,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+            >
+              +
+            </button>
+          </div>
 
           {/* 行動順ステッパー — PL | NPC */}
           {(plChars.length > 0 || npcChars.length > 0) && (

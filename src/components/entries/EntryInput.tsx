@@ -127,7 +127,7 @@ export function EntryInput({ panel }: EntryInputProps) {
       <select
         value={effectiveGroupId}
         onChange={(e) => persistGroupId(e.target.value)}
-        aria-label="追加先グループ"
+        aria-label="追加先メモグループ"
         style={{
           flex: 1,
           background: 'var(--bg-elevated)',
@@ -141,7 +141,7 @@ export function EntryInput({ panel }: EntryInputProps) {
       >
         {isTimeline ? (
           <>
-            <option value="">{groups.length === 0 ? 'グループなし' : 'グループを選択…'}</option>
+            <option value="">{groups.length === 0 ? 'メモグループなし' : 'メモグループを選択…'}</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>{g.label}</option>
             ))}
@@ -176,8 +176,8 @@ export function EntryInput({ panel }: EntryInputProps) {
                 setNewGroupLabel('');
               }
             }}
-            placeholder={isTimeline ? '当日、前日 等' : 'グループ名'}
-            aria-label="グループ名"
+            placeholder={isTimeline ? '当日、前日 等' : 'メモグループ名'}
+            aria-label="メモグループ名"
             style={{
               flex: 1,
               minWidth: 60,
@@ -236,7 +236,7 @@ export function EntryInput({ panel }: EntryInputProps) {
             <line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             <line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
           </svg>
-          グループ
+          メモグループ
         </button>
       )}
     </div>

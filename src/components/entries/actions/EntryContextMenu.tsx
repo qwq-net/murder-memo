@@ -113,7 +113,7 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
 
     if (hasGroupSection) {
       result.push({ separator: true as const });
-      result.push({ header: true as const, label: 'グループ移動' });
+      result.push({ header: true as const, label: 'メモグループ移動' });
 
       if (entry.panel === 'free' || entry.panel === 'personal') {
         const panelGroups = memoGroups.filter((g) => g.panel === entry.panel);

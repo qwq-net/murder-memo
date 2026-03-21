@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useStore } from '../../store';
 import type { AppSettings } from '../../store/slices/settings';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '../../types/memo';
 import { CharacterBadge } from '../characters/CharacterBadge';
 import { MinimalSlot } from '../characters/CharacterBadgeBar';
+import { ConfirmModal } from '../common/ConfirmModal';
 
 /* ── Segmented Control ────────────────────────────────────────────────────── */
 
@@ -438,6 +439,23 @@ export function SettingsPanel() {
   const setOpen = useStore((s) => s.setSettingsOpen);
   const settings = useStore((s) => s.settings);
   const updateSettings = useStore((s) => s.updateSettings);
+  const clearCurrentSession = useStore((s) => s.clearCurrentSession);
+  const removeSession = useStore((s) => s.removeSession);
+  const sessions = useStore((s) => s.sessions);
+  const activeSessionId = useStore((s) => s.activeSessionId);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleClearSession = useCallback(async () => {
+    await clearCurrentSession();
+    setOpen(false);
+  }, [clearCurrentSession, setOpen]);
+
+  const handleDeleteSession = useCallback(async () => {
+    if (!activeSessionId) return;
+    await removeSession(activeSessionId);
+    setOpen(false);
+  }, [activeSessionId, removeSession, setOpen]);
 
   if (!isOpen) return null;
 
@@ -456,7 +474,7 @@ export function SettingsPanel() {
 
   return (
     <div
-      onClick={() => setOpen(false)}
+      onClick={() => { if (!showClearConfirm && !showDeleteConfirm) setOpen(false); }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -610,8 +628,100 @@ export function SettingsPanel() {
               />
             ))}
           </div>
+
+          {/* ── Session management ── */}
+          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
+            <SectionHeader>現在のセッション</SectionHeader>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* 初期化 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                すべてのメモ・登場人物・メモグループ・画像データを削除します。セッション自体は残ります。
+              </span>
+              <div>
+                <button
+                  onClick={() => setShowClearConfirm(true)}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--danger)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--danger)',
+                    fontSize: 12,
+                    padding: '6px 14px',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s, color 0.15s',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = 'var(--bg-base)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--danger)'; }}
+                >
+                  初期化する
+                </button>
+              </div>
+            </div>
+
+            {/* 削除 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                セッションとそのデータをすべて削除します。
+              </span>
+              <div>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={sessions.length <= 1}
+                  style={{
+                    background: 'none',
+                    border: `1px solid ${sessions.length <= 1 ? 'var(--border-subtle)' : 'var(--danger)'}`,
+                    borderRadius: 'var(--radius-sm)',
+                    color: sessions.length <= 1 ? 'var(--text-faint)' : 'var(--danger)',
+                    fontSize: 12,
+                    padding: '6px 14px',
+                    cursor: sessions.length <= 1 ? 'not-allowed' : 'pointer',
+                    transition: 'background 0.15s, color 0.15s',
+                    opacity: sessions.length <= 1 ? 0.6 : 1,
+                  }}
+                  onMouseEnter={(e) => { if (sessions.length > 1) { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = 'var(--bg-base)'; } }}
+                  onMouseLeave={(e) => { if (sessions.length > 1) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--danger)'; } }}
+                >
+                  セッションを削除
+                </button>
+                {sessions.length <= 1 && (
+                  <span style={{ fontSize: 11, color: 'var(--text-faint)', marginLeft: 8 }}>
+                    最後のセッションは削除できません
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      <ConfirmModal
+        open={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        title="現在のセッションを初期化しますか？"
+        confirmationLabel="すべてのメモ・登場人物・画像データが削除されます。この操作は取り消せません。"
+        actions={[{
+          label: '初期化する',
+          color: 'var(--danger)',
+          requiresConfirmation: true,
+          onClick: handleClearSession,
+        }]}
+      />
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="現在のセッションを削除しますか？"
+        confirmationLabel="セッションとそのすべてのデータが完全に削除されます。この操作は取り消せません。"
+        actions={[{
+          label: '削除する',
+          color: 'var(--danger)',
+          requiresConfirmation: true,
+          onClick: handleDeleteSession,
+        }]}
+      />
     </div>
   );
 }

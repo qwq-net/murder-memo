@@ -132,6 +132,40 @@ export async function deleteSession(id: string): Promise<void> {
   await tx.done;
 }
 
+/** セッションのデータのみクリア（セッションレコード自体は残す） */
+export async function clearSessionData(id: string): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction(
+    ['entries', 'characters', 'timeline-groups', 'memo-groups', 'images'],
+    'readwrite',
+  );
+
+  const entries = await tx.objectStore('entries').index('by-session').getAll(id);
+  for (const entry of entries) {
+    await tx.objectStore('entries').delete(entry.id);
+    if (entry.imageBlobKey) {
+      await tx.objectStore('images').delete(entry.imageBlobKey);
+    }
+  }
+
+  const chars = await tx.objectStore('characters').index('by-session').getAll(id);
+  for (const char of chars) {
+    await tx.objectStore('characters').delete(char.id);
+  }
+
+  const groups = await tx.objectStore('timeline-groups').index('by-session').getAll(id);
+  for (const group of groups) {
+    await tx.objectStore('timeline-groups').delete(group.id);
+  }
+
+  const memoGroups = await tx.objectStore('memo-groups').index('by-session').getAll(id);
+  for (const mg of memoGroups) {
+    await tx.objectStore('memo-groups').delete(mg.id);
+  }
+
+  await tx.done;
+}
+
 // ─── Entries ─────────────────────────────────────────────────────────────────
 
 export async function getEntriesBySession(sessionId: string): Promise<MemoEntry[]> {

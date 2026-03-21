@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 
-import { deleteSession, getAllSessions, putSession } from '../../lib/idb';
+import { clearSessionData, deleteSession, getAllSessions, putSession } from '../../lib/idb';
 import type { GameSession } from '../../types/memo';
 import type { StoreState } from '../index';
 
@@ -13,6 +13,7 @@ export interface SessionsSlice {
   switchSession: (id: string) => void;
   renameSession: (id: string, name: string) => Promise<void>;
   removeSession: (id: string) => Promise<void>;
+  clearCurrentSession: () => Promise<void>;
 }
 
 export const createSessionsSlice = (
@@ -73,5 +74,30 @@ export const createSessionsSlice = (
         s.activeSessionId === id ? (remaining[0]?.id ?? null) : s.activeSessionId;
       return { sessions: remaining, activeSessionId: nextActiveId };
     });
+  },
+
+  clearCurrentSession: async () => {
+    const { activeSessionId, sessions } = get();
+    if (!activeSessionId) return;
+
+    await clearSessionData(activeSessionId);
+
+    // updatedAt を更新
+    const session = sessions.find((s) => s.id === activeSessionId);
+    if (session) {
+      const updated = { ...session, updatedAt: Date.now() };
+      await putSession(updated);
+      set((s) => ({
+        sessions: s.sessions.map((s2) => (s2.id === activeSessionId ? updated : s2)),
+      }));
+    }
+
+    // インメモリ状態をリセット
+    set(() => ({
+      entries: [],
+      characters: [],
+      timelineGroups: [],
+      memoGroups: [],
+    }));
   },
 });

@@ -4,6 +4,7 @@ import { getHourKey, getHourLabel } from '../../lib/time-parser';
 import { useStore } from '../../store';
 import type { MemoEntry, TimelineGroup } from '../../types/memo';
 import { ConfirmModal } from '../common/ConfirmModal';
+import { EmptyState } from '../common/EmptyState';
 import { EntryInput } from '../entries/EntryInput';
 import { SortableEntryList } from '../entries/SortableEntryList';
 
@@ -13,6 +14,7 @@ export function TimelinePanel() {
   const toggleTimelineGroupCollapse = useStore((s) => s.toggleTimelineGroupCollapse);
   const removeTimelineGroup = useStore((s) => s.removeTimelineGroup);
   const updateTimelineGroup = useStore((s) => s.updateTimelineGroup);
+  const addTimelineGroup = useStore((s) => s.addTimelineGroup);
   const reorderEntries = useStore((s) => s.reorderEntries);
   const inputPosition = useStore((s) => s.settings.inputPosition);
 
@@ -63,24 +65,11 @@ export function TimelinePanel() {
       {inputPosition === 'top' && entryInput}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 60 }}>
         {isEmpty ? (
-          <div
-            style={{
-              padding: '40px 20px',
-              textAlign: 'center',
-              color: 'var(--text-faint)',
-              fontSize: 12,
-              lineHeight: 2,
-            }}
-          >
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ margin: '0 auto 10px', display: 'block', opacity: 0.4 }}>
-              <rect x="4" y="2" width="20" height="24" rx="3" stroke="var(--panel-timeline-accent)" strokeWidth="1.2" />
-              <line x1="9" y1="8" x2="19" y2="8" stroke="var(--panel-timeline-accent)" strokeWidth="1" strokeLinecap="round" />
-              <line x1="9" y1="12" x2="16" y2="12" stroke="var(--panel-timeline-accent)" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
-              <line x1="9" y1="16" x2="18" y2="16" stroke="var(--panel-timeline-accent)" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
-              <line x1="9" y1="20" x2="14" y2="20" stroke="var(--panel-timeline-accent)" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
-            </svg>
-            メモグループを追加して<br />タイムラインを整理しよう
-          </div>
+          <EmptyState
+            accentColor="var(--panel-timeline-accent)"
+            message="メモグループを追加してタイムラインを整理しよう"
+            onAddGroup={(label) => addTimelineGroup(label)}
+          />
         ) : (
           groupedData.map(({ group, hourGroups, unknown }) => (
             <TimelineGroupSection
@@ -186,7 +175,7 @@ function TimelineGroupSection({
                 setIsEditingLabel(false);
               }
             }}
-            aria-label="グループ名を編集"
+            aria-label="メモグループ名を編集"
             style={{
               flex: 1,
               background: 'var(--bg-base)',
@@ -221,7 +210,7 @@ function TimelineGroupSection({
               setDraftLabel(group.label);
               setIsEditingLabel(true);
             }}
-            title="グループ名を変更"
+            title="メモグループ名を変更"
             aria-label={`${group.label}の名前を変更`}
             style={{
               background: 'none',
@@ -253,7 +242,7 @@ function TimelineGroupSection({
               onRemove(group.id);
             }
           }}
-          title="グループを削除"
+          title="メモグループを削除"
           aria-label={`${group.label}を削除`}
           style={{
             background: 'none',

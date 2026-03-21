@@ -103,7 +103,7 @@ export function MemoGroupSection({
                 setIsEditingLabel(false);
               }
             }}
-            aria-label="グループ名を編集"
+            aria-label="メモグループ名を編集"
             style={{
               flex: 1,
               background: 'var(--bg-base)',
@@ -138,7 +138,7 @@ export function MemoGroupSection({
               setDraftLabel(group.label);
               setIsEditingLabel(true);
             }}
-            title="グループ名を変更"
+            title="メモグループ名を変更"
             aria-label={`${group.label}の名前を変更`}
             style={{
               background: 'none',
@@ -171,7 +171,7 @@ export function MemoGroupSection({
                 onRemove(group.id);
               }
             }}
-            title="グループを削除"
+            title="メモグループを削除"
             aria-label={`${group.label}を削除`}
             style={{
               background: 'none',
