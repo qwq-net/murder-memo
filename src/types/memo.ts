@@ -60,11 +60,15 @@ export interface TimelineGroup {
 
 // ─── Character ───────────────────────────────────────────────────────────────
 
+export type CharacterRole = 'pl' | 'npc';
+
 export interface Character {
   id: string;
   name: string;
   color: string; // hex "#e74c3c"
   sortOrder: number; // DnDで並び替えた順 = 行動順
+  role: CharacterRole; // PL or NPC
+  showInEntries: boolean; // エントリのマーカーに表示するか
 }
 
 // ─── Session ─────────────────────────────────────────────────────────────────

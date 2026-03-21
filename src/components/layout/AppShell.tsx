@@ -43,8 +43,9 @@ export function AppShell() {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
-  // sortOrder順（DnD順）= 行動順
-  const actionOrderChars = [...characters].sort((a, b) => a.sortOrder - b.sortOrder);
+  // sortOrder順（DnD順）= 行動順、ロール別
+  const plChars = characters.filter((c) => c.role === 'pl').sort((a, b) => a.sortOrder - b.sortOrder);
+  const npcChars = characters.filter((c) => c.role === 'npc').sort((a, b) => a.sortOrder - b.sortOrder);
 
   const orderedPanels = order.map((id) => ({
     id,
@@ -211,62 +212,52 @@ export function AppShell() {
             {activeSession?.name ?? 'セッションなし'}
           </button>
 
-          {/* 行動順ステッパー */}
-          {actionOrderChars.length > 0 && (
+          {/* 行動順ステッパー — PL | NPC */}
+          {(plChars.length > 0 || npcChars.length > 0) && (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 overflow: 'hidden',
+                gap: 6,
               }}
             >
-              {actionOrderChars.map((char, i) => (
+              {/* PL */}
+              {plChars.map((char, i) => (
                 <div
                   key={char.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexShrink: 0,
-                  }}
+                  style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
                 >
-                  {/* Arrow connector */}
                   {i > 0 && (
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      style={{ flexShrink: 0, margin: '0 2px' }}
-                    >
-                      <path
-                        d="M7 5l5 5-5 5"
-                        stroke="var(--text-faint)"
-                        strokeWidth="1.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, margin: '0 2px' }}>
+                      <path d="M7 5l5 5-5 5" stroke="var(--text-faint)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
-                  {/* Character step */}
-                  <span
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      fontSize: 12,
-                      color: 'var(--text-secondary)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <span style={{
-                      display: 'inline-block',
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      background: char.color,
-                      boxShadow: `0 0 6px ${char.color}44`,
-                      flexShrink: 0,
-                    }} />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: char.color, boxShadow: `0 0 6px ${char.color}44`, flexShrink: 0 }} />
+                    {char.name}
+                  </span>
+                </div>
+              ))}
+
+              {/* セパレータ */}
+              {plChars.length > 0 && npcChars.length > 0 && (
+                <span style={{ color: 'var(--text-faint)', fontSize: 11, margin: '0 4px', flexShrink: 0 }}>|</span>
+              )}
+
+              {/* NPC */}
+              {npcChars.map((char, i) => (
+                <div
+                  key={char.id}
+                  style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                >
+                  {i > 0 && (
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, margin: '0 2px' }}>
+                      <path d="M7 5l5 5-5 5" stroke="var(--text-faint)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: char.color, boxShadow: `0 0 6px ${char.color}44`, flexShrink: 0, opacity: 0.7 }} />
                     {char.name}
                   </span>
                 </div>

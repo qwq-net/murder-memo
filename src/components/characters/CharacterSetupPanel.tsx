@@ -14,10 +14,57 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useStore } from '../../store';
+import type { Character, CharacterRole } from '../../types/memo';
 import { CharacterColorPalette } from './CharacterColorPalette';
+
+/* ── 共通ラジオグループ（アプリ設定と同一デザイン） ── */
+function ToggleGroup<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        borderRadius: 'var(--radius-sm)',
+        border: '1px solid var(--border-default)',
+        overflow: 'hidden',
+      }}
+    >
+      {options.map((opt, i) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
+            style={{
+              background: active ? 'rgba(196, 90, 42, 0.15)' : 'transparent',
+              border: 'none',
+              borderLeft: i > 0 ? '1px solid var(--border-default)' : 'none',
+              color: active ? '#c45a2a' : 'var(--text-secondary)',
+              fontSize: 10,
+              fontWeight: active ? 600 : 400,
+              padding: '3px 8px',
+              cursor: 'pointer',
+              transition: 'background 0.12s, color 0.12s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 const DEFAULT_COLORS = [
   '#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6',
@@ -33,6 +80,7 @@ export function CharacterSetupPanel() {
   const removeCharacter = useStore((s) => s.removeCharacter);
   const reorderCharacters = useStore((s) => s.reorderCharacters);
 
+  const [activeTab, setActiveTab] = useState<CharacterRole>('pl');
   const [newName, setNewName] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,17 +89,31 @@ export function CharacterSetupPanel() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const plChars = useMemo(
+    () => characters.filter((c) => c.role === 'pl').sort((a, b) => a.sortOrder - b.sortOrder),
+    [characters],
+  );
+  const npcChars = useMemo(
+    () => characters.filter((c) => c.role === 'npc').sort((a, b) => a.sortOrder - b.sortOrder),
+    [characters],
+  );
+  const activeChars = activeTab === 'pl' ? plChars : npcChars;
+
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (!over || active.id === over.id) return;
-      const oldIndex = characters.findIndex((c) => c.id === active.id);
-      const newIndex = characters.findIndex((c) => c.id === over.id);
+      const list = activeChars;
+      const oldIndex = list.findIndex((c) => c.id === active.id);
+      const newIndex = list.findIndex((c) => c.id === over.id);
       if (oldIndex === -1 || newIndex === -1) return;
-      const reordered = arrayMove(characters, oldIndex, newIndex);
-      reorderCharacters(reordered.map((c) => c.id));
+      const reordered = arrayMove(list, oldIndex, newIndex);
+      // 同ロール内だけ reorder — 他ロールのキャラはそのまま
+      const otherChars = characters.filter((c) => c.role !== activeTab);
+      const allOrdered = [...reordered, ...otherChars];
+      reorderCharacters(allOrdered.map((c) => c.id));
     },
-    [characters, reorderCharacters],
+    [activeChars, activeTab, characters, reorderCharacters],
   );
 
   const handleAdd = useCallback(async () => {
@@ -59,47 +121,59 @@ export function CharacterSetupPanel() {
     if (!name) return;
     const usedColors = new Set(characters.map((c) => c.color));
     const nextColor = DEFAULT_COLORS.find((c) => !usedColors.has(c)) ?? '#888888';
-    await addCharacter({ name, color: nextColor });
+    await addCharacter({ name, color: nextColor, role: activeTab, showInEntries: true });
     setNewName('');
     requestAnimationFrame(() => nameInputRef.current?.focus());
-  }, [newName, characters, addCharacter]);
+  }, [newName, characters, addCharacter, activeTab]);
 
   if (!isOpen) return null;
 
-  const sortedChars = [...characters].sort((a, b) => a.sortOrder - b.sortOrder);
+  const tabStyle = (tab: CharacterRole): React.CSSProperties => ({
+    flex: 1,
+    background: activeTab === tab ? 'var(--bg-elevated)' : 'transparent',
+    border: 'none',
+    borderBottom: activeTab === tab ? '2px solid #c45a2a' : '2px solid transparent',
+    color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
+    fontSize: 12,
+    fontWeight: activeTab === tab ? 600 : 400,
+    padding: '8px 0',
+    cursor: 'pointer',
+    transition: 'color 0.12s, border-color 0.12s',
+    letterSpacing: '0.06em',
+  });
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop + centering */}
       <div
         onClick={() => setOpen(false)}
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          zIndex: 100,
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(0, 0, 0, 0.55)',
+          backdropFilter: 'blur(2px)',
         }}
-      />
+      >
 
       {/* Panel */}
       <div
         role="dialog"
         aria-label="登場人物設定"
+        onClick={(e) => e.stopPropagation()}
         style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 'min(480px, 90vw)',
+          width: 480,
           maxHeight: '80vh',
           background: 'var(--bg-panel)',
           border: '1px solid var(--border-default)',
           borderRadius: 'var(--radius-lg)',
-          zIndex: 101,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}
       >
         {/* Header */}
@@ -132,18 +206,35 @@ export function CharacterSetupPanel() {
               background: 'none',
               border: 'none',
               color: 'var(--text-muted)',
-              fontSize: 18,
               cursor: 'pointer',
-              lineHeight: 1,
+              padding: '2px',
+              display: 'flex',
+              alignItems: 'center',
+              transition: 'color 0.12s',
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
-            ×
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <line x1="4" y1="4" x2="14" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              <line x1="14" y1="4" x2="4" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* PL / NPC タブ */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)' }}>
+          <button onClick={() => setActiveTab('pl')} style={tabStyle('pl')}>
+            PL（{plChars.length}）
+          </button>
+          <button onClick={() => setActiveTab('npc')} style={tabStyle('npc')}>
+            NPC（{npcChars.length}）
           </button>
         </div>
 
         {/* Character list */}
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 0' }}>
-          {characters.length === 0 && (
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+          {activeChars.length === 0 && (
             <div
               style={{
                 textAlign: 'center',
@@ -152,7 +243,7 @@ export function CharacterSetupPanel() {
                 fontSize: 12,
               }}
             >
-              登場人物を追加してください
+              {activeTab === 'pl' ? 'PLを追加してください' : 'NPCを追加してください'}
             </div>
           )}
 
@@ -162,15 +253,14 @@ export function CharacterSetupPanel() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={sortedChars.map((c) => c.id)}
+              items={activeChars.map((c) => c.id)}
               strategy={verticalListSortingStrategy}
             >
-              {sortedChars.map((char) => (
+              {activeChars.map((char, i) => (
                 <SortableCharacterRow
                   key={char.id}
-                  id={char.id}
-                  name={char.name}
-                  color={char.color}
+                  char={char}
+                  isLast={i === activeChars.length - 1}
                   onUpdate={updateCharacter}
                   onRemove={removeCharacter}
                 />
@@ -184,9 +274,8 @@ export function CharacterSetupPanel() {
           style={{
             display: 'flex',
             gap: 8,
-            padding: '12px 18px',
+            padding: '10px 18px',
             borderTop: '1px solid var(--border-subtle)',
-            background: 'var(--bg-surface)',
           }}
         >
           <input
@@ -199,7 +288,7 @@ export function CharacterSetupPanel() {
                 handleAdd();
               }
             }}
-            placeholder="名前を入力"
+            placeholder={activeTab === 'pl' ? 'PL名を入力' : 'NPC名を入力'}
             aria-label="登場人物の名前"
             style={{
               flex: 1,
@@ -231,6 +320,7 @@ export function CharacterSetupPanel() {
           </button>
         </div>
       </div>
+      </div>
     </>
   );
 }
@@ -238,21 +328,18 @@ export function CharacterSetupPanel() {
 // ─── Sortable Character Row ──────────────────────────────────────────────────
 
 function SortableCharacterRow({
-  id,
-  name,
-  color,
+  char,
+  isLast,
   onUpdate,
   onRemove,
 }: {
-  id: string;
-  name: string;
-  color: string;
-  onUpdate: (id: string, patch: Partial<import('../../types/memo').Character>) => void;
+  char: Character;
+  isLast: boolean;
+  onUpdate: (id: string, patch: Partial<Character>) => void;
   onRemove: (id: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: char.id });
 
-  // X軸の移動を除去してモーダルの水平スクロールバーを防止
   const transformStyle = transform
     ? `translate3d(0, ${transform.y}px, 0)`
     : undefined;
@@ -269,9 +356,8 @@ function SortableCharacterRow({
       }}
     >
       <CharacterRow
-        id={id}
-        name={name}
-        color={color}
+        char={char}
+        isLast={isLast}
         dragHandleProps={{ ...attributes, ...listeners }}
         onUpdate={onUpdate}
         onRemove={onRemove}
@@ -283,35 +369,31 @@ function SortableCharacterRow({
 // ─── Character Row ──────────────────────────────────────────────────────────
 
 function CharacterRow({
-  id,
-  name,
-  color,
+  char,
+  isLast,
   dragHandleProps,
   onUpdate,
   onRemove,
 }: {
-  id: string;
-  name: string;
-  color: string;
+  char: Character;
+  isLast: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
-  onUpdate: (id: string, patch: Partial<import('../../types/memo').Character>) => void;
+  onUpdate: (id: string, patch: Partial<Character>) => void;
   onRemove: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  // ローカルステートでIME compositionを管理
-  const [localName, setLocalName] = useState(name);
+  const [localName, setLocalName] = useState(char.name);
   const composingRef = useRef(false);
 
-  // 外部から名前が変わった時（他操作）だけ同期
   useEffect(() => {
-    if (!composingRef.current) setLocalName(name);
-  }, [name]);
+    if (!composingRef.current) setLocalName(char.name);
+  }, [char.name]);
 
   return (
     <div
       style={{
         padding: '6px 18px',
-        borderBottom: '1px solid var(--border-subtle)',
+        borderBottom: isLast ? 'none' : '1px solid var(--border-subtle)',
       }}
     >
       <div
@@ -347,7 +429,7 @@ function CharacterRow({
             width: 16,
             height: 16,
             borderRadius: '50%',
-            background: color,
+            background: char.color,
             border: 'none',
             cursor: 'pointer',
             flexShrink: 0,
@@ -361,11 +443,11 @@ function CharacterRow({
           onCompositionStart={() => { composingRef.current = true; }}
           onCompositionEnd={(e) => {
             composingRef.current = false;
-            onUpdate(id, { name: e.currentTarget.value });
+            onUpdate(char.id, { name: e.currentTarget.value });
           }}
           onBlur={(e) => {
             if (!composingRef.current) {
-              onUpdate(id, { name: e.currentTarget.value.trim() || name });
+              onUpdate(char.id, { name: e.currentTarget.value.trim() || char.name });
             }
           }}
           aria-label="登場人物の名前"
@@ -380,30 +462,45 @@ function CharacterRow({
           }}
         />
 
+        {/* エントリ表示トグル */}
+        <ToggleGroup
+          options={[
+            { value: 'show', label: '表示' },
+            { value: 'hide', label: '非表示' },
+          ]}
+          value={char.showInEntries ? 'show' : 'hide'}
+          onChange={(v) => onUpdate(char.id, { showInEntries: v === 'show' })}
+        />
+
         {/* Delete */}
         <button
-          onClick={() => onRemove(id)}
-          aria-label={`${name}を削除`}
+          onClick={() => onRemove(char.id)}
+          aria-label={`${char.name}を削除`}
           style={{
             background: 'none',
             border: 'none',
             color: 'var(--text-faint)',
-            fontSize: 14,
             cursor: 'pointer',
-            padding: '0 2px',
+            padding: '2px',
+            display: 'flex',
+            alignItems: 'center',
             transition: 'color 0.12s',
+            flexShrink: 0,
           }}
           onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
         >
-          ×
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
         </button>
       </div>
 
       {/* Expanded: color palette */}
       {expanded && (
         <div style={{ padding: '8px 0 4px 42px' }}>
-          <CharacterColorPalette value={color} onChange={(c) => onUpdate(id, { color: c })} />
+          <CharacterColorPalette value={char.color} onChange={(c) => onUpdate(char.id, { color: c })} />
         </div>
       )}
     </div>

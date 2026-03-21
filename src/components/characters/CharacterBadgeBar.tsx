@@ -59,8 +59,11 @@ export function MinimalSlot({
 }
 
 export function CharacterBadgeBar({ entry, indent, format, visibility, isEntryHovered }: CharacterBadgeBarProps) {
-  const characters = useStore((s) => s.characters);
+  const allCharacters = useStore((s) => s.characters);
   const toggleCharacterTag = useStore((s) => s.toggleCharacterTag);
+
+  // showInEntries が true のキャラのみ表示
+  const characters = allCharacters.filter((c) => c.showInEntries);
 
   if (characters.length === 0) return null;
   if (visibility === 'off') return null;

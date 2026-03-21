@@ -169,7 +169,11 @@ export async function bulkPutEntries(
 export async function getCharactersBySession(sessionId: string): Promise<Character[]> {
   const db = await getDb();
   const rows = await db.getAllFromIndex('characters', 'by-session', sessionId);
-  return rows.map(({ sessionId: _sid, ...c }) => c as Character);
+  return rows.map(({ sessionId: _sid, ...c }) => ({
+    role: 'pl' as const,
+    showInEntries: true,
+    ...(c as Omit<Character, 'role' | 'showInEntries'> & Partial<Pick<Character, 'role' | 'showInEntries'>>),
+  }));
 }
 
 export async function putCharacter(char: Character, sessionId: string): Promise<void> {

@@ -512,9 +512,9 @@ export function SettingsPanel() {
               alignItems: 'center',
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <line x1="3" y1="3" x2="11" y2="11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              <line x1="11" y1="3" x2="3" y2="11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <line x1="4" y1="4" x2="14" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              <line x1="14" y1="4" x2="4" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
           </button>
         </div>
