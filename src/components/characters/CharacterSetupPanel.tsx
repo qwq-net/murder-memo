@@ -223,17 +223,17 @@ export function CharacterSetupPanel() {
         </div>
 
         {/* PL / NPC タブ */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)' }}>
-          <button onClick={() => setActiveTab('pl')} style={tabStyle('pl')}>
+        <div role="tablist" aria-label="キャラクタータイプ" style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)' }}>
+          <button role="tab" aria-selected={activeTab === 'pl'} id="tab-pl" aria-controls="tabpanel-characters" onClick={() => setActiveTab('pl')} style={tabStyle('pl')}>
             PL（{plChars.length}）
           </button>
-          <button onClick={() => setActiveTab('npc')} style={tabStyle('npc')}>
+          <button role="tab" aria-selected={activeTab === 'npc'} id="tab-npc" aria-controls="tabpanel-characters" onClick={() => setActiveTab('npc')} style={tabStyle('npc')}>
             NPC（{npcChars.length}）
           </button>
         </div>
 
         {/* Character list */}
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+        <div role="tabpanel" id="tabpanel-characters" aria-labelledby={`tab-${activeTab}`} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
           {activeChars.length === 0 && (
             <div
               style={{
@@ -400,7 +400,7 @@ function CharacterRow({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
+          gap: 12,
           minHeight: 36,
         }}
       >

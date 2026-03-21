@@ -36,7 +36,6 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
   const accent = PANEL_ACCENT[entry.panel] ?? 'var(--border-default)';
 
   const { isSelected, selectedIds, clearSelection } = useSelection();
-  const entries = useStore((s) => s.entries);
   const settings = useStore((s) => s.settings);
   const focusedEntryId = useStore((s) => s.focusedEntryId);
   const selected = isSelected(entry.id);
@@ -55,8 +54,9 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
     }
   }, [selectedIds, entry.id]);
 
+  // bulkCtxMenu表示時のみentriesを取得（全EntryCardの不要な再レンダーを回避）
   const selectedEntries = bulkCtxMenu
-    ? entries.filter((e) => selectedIds.has(e.id))
+    ? useStore.getState().entries.filter((e) => selectedIds.has(e.id))
     : [];
 
   const renderContent = () => {
@@ -113,7 +113,7 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
           top: 2,
           bottom: 2,
           width: selected ? 3 : 2,
-          borderRadius: 2,
+          borderRadius: 'var(--radius-sm)',
           background: selected ? 'var(--accent)' : accent,
           opacity: selected ? 0.9 : (hovered ? 0.45 : 0.2),
           transition: 'opacity 0.12s, width 0.12s, background 0.12s',

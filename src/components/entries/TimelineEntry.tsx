@@ -173,7 +173,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
         padding: '1px 4px 2px 18px',
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 10,
+        gap: 12,
         minHeight: 22,
       }}
     >

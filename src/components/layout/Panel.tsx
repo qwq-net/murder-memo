@@ -42,12 +42,12 @@ export function Panel({ panelId, title, actions, children }: PanelProps) {
           gap: 8,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span
             style={{
               width: 3,
               height: 14,
-              borderRadius: 2,
+              borderRadius: 'var(--radius-sm)',
               background: accent,
               flexShrink: 0,
             }}

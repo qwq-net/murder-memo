@@ -85,6 +85,7 @@ export function ConfirmModal({
         role="alertdialog"
         aria-modal="true"
         aria-label={title}
+        aria-describedby={confirmationLabel ? 'confirm-modal-desc' : undefined}
         style={{
           background: 'var(--bg-elevated)',
           border: '1px solid var(--border-default)',
@@ -113,6 +114,7 @@ export function ConfirmModal({
         {/* トグル確認 */}
         {confirmationLabel && (
           <label
+            id="confirm-modal-desc"
             style={{
               display: 'flex',
               alignItems: 'flex-start',

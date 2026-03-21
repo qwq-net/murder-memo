@@ -158,7 +158,6 @@ button:focus-visible {
 @utility btn-ghost {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   background: none;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
@@ -182,14 +181,17 @@ button:focus-visible {
 
 /* ボタンサイズ — 3段階 */
 @utility btn-sm {
-  padding: 3px 8px;
-  font-size: 11px;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
 }
 @utility btn-md {
+  gap: 8px;
   padding: 5px 12px;
   font-size: 12px;
 }
 @utility btn-lg {
+  gap: 8px;
   padding: 6px 14px;
   font-size: 12px;
   font-weight: 600;

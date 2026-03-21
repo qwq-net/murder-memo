@@ -33,18 +33,18 @@ export function TimelinePanel() {
         .filter((e) => e.eventTimeSortKey != null)
         .sort((a, b) => a.eventTimeSortKey! - b.eventTimeSortKey! || a.sortOrder - b.sortOrder);
 
+      // Map で O(1) ルックアップ（find の O(n) を回避）
+      const hourMap = new Map<number, { hour: number; label: string; entries: MemoEntry[] }>();
       const hourGroups: { hour: number; label: string; entries: MemoEntry[] }[] = [];
       for (const entry of withTime) {
         const hour = getHourKey(entry.eventTimeSortKey!);
-        const existing = hourGroups.find((g) => g.hour === hour);
+        const existing = hourMap.get(hour);
         if (existing) {
           existing.entries.push(entry);
         } else {
-          hourGroups.push({
-            hour,
-            label: getHourLabel(entry.eventTimeSortKey!),
-            entries: [entry],
-          });
+          const group = { hour, label: getHourLabel(entry.eventTimeSortKey!), entries: [entry] };
+          hourMap.set(hour, group);
+          hourGroups.push(group);
         }
       }
 
@@ -136,7 +136,7 @@ function TimelineGroupSection({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
+          gap: 8,
           padding: '7px 10px',
           background: 'color-mix(in srgb, var(--panel-timeline-accent) 5%, transparent)',
           borderBottom: '1px solid color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
@@ -389,7 +389,7 @@ function HourDivider({ label, muted }: { label: string; muted?: boolean }) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
         padding: '4px 8px 2px 0',
       }}
     >

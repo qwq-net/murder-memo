@@ -146,7 +146,7 @@ function MarkerPreview({
       style={containerStyle}
     >
       <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-        {MOCK_CHARACTERS.map((c) => {
+        {MOCK_CHARACTERS.map((c, i) => {
           const badge = (
             <CharacterBadge
               key={c.name}
@@ -160,7 +160,7 @@ function MarkerPreview({
 
           if (isMinimal) {
             return (
-              <MinimalSlot key={c.name} revealed={hovered || c.active} isActive={c.active}>
+              <MinimalSlot key={c.name} revealed={hovered || c.active} isActive={c.active} isFirst={i === 0}>
                 {badge}
               </MinimalSlot>
             );
@@ -371,7 +371,7 @@ function MarkerCard({
       }}
     >
       {/* card title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
           style={{
             width: 8,
@@ -392,7 +392,7 @@ function MarkerCard({
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          gap: 10,
+          gap: 12,
         }}
       >
         {/* format column */}
@@ -636,7 +636,7 @@ export function SettingsPanel() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* 初期化 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 すべてのメモ・登場人物・メモグループ・画像データを削除します。セッション自体は残ります。
               </span>
@@ -662,7 +662,7 @@ export function SettingsPanel() {
             </div>
 
             {/* 削除 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 セッションとそのデータをすべて削除します。
               </span>

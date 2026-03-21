@@ -274,6 +274,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       <div
         ref={menuRef}
         role="menu"
+        aria-label="コンテキストメニュー"
         style={{
           position: 'fixed', top: y, left: x, zIndex: 200, minWidth: 170,
           background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
@@ -287,7 +288,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
           }
           if (isHeader(item)) {
             return (
-              <div key={`hdr-${i}`} style={{ padding: '5px 14px 2px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <div key={`hdr-${i}`} style={{ padding: '5px 14px 2px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 {item.label}
               </div>
             );
@@ -298,6 +299,8 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
               <button
                 key={i}
                 role="menuitem"
+                aria-haspopup="true"
+                aria-expanded={isOpen}
                 disabled={item.disabled}
                 onClick={(e) => { if (!item.disabled) toggleSubmenu(i, e.currentTarget); }}
                 onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = 'var(--bg-hover)'; }}
@@ -412,7 +415,7 @@ const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
         {items.map((item, i) => {
           if (isSeparator(item)) return <div key={`sep-${i}`} style={{ height: 1, background: 'var(--border-subtle)', margin: '4px 0' }} />;
           if (isHeader(item)) return (
-            <div key={`hdr-${i}`} style={{ padding: '5px 14px 2px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            <div key={`hdr-${i}`} style={{ padding: '5px 14px 2px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               {item.label}
             </div>
           );

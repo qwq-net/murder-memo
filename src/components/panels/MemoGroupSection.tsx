@@ -60,7 +60,7 @@ export function MemoGroupSection({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
+          gap: 8,
           padding: '7px 10px',
           background: isUncategorized
             ? 'color-mix(in srgb, var(--text-muted) 5%, transparent)'

@@ -20,6 +20,8 @@ export function MobileTabNav() {
 
   return (
     <nav
+      role="tablist"
+      aria-label="パネル切替"
       style={{
         display: 'flex',
         borderTop: '1px solid var(--border-subtle)',
@@ -34,6 +36,8 @@ export function MobileTabNav() {
         return (
           <button
             key={id}
+            role="tab"
+            aria-selected={isActive}
             onClick={() => setActivePanel(id)}
             style={{
               flex: 1,

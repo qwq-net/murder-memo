@@ -93,7 +93,7 @@ export function AppShell() {
           }}
         >
           {/* Logo / title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <img src="/logo.svg" alt="マダめもくん" width="20" height="20" />
             <span
               style={{
@@ -108,7 +108,7 @@ export function AppShell() {
           </div>
 
           {/* 右側ボタン群 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => setCharacterSetupOpen(true)}
             style={{
@@ -147,24 +147,24 @@ export function AppShell() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               background: 'none',
-              border: '1px solid rgba(196, 90, 42, 0.4)',
+              border: '1px solid color-mix(in srgb, var(--color-settings-accent) 40%, transparent)',
               borderRadius: 'var(--radius-sm)',
-              color: '#c45a2a',
+              color: 'var(--color-settings-accent)',
               fontSize: 12,
-              padding: '4px 10px',
+              padding: '4px 10px', // btn-sm と同サイズ
               cursor: 'pointer',
               transition: 'color 0.15s, border-color 0.15s',
               letterSpacing: '0.02em',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = '#d9683a';
-              e.currentTarget.style.borderColor = 'rgba(196, 90, 42, 0.7)';
+              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-settings-accent) 70%, transparent)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#c45a2a';
-              e.currentTarget.style.borderColor = 'rgba(196, 90, 42, 0.4)';
+              e.currentTarget.style.color = 'var(--color-settings-accent)';
+              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-settings-accent) 40%, transparent)';
             }}
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
@@ -188,7 +188,7 @@ export function AppShell() {
           }}
         >
           {/* Session switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             {isRenaming ? (
               <input
                 autoFocus
@@ -209,7 +209,7 @@ export function AppShell() {
                 style={{
                   background: 'var(--bg-elevated)',
                   color: 'var(--text-primary)',
-                  border: '1px solid #c45a2a',
+                  border: '1px solid var(--color-settings-accent)',
                   borderRadius: 'var(--radius-sm)',
                   fontSize: 12,
                   padding: '3px 8px',
@@ -259,22 +259,8 @@ export function AppShell() {
                 setIsRenaming(true);
               }}
               title="セッション名を変更"
-              style={{
-                background: 'none',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--text-secondary)',
-                width: 26,
-                height: 26,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                flexShrink: 0,
-                transition: 'color 0.15s, border-color 0.15s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+              className="btn-ghost"
+              style={{ width: 26, height: 26, justifyContent: 'center', padding: 0, flexShrink: 0 }}
             >
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                 <path d="M11.5 1.5a2.121 2.121 0 0 1 3 3L5 14l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
@@ -291,24 +277,8 @@ export function AppShell() {
                 createSession(`セッション ${next}`);
               }}
               title="新しいセッション"
-              style={{
-                background: 'none',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--text-secondary)',
-                fontSize: 14,
-                width: 26,
-                height: 26,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                flexShrink: 0,
-                transition: 'color 0.15s, border-color 0.15s',
-                lineHeight: 1,
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+              className="btn-ghost"
+              style={{ width: 26, height: 26, justifyContent: 'center', padding: 0, flexShrink: 0, fontSize: 14, lineHeight: 1 }}
             >
               +
             </button>
@@ -321,7 +291,7 @@ export function AppShell() {
                 display: 'flex',
                 alignItems: 'center',
                 overflow: 'hidden',
-                gap: 6,
+                gap: 8,
               }}
             >
               {/* PL */}
@@ -335,7 +305,7 @@ export function AppShell() {
                       <path d="M7 5l5 5-5 5" stroke="var(--text-faint)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                     <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: char.color, boxShadow: `0 0 6px ${char.color}44`, flexShrink: 0 }} />
                     {char.name}
                   </span>
@@ -358,7 +328,7 @@ export function AppShell() {
                       <path d="M7 5l5 5-5 5" stroke="var(--text-faint)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                     <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: char.color, boxShadow: `0 0 6px ${char.color}44`, flexShrink: 0, opacity: 0.7 }} />
                     {char.name}
                   </span>
@@ -397,7 +367,7 @@ export function AppShell() {
       >
         <span
           style={{
-            fontSize: 10,
+            fontSize: 11,
             color: 'var(--text-faint)',
             letterSpacing: '0.04em',
           }}

@@ -107,7 +107,7 @@ export function EntryInput({ panel }: EntryInputProps) {
 
   // ── グループセレクタ + 追加ボタン行（常に表示） ──
   const groupRow = (
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', minHeight: 24 }}>
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center', minHeight: 24 }}>
       {/* グループセレクタ */}
       <select
         value={effectiveGroupId}
@@ -229,7 +229,7 @@ export function EntryInput({ panel }: EntryInputProps) {
 
   // ── 入力行 ──
   const inputRow = (
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', minHeight: 24 }}>
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center', minHeight: 24 }}>
       {isTimeline && (
         <input
           ref={timeRef}
@@ -244,12 +244,14 @@ export function EntryInput({ panel }: EntryInputProps) {
           placeholder="--:--"
           disabled={disabled}
           aria-label="時刻"
+          aria-invalid={timeError || undefined}
+          aria-describedby={timeError ? 'entry-time-error' : undefined}
           style={{
             width: 44,
             flexShrink: 0,
             background: 'transparent',
             border: 'none',
-            borderBottom: timeError ? '1px solid #e05252' : '1px solid var(--border-default)',
+            borderBottom: timeError ? '1px solid var(--importance-high)' : '1px solid var(--border-default)',
             color: 'var(--panel-timeline-accent)',
             fontFamily: 'var(--font-mono)',
             fontSize: 12,
@@ -288,13 +290,15 @@ export function EntryInput({ panel }: EntryInputProps) {
             : 'メモを入力… (Shift+Enter で改行)'
         }
         disabled={disabled}
+        aria-invalid={textError || undefined}
+        aria-describedby={textError ? 'entry-text-error' : undefined}
         rows={1}
         style={{
           flex: 1,
           minWidth: 0,
           background: 'transparent',
           border: 'none',
-          borderBottom: textError ? '1px solid #e05252' : undefined,
+          borderBottom: textError ? '1px solid var(--importance-high)' : undefined,
           color: 'var(--text-primary)',
           fontFamily: 'var(--font-sans)',
           fontSize: 13,
@@ -324,6 +328,9 @@ export function EntryInput({ panel }: EntryInputProps) {
     >
       {groupRow}
       {inputRow}
+      {/* スクリーンリーダー用エラーメッセージ */}
+      {timeError && <span id="entry-time-error" className="sr-only">時刻の形式が正しくありません</span>}
+      {textError && <span id="entry-text-error" className="sr-only">テキストを入力してください</span>}
     </div>
   );
 }

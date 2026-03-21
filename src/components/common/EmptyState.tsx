@@ -46,7 +46,7 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
 
       {/* Add group */}
       {isAdding ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input
             autoFocus
             value={label}

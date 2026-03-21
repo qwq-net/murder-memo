@@ -16,7 +16,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { MemoEntry } from '../../types/memo';
@@ -103,7 +103,7 @@ export function SortableEntryList({ entries, onReorder, hideTimeDuplicates }: So
   );
 }
 
-function SortableEntryCard({ entry, allIds, hideTime }: { entry: MemoEntry; allIds: string[]; hideTime?: boolean }) {
+const SortableEntryCard = memo(function SortableEntryCard({ entry, allIds, hideTime }: { entry: MemoEntry; allIds: string[]; hideTime?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: entry.id,
   });
@@ -153,4 +153,4 @@ function SortableEntryCard({ entry, allIds, hideTime }: { entry: MemoEntry; allI
       <EntryCard entry={entry} hideTime={hideTime} />
     </div>
   );
-}
+});
