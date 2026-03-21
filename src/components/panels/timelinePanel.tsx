@@ -240,7 +240,7 @@ function TimelineGroupSection({
       {!group.collapsed && (
         // --tl-spine-x: 縦線・ドットの中心X座標の単一の真実の情報源
         // 縦線・HourDividerドットはともにこの値から位置を計算するため、値を変えれば両方追従する
-        <div className="relative py-4" style={{ '--tl-spine-x': '15px' } as React.CSSProperties}>
+        <div className="relative py-2.5" style={{ '--tl-spine-x': '15px' } as React.CSSProperties}>
           {/* 縦線 — 上下余白部分は破線、中央は実線 */}
           <div
             className="absolute top-0 bottom-0 w-0"
@@ -248,21 +248,21 @@ function TimelineGroupSection({
           >
             {/* 上部破線 */}
             <div
-              className="absolute top-0 h-4"
+              className="absolute top-0 h-2.5"
               style={{
                 borderLeft: '1px dashed color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
               }}
             />
             {/* 中央実線 */}
             <div
-              className="absolute top-4 bottom-4"
+              className="absolute top-2.5 bottom-2.5"
               style={{
                 borderLeft: '1px solid color-mix(in srgb, var(--panel-timeline-accent) 15%, transparent)',
               }}
             />
             {/* 下部破線 */}
             <div
-              className="absolute bottom-0 h-4"
+              className="absolute bottom-0 h-2.5"
               style={{
                 borderLeft: '1px dashed color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
               }}
@@ -285,7 +285,7 @@ function TimelineGroupSection({
             {/* 不明グループ — DnDで並び替え可能 */}
             {unknownEntries.length > 0 && (
               <div>
-                <HourDivider label="不明" muted />
+                <HourDivider label="不明" />
                 <SortableEntryList
                   entries={unknownEntries}
                   onReorder={onReorderEntries}
@@ -329,7 +329,7 @@ function HourDivider({ label, muted }: { label: string; muted?: boolean }) {
     : 'color-mix(in srgb, var(--panel-timeline-accent) 15%, transparent)';
 
   return (
-    <div className="flex items-center gap-2 pt-1 pr-2 pb-0.5 pl-0">
+    <div className="flex items-center gap-2 pt-0.5 pr-2 pb-0 pl-0">
       {/* 左ライン — 縦線とクロスする */}
       <span className="flex-1 h-px" style={{ background: lineColor }} />
       <span

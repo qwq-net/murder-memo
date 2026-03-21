@@ -107,7 +107,7 @@ export function EntryContent({
     <div style={{ flex: 1, minWidth: 0 }}>
       {/* テキスト */}
       {isEditing ? (
-        <div className="px-2.5 pt-px pb-0">
+        <div className="pl-3.5 pr-2.5 pt-px pb-0">
           <textarea
             ref={inputRef}
             value={draft.content}
@@ -128,14 +128,14 @@ export function EntryContent({
             captureFromMouseEvent(e, entry.content.length);
             setFocusedEntry(entry.id);
           }}
-          className="cursor-text pt-px pr-1 pb-0 pl-2.5 whitespace-pre-wrap break-words text-[13px] leading-[1.2]"
+          className="cursor-text pt-px pr-1 pb-0 pl-3.5 whitespace-pre-wrap break-words text-[13px] leading-[1.2]"
         >
           {entry.content || <span className="text-text-faint">空のメモ</span>}
         </div>
       )}
 
       {/* 役職マーカー — テキストと同じ左右 padding で揃える */}
-      <div className="px-2.5 pb-0.5">
+      <div className="pl-3.5 pr-2.5 pb-0.5">
         <CharacterBadgeBar
           entry={entry}
           format={effectiveFormat}
