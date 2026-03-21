@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 
+import { useResponsive } from '../../hooks/useResponsive';
 import { useStore } from '../../store';
 import type { PanelId } from '../../types/memo';
 import { CharacterSetupPanel } from '../characters/CharacterSetupPanel';
@@ -39,16 +40,17 @@ export function AppShell() {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
+  const { isMobile } = useResponsive(1024);
 
   // sortOrder順（DnD順）= 行動順、ロール別
-  const plChars = characters.filter((c) => c.role === 'pl').sort((a, b) => a.sortOrder - b.sortOrder);
-  const npcChars = characters.filter((c) => c.role === 'npc').sort((a, b) => a.sortOrder - b.sortOrder);
+  const plChars = useMemo(
+    () => characters.filter((c) => c.role === 'pl').sort((a, b) => a.sortOrder - b.sortOrder),
+    [characters],
+  );
+  const npcChars = useMemo(
+    () => characters.filter((c) => c.role === 'npc').sort((a, b) => a.sortOrder - b.sortOrder),
+    [characters],
+  );
 
   const orderedPanels = order.map((id) => ({
     id,

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useAutoResizeTextarea } from '../../hooks/useAutoResizeTextarea';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '../../lib/time-parser';
 import { useStore } from '../../store';
 import type { PanelId } from '../../types/memo';
@@ -18,16 +20,14 @@ export function EntryInput({ panel }: EntryInputProps) {
 
   const [value, setValue] = useState('');
   const [timeValue, setTimeValue] = useState('');
-  const groupStorageKey = `murder-memo-selected-group-${panel}`;
-  const [selectedGroupId, setSelectedGroupId] = useState(() => {
-    try { return localStorage.getItem(groupStorageKey) ?? ''; } catch { return ''; }
-  });
+  const [selectedGroupId, persistGroupId] = useLocalStorage(`murder-memo-selected-group-${panel}`, '');
   const [timeError, setTimeError] = useState(false);
   const [textError, setTextError] = useState(false);
   const [newGroupLabel, setNewGroupLabel] = useState('');
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
+  const { resize: resizeInput } = useAutoResizeTextarea(120);
 
   const isTimeline = panel === 'timeline';
   const isMemoPanel = panel === 'free' || panel === 'personal';
@@ -46,24 +46,9 @@ export function EntryInput({ panel }: EntryInputProps) {
     ? timelineGroups[0].id
     : validSelectedId;
 
-  const MAX_INPUT_HEIGHT = 120;
-
-  const resizeInput = useCallback((el: HTMLTextAreaElement | null) => {
-    if (!el) return;
-    el.style.height = 'auto';
-    const next = Math.min(el.scrollHeight, MAX_INPUT_HEIGHT);
-    el.style.height = next + 'px';
-    el.style.overflowY = el.scrollHeight > MAX_INPUT_HEIGHT ? 'auto' : 'hidden';
-  }, []);
-
   useEffect(() => {
     resizeInput(inputRef.current);
   }, [value, resizeInput]);
-
-  const persistGroupId = useCallback((id: string) => {
-    setSelectedGroupId(id);
-    try { localStorage.setItem(groupStorageKey, id); } catch { /* noop */ }
-  }, [groupStorageKey]);
 
   const submit = useCallback(async () => {
     const text = value.trim();

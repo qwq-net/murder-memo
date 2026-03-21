@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
-
-import { getImage } from '../../lib/idb';
+import { useImageBlob } from '../../hooks/useImageBlob';
 import { useStore } from '../../store';
 import type { MemoEntry } from '../../types/memo';
 
@@ -9,26 +7,8 @@ interface ImageEntryProps {
 }
 
 export function ImageEntry({ entry }: ImageEntryProps) {
-  const [src, setSrc] = useState<string | null>(null);
+  const src = useImageBlob(entry.imageBlobKey);
   const deleteEntry = useStore((s) => s.deleteEntry);
-
-  useEffect(() => {
-    let revoked = false;
-    if (!entry.imageBlobKey) return;
-
-    getImage(entry.imageBlobKey).then((blob) => {
-      if (revoked || !blob) return;
-      const url = URL.createObjectURL(blob);
-      setSrc(url);
-    });
-
-    return () => {
-      revoked = true;
-      if (src) URL.revokeObjectURL(src);
-    };
-    // src を依存に入れると無限ループになるため除外
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entry.imageBlobKey]);
 
   return (
     <div style={{ padding: '6px 8px', position: 'relative' }}>

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { useAutoResizeTextarea } from '../../hooks/useAutoResizeTextarea';
+import { useCaretPosition } from '../../hooks/useCaretPosition';
 import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '../../lib/time-parser';
 import { useStore } from '../../store';
 import type { MemoEntry } from '../../types/memo';
@@ -7,17 +9,6 @@ import type { MemoEntry } from '../../types/memo';
 interface TimelineEntryProps {
   entry: MemoEntry;
   hideTime?: boolean;
-}
-
-function getCaretOffset(x: number, y: number): number | null {
-  if (document.caretRangeFromPoint) {
-    const r = document.caretRangeFromPoint(x, y);
-    return r ? r.startOffset : null;
-  }
-  const cp = (document as Document & {
-    caretPositionFromPoint?: (x: number, y: number) => { offset: number } | null;
-  }).caretPositionFromPoint?.(x, y);
-  return cp ? cp.offset : null;
 }
 
 export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
@@ -31,20 +22,14 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
   const focusTargetRef = useRef<'time' | 'content'>('content');
-  const pendingCursorRef = useRef<number | null>(null);
-  const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null);
   const cancelledRef = useRef(false);
-
-  const resizeContent = useCallback((el: HTMLTextAreaElement | null) => {
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
-  }, []);
+  const { applyPendingCursor, captureFromMouseEvent } = useCaretPosition();
+  const { resize } = useAutoResizeTextarea();
 
   useLayoutEffect(() => {
     if (!isEditing) return;
     cancelledRef.current = false;
-    resizeContent(contentRef.current);
+    resize(contentRef.current);
 
     if (focusTargetRef.current === 'time') {
       timeRef.current?.focus();
@@ -52,19 +37,9 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
       const el = contentRef.current;
       if (!el) return;
       el.focus();
-      if (pendingSelectionRef.current !== null) {
-        const { start, end } = pendingSelectionRef.current;
-        el.setSelectionRange(start, end);
-        pendingSelectionRef.current = null;
-      } else if (pendingCursorRef.current !== null) {
-        const pos = pendingCursorRef.current;
-        el.setSelectionRange(pos, pos);
-        pendingCursorRef.current = null;
-      } else {
-        el.setSelectionRange(el.value.length, el.value.length);
-      }
+      applyPendingCursor(el);
     }
-  }, [isEditing, resizeContent]);
+  }, [isEditing, resize, applyPendingCursor]);
 
   useEffect(() => {
     if (!isEditing) {
@@ -150,7 +125,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
           value={draftContent}
           onChange={(e) => {
             setDraftContent(e.target.value);
-            resizeContent(e.target);
+            resize(e.target);
           }}
           onBlur={handleBlur}
           onKeyDown={(e) => {
@@ -233,15 +208,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
         onMouseUp={(e) => {
           if (e.shiftKey) return;
           focusTargetRef.current = 'content';
-          const sel = window.getSelection();
-          if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-            pendingSelectionRef.current = { start: range.startOffset, end: range.endOffset };
-            pendingCursorRef.current = null;
-          } else {
-            pendingCursorRef.current = getCaretOffset(e.clientX, e.clientY) ?? entry.content.length;
-            pendingSelectionRef.current = null;
-          }
+          captureFromMouseEvent(e, entry.content.length);
           setFocusedEntry(entry.id);
         }}
         style={{

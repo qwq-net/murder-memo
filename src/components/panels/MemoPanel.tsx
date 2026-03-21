@@ -1,0 +1,104 @@
+/**
+ * 自由メモ / 自分用メモ の共通パネルコンポーネント。
+ * FreeMemoPanel と PersonalMemoPanel で90%同一だったロジックを統合。
+ */
+import { useCallback, useMemo } from 'react';
+
+import { useStore } from '../../store';
+import { EmptyState } from '../common/EmptyState';
+import { EntryInput } from '../entries/EntryInput';
+import { MemoGroupSection } from './MemoGroupSection';
+
+interface MemoPanelProps {
+  panel: 'free' | 'personal';
+  accentColor: string;
+  emptyMessage: string;
+}
+
+export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) {
+  const allEntries = useStore((s) => s.entries);
+  const memoGroups = useStore((s) => s.memoGroups);
+  const toggleMemoGroupCollapse = useStore((s) => s.toggleMemoGroupCollapse);
+  const removeMemoGroup = useStore((s) => s.removeMemoGroup);
+  const updateMemoGroup = useStore((s) => s.updateMemoGroup);
+  const addMemoGroup = useStore((s) => s.addMemoGroup);
+  const reorderEntries = useStore((s) => s.reorderEntries);
+  const inputPosition = useStore((s) => s.settings.inputPosition);
+
+  const panelGroups = useMemo(
+    () => memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder),
+    [memoGroups, panel],
+  );
+
+  const entries = useMemo(
+    () => allEntries.filter((e) => e.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder),
+    [allEntries, panel],
+  );
+
+  const groupedData = useMemo(() => {
+    const grouped = panelGroups.map((group) => ({
+      group,
+      entries: entries.filter((e) => e.groupId === group.id),
+    }));
+    const uncategorized = entries.filter(
+      (e) => !e.groupId || !panelGroups.some((g) => g.id === e.groupId),
+    );
+    return { grouped, uncategorized };
+  }, [panelGroups, entries]);
+
+  const handleReorder = useCallback(
+    (ids: string[]) => reorderEntries(panel, ids),
+    [reorderEntries, panel],
+  );
+
+  const hasGroups = panelGroups.length > 0;
+  const isEmpty = entries.length === 0 && !hasGroups;
+
+  const entryInput = <EntryInput panel={panel} />;
+
+  return (
+    <>
+      {inputPosition === 'top' && entryInput}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 60 }}>
+        {isEmpty ? (
+          <EmptyState
+            accentColor={accentColor}
+            message={emptyMessage}
+            onAddGroup={(label) => addMemoGroup(label, panel)}
+          />
+        ) : hasGroups ? (
+          <>
+            {groupedData.uncategorized.length > 0 && (
+              <MemoGroupSection
+                group={null}
+                entries={groupedData.uncategorized}
+                accentColor={accentColor}
+                onReorderEntries={handleReorder}
+              />
+            )}
+            {groupedData.grouped.map(({ group, entries: groupEntries }) => (
+              <MemoGroupSection
+                key={group.id}
+                group={group}
+                entries={groupEntries}
+                accentColor={accentColor}
+                onToggleCollapse={toggleMemoGroupCollapse}
+                onRemove={removeMemoGroup}
+                onUpdate={updateMemoGroup}
+                onReorderEntries={handleReorder}
+              />
+            ))}
+          </>
+        ) : (
+          <MemoGroupSection
+            group={null}
+            entries={entries}
+            accentColor={accentColor}
+            onReorderEntries={handleReorder}
+          />
+        )}
+      </div>
+      {inputPosition === 'bottom' && entryInput}
+    </>
+  );
+}

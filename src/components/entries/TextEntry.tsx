@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { useAutoResizeTextarea } from '../../hooks/useAutoResizeTextarea';
+import { useCaretPosition } from '../../hooks/useCaretPosition';
 import { useStore } from '../../store';
 import type { MemoEntry } from '../../types/memo';
 
 interface TextEntryProps {
   entry: MemoEntry;
-}
-
-function getCaretOffset(x: number, y: number): number | null {
-  if (document.caretRangeFromPoint) {
-    const r = document.caretRangeFromPoint(x, y);
-    return r ? r.startOffset : null;
-  }
-  const cp = (document as Document & {
-    caretPositionFromPoint?: (x: number, y: number) => { offset: number } | null;
-  }).caretPositionFromPoint?.(x, y);
-  return cp ? cp.offset : null;
 }
 
 export function TextEntry({ entry }: TextEntryProps) {
@@ -26,35 +17,18 @@ export function TextEntry({ entry }: TextEntryProps) {
   const isEditing = focusedEntryId === entry.id;
   const [draft, setDraft] = useState(entry.content);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const pendingCursorRef = useRef<number | null>(null);
-  const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null);
   const cancelledRef = useRef(false);
-
-  const resizeTextarea = useCallback((el: HTMLTextAreaElement | null) => {
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
-  }, []);
+  const { applyPendingCursor, captureFromMouseEvent } = useCaretPosition();
+  const { resize } = useAutoResizeTextarea();
 
   useLayoutEffect(() => {
     if (!isEditing || !inputRef.current) return;
     cancelledRef.current = false;
     const el = inputRef.current;
-    resizeTextarea(el);
+    resize(el);
     el.focus();
-
-    if (pendingSelectionRef.current !== null) {
-      const { start, end } = pendingSelectionRef.current;
-      el.setSelectionRange(start, end);
-      pendingSelectionRef.current = null;
-    } else if (pendingCursorRef.current !== null) {
-      const pos = pendingCursorRef.current;
-      el.setSelectionRange(pos, pos);
-      pendingCursorRef.current = null;
-    } else {
-      el.setSelectionRange(el.value.length, el.value.length);
-    }
-  }, [isEditing, resizeTextarea]);
+    applyPendingCursor(el);
+  }, [isEditing, resize, applyPendingCursor]);
 
   useEffect(() => {
     if (!isEditing) setDraft(entry.content);
@@ -81,7 +55,7 @@ export function TextEntry({ entry }: TextEntryProps) {
           value={draft}
           onChange={(e) => {
             setDraft(e.target.value);
-            resizeTextarea(e.target);
+            resize(e.target);
           }}
           onBlur={handleBlur}
           onKeyDown={(e) => {
@@ -126,15 +100,7 @@ export function TextEntry({ entry }: TextEntryProps) {
     <div
       onMouseUp={(e) => {
         if (e.shiftKey) return;
-        const sel = window.getSelection();
-        if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
-          const range = sel.getRangeAt(0);
-          pendingSelectionRef.current = { start: range.startOffset, end: range.endOffset };
-          pendingCursorRef.current = null;
-        } else {
-          pendingCursorRef.current = getCaretOffset(e.clientX, e.clientY) ?? entry.content.length;
-          pendingSelectionRef.current = null;
-        }
+        captureFromMouseEvent(e, entry.content.length);
         setFocusedEntry(entry.id);
       }}
       style={{
