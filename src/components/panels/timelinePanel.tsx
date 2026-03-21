@@ -19,6 +19,7 @@ export function TimelinePanel() {
   const reorderEntries = useStore((s) => s.reorderEntries);
   const reorderTimelineGroups = useStore((s) => s.reorderTimelineGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
+  const filterIds = useStore((s) => s.characterFilter.timeline);
 
   const swapGroup = useCallback(
     (index: number, direction: -1 | 1) => {
@@ -31,10 +32,13 @@ export function TimelinePanel() {
     [timelineGroups, reorderTimelineGroups],
   );
 
-  const timelineEntries = useMemo(
-    () => allEntries.filter((e) => e.panel === 'timeline'),
-    [allEntries],
-  );
+  const timelineEntries = useMemo(() => {
+    let result = allEntries.filter((e) => e.panel === 'timeline');
+    if (filterIds.length > 0) {
+      result = result.filter((e) => e.characterTags.some((t) => filterIds.includes(t)));
+    }
+    return result;
+  }, [allEntries, filterIds]);
 
   const groupedData = useMemo(() => {
     return timelineGroups.map((group) => {
@@ -70,6 +74,8 @@ export function TimelinePanel() {
   }, [timelineGroups, timelineEntries]);
 
   const isEmpty = timelineGroups.length === 0;
+  const isFiltering = filterIds.length > 0;
+  const isFilteredEmpty = isFiltering && timelineEntries.length === 0 && !isEmpty;
 
   const entryInput = <EntryInput panel="timeline" />;
 
@@ -77,7 +83,11 @@ export function TimelinePanel() {
     <>
       {inputPosition === 'top' && entryInput}
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[60px]">
-        {isEmpty ? (
+        {isFilteredEmpty ? (
+          <div className="py-6 px-5 text-center text-sm text-text-faint">
+            フィルター条件に一致するメモはありません
+          </div>
+        ) : isEmpty ? (
           <EmptyState
             accentColor="var(--panel-timeline-accent)"
             message="メモグループを追加してタイムラインを整理しよう"

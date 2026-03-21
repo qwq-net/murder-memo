@@ -6,16 +6,19 @@ interface CharacterBadgeProps {
   isActive: boolean;
   onClick: (e: React.MouseEvent) => void;
   format: CharacterDisplayFormat;
+  /** カスタム aria-label（省略時はタグ付け用のデフォルトラベル） */
+  ariaLabel?: string;
 }
 
-export function CharacterBadge({ color, name, isActive, onClick, format }: CharacterBadgeProps) {
+export function CharacterBadge({ color, name, isActive, onClick, format, ariaLabel }: CharacterBadgeProps) {
   const displayName = name.length > 5 ? name.slice(0, 5) + '…' : name;
+  const label = ariaLabel ?? `${name}${isActive ? 'のタグを外す' : 'をタグ付け'}`;
 
   if (format === 'text') {
     return (
       <button
         onClick={onClick}
-        aria-label={`${name}${isActive ? 'のタグを外す' : 'をタグ付け'}`}
+        aria-label={label}
         aria-pressed={isActive}
         title={name}
         style={{
@@ -69,7 +72,7 @@ export function CharacterBadge({ color, name, isActive, onClick, format }: Chara
     return (
       <button
         onClick={onClick}
-        aria-label={`${name}${isActive ? 'のタグを外す' : 'をタグ付け'}`}
+        aria-label={label}
         aria-pressed={isActive}
         title={name}
         style={{
@@ -111,7 +114,7 @@ export function CharacterBadge({ color, name, isActive, onClick, format }: Chara
   return (
     <button
       onClick={onClick}
-      aria-label={`${name}${isActive ? 'のタグを外す' : 'をタグ付け'}`}
+      aria-label={label}
       aria-pressed={isActive}
       title={name}
       style={{

@@ -63,7 +63,9 @@ useStore.subscribe(
   (state) => state.activeSessionId,
   async (sessionId) => {
     if (!sessionId) return;
-    const { loadCharacters, loadEntries, loadTimelineGroups, loadMemoGroups } = useStore.getState();
+    const { loadCharacters, loadEntries, loadTimelineGroups, loadMemoGroups, clearAllCharacterFilters } =
+      useStore.getState();
+    clearAllCharacterFilters();
     const [entries] = await Promise.all([
       getEntriesBySession(sessionId),
       loadCharacters(sessionId),

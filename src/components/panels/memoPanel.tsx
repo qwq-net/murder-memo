@@ -25,16 +25,20 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
   const reorderEntries = useStore((s) => s.reorderEntries);
   const reorderMemoGroups = useStore((s) => s.reorderMemoGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
+  const filterIds = useStore((s) => s.characterFilter[panel]);
 
   const panelGroups = useMemo(
     () => memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder),
     [memoGroups, panel],
   );
 
-  const entries = useMemo(
-    () => allEntries.filter((e) => e.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder),
-    [allEntries, panel],
-  );
+  const entries = useMemo(() => {
+    let result = allEntries.filter((e) => e.panel === panel);
+    if (filterIds.length > 0) {
+      result = result.filter((e) => e.characterTags.some((t) => filterIds.includes(t)));
+    }
+    return result.sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [allEntries, panel, filterIds]);
 
   const groupedData = useMemo(() => {
     const grouped = panelGroups.map((group) => ({
@@ -64,7 +68,8 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
   );
 
   const hasGroups = panelGroups.length > 0;
-  const isEmpty = entries.length === 0 && !hasGroups;
+  const isFiltering = filterIds.length > 0;
+  const isEmpty = entries.length === 0 && !hasGroups && !isFiltering;
 
   const entryInput = <EntryInput panel={panel} />;
 
@@ -72,7 +77,11 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
     <>
       {inputPosition === 'top' && entryInput}
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[60px]">
-        {isEmpty ? (
+        {isFiltering && entries.length === 0 ? (
+          <div className="py-6 px-5 text-center text-sm text-text-faint">
+            フィルター条件に一致するメモはありません
+          </div>
+        ) : isEmpty ? (
           <EmptyState
             accentColor={accentColor}
             message={emptyMessage}

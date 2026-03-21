@@ -1,6 +1,8 @@
 import type { PanelId, PanelLayoutConfig } from '@/types/memo';
 import type { StoreState } from '@/store/index';
 
+const EMPTY_FILTER: Record<PanelId, string[]> = { free: [], personal: [], timeline: [] };
+
 export interface UiSlice {
   layout: PanelLayoutConfig;
   activePanel: PanelId;
@@ -11,6 +13,8 @@ export interface UiSlice {
   focusedEntryId: string | null;
   /** 未分類グループの折りたたみ状態（パネル別） */
   uncategorizedCollapsed: Record<string, boolean>;
+  /** キャラクターフィルター（パネル別、選択中のキャラクター ID 配列） */
+  characterFilter: Record<PanelId, string[]>;
 
   setLayout: (layout: Partial<PanelLayoutConfig>) => void;
   setActivePanel: (panel: PanelId) => void;
@@ -20,6 +24,9 @@ export interface UiSlice {
   setSessionSwitcherOpen: (open: boolean) => void;
   setFocusedEntry: (id: string | null) => void;
   setUncategorizedCollapsed: (panel: string, collapsed: boolean) => void;
+  toggleCharacterFilter: (panel: PanelId, characterId: string) => void;
+  clearCharacterFilter: (panel: PanelId) => void;
+  clearAllCharacterFilters: () => void;
 }
 
 const DEFAULT_LAYOUT: PanelLayoutConfig = {
@@ -38,6 +45,7 @@ export const createUiSlice = (
   isSessionSwitcherOpen: false,
   focusedEntryId: null,
   uncategorizedCollapsed: {},
+  characterFilter: { ...EMPTY_FILTER },
 
   setLayout: (patch) =>
     set((s) => ({ layout: { ...s.layout, ...patch } })),
@@ -56,4 +64,19 @@ export const createUiSlice = (
 
   setUncategorizedCollapsed: (panel, collapsed) =>
     set((s) => ({ uncategorizedCollapsed: { ...s.uncategorizedCollapsed, [panel]: collapsed } })),
+
+  toggleCharacterFilter: (panel, characterId) =>
+    set((s) => {
+      const current = s.characterFilter[panel];
+      const next = current.includes(characterId)
+        ? current.filter((id) => id !== characterId)
+        : [...current, characterId];
+      return { characterFilter: { ...s.characterFilter, [panel]: next } };
+    }),
+
+  clearCharacterFilter: (panel) =>
+    set((s) => ({ characterFilter: { ...s.characterFilter, [panel]: [] } })),
+
+  clearAllCharacterFilters: () =>
+    set(() => ({ characterFilter: { ...EMPTY_FILTER } })),
 });

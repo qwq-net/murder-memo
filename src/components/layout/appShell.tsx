@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
+import { CharacterFilterBar } from '@/components/characters/characterFilterBar';
 import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel';
 import { useSelection } from '@/components/entries/selectionContext';
 import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Settings, User } from '@/components/icons';
@@ -118,7 +119,16 @@ export function AppShell() {
   const orderedPanels = order.map((id) => ({
     id,
     node: (
-      <Panel panelId={id} title={PANEL_TITLES[id]} actions={<GroupCollapseActions panelId={id} />}>
+      <Panel
+        panelId={id}
+        title={PANEL_TITLES[id]}
+        actions={
+          <>
+            <CharacterFilterBar panelId={id} />
+            <GroupCollapseActions panelId={id} />
+          </>
+        }
+      >
         {PANEL_CONTENT[id]}
       </Panel>
     ),
