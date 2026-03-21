@@ -122,7 +122,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
             outline: 'none',
             color: draftTime ? 'var(--panel-timeline-accent)' : 'var(--text-faint)',
             fontFamily: 'var(--font-mono)',
-            fontSize: 12,
+            fontSize: 13,
             lineHeight: 1.6,
             padding: '2px 4px',
             textAlign: 'center',
@@ -201,7 +201,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
           padding: '2px 4px',
           boxSizing: 'border-box' as const,
           fontFamily: 'var(--font-mono)',
-          fontSize: 12,
+          fontSize: 13,
           letterSpacing: '0.04em',
           color: entry.eventTime
             ? 'var(--panel-timeline-accent)'

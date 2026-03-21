@@ -62,8 +62,13 @@ export function CharacterBadgeBar({ entry, indent, format, visibility, isEntryHo
   const allCharacters = useStore((s) => s.characters);
   const toggleCharacterTag = useStore((s) => s.toggleCharacterTag);
 
-  // showInEntries が true のキャラのみ表示
-  const characters = allCharacters.filter((c) => c.showInEntries);
+  // showInEntries が true のキャラのみ表示。PL → NPC の順、その中で行動順（sortOrder）
+  const characters = allCharacters
+    .filter((c) => c.showInEntries)
+    .sort((a, b) => {
+      if (a.role !== b.role) return a.role === 'pl' ? -1 : 1;
+      return a.sortOrder - b.sortOrder;
+    });
 
   if (characters.length === 0) return null;
   if (visibility === 'off') return null;

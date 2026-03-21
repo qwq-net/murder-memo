@@ -7,7 +7,7 @@ import { ConfirmModal } from '@/components/common/confirmModal';
 import { EmptyState } from '@/components/common/emptyState';
 import { EntryInput } from '@/components/entries/entryInput';
 import { SortableEntryList } from '@/components/entries/sortableEntryList';
-import { IconChevronDown, IconClose, IconEditSquare } from '@/components/icons';
+import { ArrowDown, ArrowUp, ChevronDown, SquarePen, X } from '@/components/icons';
 
 export function TimelinePanel() {
   const allEntries = useStore((s) => s.entries);
@@ -17,7 +17,19 @@ export function TimelinePanel() {
   const updateTimelineGroup = useStore((s) => s.updateTimelineGroup);
   const addTimelineGroup = useStore((s) => s.addTimelineGroup);
   const reorderEntries = useStore((s) => s.reorderEntries);
+  const reorderTimelineGroups = useStore((s) => s.reorderTimelineGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
+
+  const swapGroup = useCallback(
+    (index: number, direction: -1 | 1) => {
+      const ids = timelineGroups.map((g) => g.id);
+      const target = index + direction;
+      if (target < 0 || target >= ids.length) return;
+      [ids[index], ids[target]] = [ids[target], ids[index]];
+      reorderTimelineGroups(ids);
+    },
+    [timelineGroups, reorderTimelineGroups],
+  );
 
   const timelineEntries = useMemo(
     () => allEntries.filter((e) => e.panel === 'timeline'),
@@ -72,7 +84,7 @@ export function TimelinePanel() {
             onAddGroup={(label) => addTimelineGroup(label)}
           />
         ) : (
-          groupedData.map(({ group, hourGroups, unknown }) => (
+          groupedData.map(({ group, hourGroups, unknown }, i) => (
             <TimelineGroupSection
               key={group.id}
               group={group}
@@ -82,6 +94,8 @@ export function TimelinePanel() {
               onRemove={removeTimelineGroup}
               onUpdate={updateTimelineGroup}
               onReorderEntries={(ids) => reorderEntries('timeline', ids)}
+              onMoveUp={i > 0 ? () => swapGroup(i, -1) : undefined}
+              onMoveDown={i < timelineGroups.length - 1 ? () => swapGroup(i, 1) : undefined}
             />
           ))
         )}
@@ -102,6 +116,8 @@ interface TimelineGroupSectionProps {
   onRemove: (id: string) => Promise<void>;
   onUpdate: (id: string, patch: Partial<Pick<TimelineGroup, 'label' | 'collapsed'>>) => Promise<void>;
   onReorderEntries: (orderedIds: string[]) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
 function TimelineGroupSection({
@@ -112,6 +128,8 @@ function TimelineGroupSection({
   onRemove,
   onUpdate,
   onReorderEntries,
+  onMoveUp,
+  onMoveDown,
 }: TimelineGroupSectionProps) {
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [draftLabel, setDraftLabel] = useState(group.label);
@@ -147,7 +165,7 @@ function TimelineGroupSection({
             transform: group.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
           }}
         >
-          <IconChevronDown />
+          <ChevronDown size={12} />
         </span>
 
         {/* ラベル */}
@@ -166,11 +184,42 @@ function TimelineGroupSection({
               }
             }}
             aria-label="メモグループ名を編集"
-            className="flex-1 bg-bg-base border border-panel-timeline-accent rounded-sm text-panel-timeline-accent text-[12px] font-semibold px-1.5 py-px outline-none"
+            className="flex-1 bg-bg-base border border-panel-timeline-accent rounded-sm text-panel-timeline-accent text-sm font-semibold px-1.5 py-px outline-none"
           />
         ) : (
-          <span className="flex-1 text-[12px] font-semibold text-panel-timeline-accent tracking-[0.06em]">
+          <span className="flex-1 text-sm font-semibold text-panel-timeline-accent tracking-[0.06em]">
             {group.label}
+          </span>
+        )}
+
+        {/* 並び替え矢印 — ホバー時のみ表示 */}
+        {!isEditingLabel && (onMoveUp || onMoveDown) && (
+          <span
+            className="flex items-center gap-px"
+            style={{ opacity: headerHovered ? 0.8 : 0, transition: 'opacity 0.15s' }}
+          >
+            <button
+              disabled={!onMoveUp}
+              onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
+              aria-label={`${group.label}を上に移動`}
+              className="bg-transparent border-none cursor-pointer p-0 flex items-center transition-colors duration-150"
+              style={{ color: onMoveUp ? 'var(--text-faint)' : 'var(--text-faint)', opacity: onMoveUp ? 1 : 0.3 }}
+              onMouseEnter={(e) => { if (onMoveUp) e.currentTarget.style.color = 'var(--panel-timeline-accent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
+            >
+              <ArrowUp size={14} />
+            </button>
+            <button
+              disabled={!onMoveDown}
+              onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
+              aria-label={`${group.label}を下に移動`}
+              className="bg-transparent border-none cursor-pointer p-0 flex items-center transition-colors duration-150"
+              style={{ color: onMoveDown ? 'var(--text-faint)' : 'var(--text-faint)', opacity: onMoveDown ? 1 : 0.3 }}
+              onMouseEnter={(e) => { if (onMoveDown) e.currentTarget.style.color = 'var(--panel-timeline-accent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
+            >
+              <ArrowDown size={14} />
+            </button>
           </span>
         )}
 
@@ -191,7 +240,7 @@ function TimelineGroupSection({
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--panel-timeline-accent)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
           >
-            <IconEditSquare />
+            <SquarePen size={14} />
           </button>
         )}
 
@@ -214,11 +263,11 @@ function TimelineGroupSection({
           onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
         >
-          <IconClose />
+          <X size={14} />
         </button>
 
         {/* エントリ数 — 常に右端 */}
-        <span className="text-[12px] text-text-muted font-mono min-w-4 text-right opacity-70 shrink-0">
+        <span className="text-sm text-text-muted font-mono min-w-4 text-right opacity-70 shrink-0">
           {entryCount}
         </span>
       </div>
@@ -282,7 +331,7 @@ function TimelineGroupSection({
 
             {/* 空の場合 */}
             {hourGroups.length === 0 && unknownEntries.length === 0 && (
-              <div className="px-3 py-3.5 text-[12px] text-text-faint text-center">
+              <div className="px-3 py-3.5 text-sm text-text-faint text-center">
                 メモを追加してください
               </div>
             )}
@@ -320,7 +369,7 @@ function HourDivider({ label, muted }: { label: string; muted?: boolean }) {
       {/* 左ライン — 縦線とクロスする */}
       <span className="flex-1 h-px" style={{ background: lineColor }} />
       <span
-        className={`text-[11px] font-mono tracking-[0.06em] shrink-0 opacity-80 ${
+        className={`text-sm font-mono tracking-[0.06em] shrink-0 opacity-80 ${
           muted ? 'text-text-faint' : 'text-text-muted'
         }`}
       >

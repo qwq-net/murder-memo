@@ -5,7 +5,7 @@ import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel';
 import { useSelection } from '@/components/entries/selectionContext';
-import { IconChevronRightLg } from '@/components/icons';
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Settings, User } from '@/components/icons';
 import { FreeMemoPanel } from '@/components/panels/freeMemoPanel';
 import { SettingsPanel } from '@/components/settings/settingsPanel';
 import { PersonalMemoPanel } from '@/components/panels/personalMemoPanel';
@@ -14,17 +14,87 @@ import { MobileTabNav } from '@/components/layout/mobileTabNav';
 import { Panel } from '@/components/layout/panel';
 import { PanelContainer } from '@/components/layout/panelContainer';
 
-const PANEL_CONTENT: Record<PanelId, React.ReactNode> = {
-  free:     <FreeMemoPanel />,
-  personal: <PersonalMemoPanel />,
-  timeline: <TimelinePanel />,
-};
-
 const PANEL_TITLES: Record<PanelId, string> = {
   free:     'フリーメモ',
   personal: '自分用メモ',
   timeline: 'タイムライン',
 };
+
+/** パネルヘッダーの全開/全閉ボタン */
+function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
+  const memoGroups = useStore((s) => s.memoGroups);
+  const timelineGroups = useStore((s) => s.timelineGroups);
+  const updateMemoGroup = useStore((s) => s.updateMemoGroup);
+  const updateTimelineGroup = useStore((s) => s.updateTimelineGroup);
+  const uncategorizedCollapsed = useStore((s) => s.uncategorizedCollapsed[panelId] ?? false);
+  const setUncategorizedCollapsed = useStore((s) => s.setUncategorizedCollapsed);
+
+  const groups = panelId === 'timeline'
+    ? timelineGroups
+    : memoGroups.filter((g) => g.panel === panelId);
+
+  if (groups.length === 0) return null;
+
+  // 未分類も含めた全体の折りたたみ状態を判定
+  const hasUncategorized = panelId !== 'timeline';
+  const allCollapsed = groups.every((g) => g.collapsed) && (!hasUncategorized || uncategorizedCollapsed);
+  const allExpanded = groups.every((g) => !g.collapsed) && (!hasUncategorized || !uncategorizedCollapsed);
+
+  const setAll = (collapsed: boolean) => {
+    for (const g of groups) {
+      if (g.collapsed !== collapsed) {
+        if (panelId === 'timeline') {
+          updateTimelineGroup(g.id, { collapsed });
+        } else {
+          updateMemoGroup(g.id, { collapsed });
+        }
+      }
+    }
+    // 未分類も連動
+    if (hasUncategorized) {
+      setUncategorizedCollapsed(panelId, collapsed);
+    }
+  };
+
+  const btnStyle = (disabled: boolean): React.CSSProperties => ({
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-muted)',
+    cursor: disabled ? 'default' : 'pointer',
+    opacity: disabled ? 0.3 : 0.7,
+    padding: 2,
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'opacity 0.12s',
+  });
+
+  return (
+    <>
+      <button
+        disabled={allExpanded}
+        onClick={() => setAll(false)}
+        title="すべて開く"
+        aria-label="すべてのグループを開く"
+        style={btnStyle(allExpanded)}
+        onMouseEnter={(e) => { if (!allExpanded) e.currentTarget.style.opacity = '1'; }}
+        onMouseLeave={(e) => { if (!allExpanded) e.currentTarget.style.opacity = '0.7'; }}
+      >
+        <ChevronsUpDown size={14} />
+      </button>
+      <button
+        disabled={allCollapsed}
+        onClick={() => setAll(true)}
+        title="すべて閉じる"
+        aria-label="すべてのグループを閉じる"
+        style={btnStyle(allCollapsed)}
+        onMouseEnter={(e) => { if (!allCollapsed) e.currentTarget.style.opacity = '1'; }}
+        onMouseLeave={(e) => { if (!allCollapsed) e.currentTarget.style.opacity = '0.7'; }}
+      >
+        <ChevronsDownUp size={14} />
+      </button>
+    </>
+  );
+}
 
 export function AppShell() {
   const order = useStore((s) => s.layout.order);
@@ -53,10 +123,16 @@ export function AppShell() {
     [characters],
   );
 
+  const PANEL_CONTENT: Record<PanelId, React.ReactNode> = {
+    free:     <FreeMemoPanel />,
+    personal: <PersonalMemoPanel />,
+    timeline: <TimelinePanel />,
+  };
+
   const orderedPanels = order.map((id) => ({
     id,
     node: (
-      <Panel panelId={id} title={PANEL_TITLES[id]}>
+      <Panel panelId={id} title={PANEL_TITLES[id]} actions={<GroupCollapseActions panelId={id} />}>
         {PANEL_CONTENT[id]}
       </Panel>
     ),
@@ -94,7 +170,7 @@ export function AppShell() {
               border: '1px solid rgba(255, 255, 255, 0.15)',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--text-secondary)',
-              fontSize: 12,
+              fontSize: 13,
               padding: '4px 10px',
               cursor: 'pointer',
               transition: 'color 0.15s, border-color 0.15s',
@@ -109,10 +185,7 @@ export function AppShell() {
               e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
             }}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" strokeWidth="1.2"/>
-              <path d="M2 12c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
+            <User size={13} />
             登場人物設定
           </button>
 
@@ -127,7 +200,7 @@ export function AppShell() {
               border: '1px solid color-mix(in srgb, var(--color-settings-accent) 40%, transparent)',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--color-settings-accent)',
-              fontSize: 12,
+              fontSize: 13,
               padding: '4px 10px', // btn-sm と同サイズ
               cursor: 'pointer',
               transition: 'color 0.15s, border-color 0.15s',
@@ -142,10 +215,7 @@ export function AppShell() {
               e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-settings-accent) 40%, transparent)';
             }}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2"/>
-              <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.76 2.76l1.06 1.06M10.18 10.18l1.06 1.06M2.76 11.24l1.06-1.06M10.18 3.82l1.06-1.06" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-            </svg>
+            <Settings size={13} />
             アプリ設定
           </button>
           </div>
@@ -177,7 +247,7 @@ export function AppShell() {
                   color: 'var(--text-primary)',
                   border: '1px solid var(--color-settings-accent)',
                   borderRadius: 'var(--radius-sm)',
-                  fontSize: 12,
+                  fontSize: 13,
                   padding: '3px 8px',
                   minWidth: 0,
                   maxWidth: 200,
@@ -193,7 +263,7 @@ export function AppShell() {
                   color: 'var(--text-secondary)',
                   border: '1px solid var(--border-default)',
                   borderRadius: 'var(--radius-sm)',
-                  fontSize: 12,
+                  fontSize: 13,
                   padding: '3px 24px 3px 8px',
                   cursor: 'pointer',
                   appearance: 'none',
@@ -257,9 +327,9 @@ export function AppShell() {
               {plChars.map((char, i) => (
                 <div key={char.id} className="flex items-center shrink-0">
                   {i > 0 && (
-                    <IconChevronRightLg className="shrink-0 mx-0.5 text-text-faint" />
+                    <ChevronRight size={14} className="shrink-0 mx-0.5 text-text-faint" />
                   )}
-                  <span className="flex items-center gap-1 text-xs text-text-secondary whitespace-nowrap">
+                  <span className="flex items-center gap-1 text-sm text-text-secondary whitespace-nowrap">
                     <span className="inline-block size-2.5 rounded-full shrink-0" style={{ background: char.color, boxShadow: `0 0 6px ${char.color}44` }} />
                     {char.name}
                   </span>
@@ -268,16 +338,16 @@ export function AppShell() {
 
               {/* セパレータ */}
               {plChars.length > 0 && npcChars.length > 0 && (
-                <span className="text-text-faint text-[11px] mx-1 shrink-0">|</span>
+                <span className="text-text-faint text-sm mx-1 shrink-0">|</span>
               )}
 
               {/* NPC */}
               {npcChars.map((char, i) => (
                 <div key={char.id} className="flex items-center shrink-0">
                   {i > 0 && (
-                    <IconChevronRightLg className="shrink-0 mx-0.5 text-text-faint" />
+                    <ChevronRight size={14} className="shrink-0 mx-0.5 text-text-faint" />
                   )}
-                  <span className="flex items-center gap-1 text-xs text-text-muted whitespace-nowrap">
+                  <span className="flex items-center gap-1 text-sm text-text-muted whitespace-nowrap">
                     <span className="inline-block size-2.5 rounded-full shrink-0 opacity-70" style={{ background: char.color, boxShadow: `0 0 6px ${char.color}44` }} />
                     {char.name}
                   </span>
@@ -304,7 +374,7 @@ export function AppShell() {
 
       {/* Footer */}
       <footer className="flex items-center justify-center px-[14px] py-1.5 border-t border-border-subtle bg-bg-surface shrink-0">
-        <span className="text-[11px] text-text-faint tracking-[0.04em]">
+        <span className="text-sm text-text-faint tracking-[0.04em]">
           &copy; 2026 マダめもくん
         </span>
       </footer>

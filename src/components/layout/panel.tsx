@@ -30,7 +30,7 @@ export function Panel({ panelId, title, actions, children }: PanelProps) {
             className="shrink-0"
             style={{ width: 3, height: 14, borderRadius: 'var(--radius-sm)', background: accent }}
           />
-          <span className="text-xs font-medium text-text-secondary tracking-wide">
+          <span className="text-sm font-medium text-text-secondary tracking-wide">
             {title}
           </span>
         </div>

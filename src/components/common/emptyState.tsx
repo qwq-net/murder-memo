@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { IconPlus } from '@/components/icons';
+import { Plus } from '@/components/icons';
 
 interface EmptyStateProps {
   accentColor: string;
@@ -22,7 +22,7 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
   }, [label, onAddGroup]);
 
   return (
-    <div className="flex flex-col items-center gap-3 py-10 px-5 text-center text-xs text-text-faint leading-8">
+    <div className="flex flex-col items-center gap-3 py-10 px-5 text-center text-sm text-text-faint leading-8">
       {/* アイコン */}
       <svg width="28" height="28" viewBox="0 0 28 28" fill="none" className="opacity-40">
         <rect x="4" y="2" width="20" height="24" rx="3" stroke={accentColor} strokeWidth="1.2" />
@@ -65,7 +65,7 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
       ) : (
         <button
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-1 text-xs cursor-pointer transition-[border-color,background] duration-150"
+          className="flex items-center gap-1 text-sm cursor-pointer transition-[border-color,background] duration-150"
           style={{
             background: 'none',
             border: `1px solid ${accentColor}55`,
@@ -76,7 +76,7 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
           onMouseEnter={(e) => { e.currentTarget.style.borderColor = accentColor; e.currentTarget.style.background = `${accentColor}15`; }}
           onMouseLeave={(e) => { e.currentTarget.style.borderColor = `${accentColor}55`; e.currentTarget.style.background = 'none'; }}
         >
-          <IconPlus size={12} />
+          <Plus size={14} strokeWidth={2.5} />
           メモグループを作成
         </button>
       )}

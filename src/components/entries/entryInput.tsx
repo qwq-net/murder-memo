@@ -5,7 +5,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
-import { IconPlusSm } from '@/components/icons';
+import { Plus } from '@/components/icons';
 
 interface EntryInputProps {
   panel: PanelId;
@@ -114,7 +114,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         value={effectiveGroupId}
         onChange={(e) => persistGroupId(e.target.value)}
         aria-label="追加先メモグループ"
-        className="flex-1 bg-bg-elevated border border-border-subtle rounded-sm text-text-secondary text-xs px-1.5 py-[3px] outline-none"
+        className="flex-1 bg-bg-elevated border border-border-subtle rounded-sm text-text-secondary text-sm px-1.5 py-[3px] outline-none"
       >
         {isTimeline ? (
           <>
@@ -155,11 +155,11 @@ export function EntryInput({ panel }: EntryInputProps) {
             }}
             placeholder={isTimeline ? '当日、前日 等' : 'メモグループ名'}
             aria-label="メモグループ名"
-            className="flex-1 min-w-[60px] bg-bg-base border border-border-default rounded-sm text-text-primary text-xs px-1.5 py-[3px] outline-none"
+            className="flex-1 min-w-[60px] bg-bg-base border border-border-default rounded-sm text-text-primary text-sm px-1.5 py-[3px] outline-none"
           />
           <button
             onClick={handleAddGroup}
-            className="btn-primary btn-sm text-[11px]"
+            className="btn-primary btn-sm text-sm"
           >
             追加
           </button>
@@ -168,9 +168,9 @@ export function EntryInput({ panel }: EntryInputProps) {
         <button
           onClick={() => setIsAddingGroup(true)}
           title="メモグループを追加"
-          className="flex items-center bg-transparent border border-dashed border-border-default rounded-sm text-text-muted text-[11px] px-2 py-[3px] cursor-pointer transition-[border-color,color] duration-150 whitespace-nowrap hover:border-border-strong hover:text-text-secondary"
+          className="flex items-center bg-transparent border border-dashed border-border-default rounded-sm text-text-muted text-sm px-2 py-[3px] cursor-pointer transition-[border-color,color] duration-150 whitespace-nowrap hover:border-border-strong hover:text-text-secondary"
         >
-          <IconPlusSm className="mr-1" />
+          <Plus size={12} strokeWidth={2.5} className="mr-1" />
           メモグループ
         </button>
       )}
@@ -196,7 +196,7 @@ export function EntryInput({ panel }: EntryInputProps) {
           aria-label="時刻"
           aria-invalid={timeError || undefined}
           aria-describedby={timeError ? 'entry-time-error' : undefined}
-          className="w-11 shrink-0 bg-transparent border-0 border-b text-panel-timeline-accent font-mono text-xs px-0.5 py-px outline-none text-center tracking-wide transition-[border-color] duration-150 focus:border-b-panel-timeline-accent"
+          className="w-11 shrink-0 bg-transparent border-0 border-b text-panel-timeline-accent font-mono text-sm px-0.5 py-px outline-none text-center tracking-wide transition-[border-color] duration-150 focus:border-b-panel-timeline-accent"
           style={{
             borderBottomColor: timeError ? 'var(--importance-high)' : undefined,
             opacity: disabled ? 0.4 : undefined,

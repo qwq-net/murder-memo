@@ -10,7 +10,7 @@ import { ConfirmModal } from '@/components/common/confirmModal';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { RadioGroup } from '@/components/common/radioGroup';
 import type { RadioOption } from '@/components/common/radioGroup';
-import { IconCloseLg } from '@/components/icons';
+import { X } from '@/components/icons';
 
 /* RadioGroup は src/components/common/RadioGroup.tsx を使用 */
 
@@ -76,7 +76,7 @@ function MarkerPreview({
   if (visibility === 'off') {
     return (
       <div style={{ ...containerStyle, justifyContent: 'center' }}>
-        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>非表示</span>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>非表示</span>
       </div>
     );
   }
@@ -141,7 +141,7 @@ function SectionHeader({
     >
       <span
         style={{
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 600,
           color: 'var(--text-primary)',
           letterSpacing: '0.06em',
@@ -150,7 +150,7 @@ function SectionHeader({
         {children}
       </span>
       {hint && (
-        <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 400 }}>
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 400 }}>
           {hint}
         </span>
       )}
@@ -162,7 +162,7 @@ function SectionHeader({
             marginLeft: 'auto',
             background: 'none',
             border: 'none',
-            fontSize: 11,
+            fontSize: 13,
             color: resetDisabled ? 'var(--text-muted)' : 'var(--text-secondary)',
             cursor: resetDisabled ? 'default' : 'pointer',
             padding: '0 2px',
@@ -225,7 +225,7 @@ function PanelOrderEditor({
           />
 
           {/* label */}
-          <span style={{ flex: 1, fontSize: 12, color: 'var(--text-primary)' }}>
+          <span style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }}>
             {PANEL_ORDER_LABELS[panelId]}
           </span>
 
@@ -325,9 +325,9 @@ function MarkerCard({
             flexShrink: 0,
           }}
         />
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</span>
         {hint && (
-          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 'auto' }}>{hint}</span>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)', marginLeft: 'auto' }}>{hint}</span>
         )}
       </div>
 
@@ -341,7 +341,7 @@ function MarkerCard({
       >
         {/* format column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500 }}>形式</span>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>形式</span>
           <RadioGroup<CharacterDisplayFormat>
             stretch
             options={[
@@ -356,7 +356,7 @@ function MarkerCard({
 
         {/* mode column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500 }}>モード</span>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>モード</span>
           <RadioGroup<CharacterDisplayVisibility>
             stretch
             options={[
@@ -462,7 +462,7 @@ export function SettingsPanel() {
               alignItems: 'center',
             }}
           >
-            <IconCloseLg />
+            <X size={18} />
           </button>
         </div>
 
@@ -566,7 +566,7 @@ export function SettingsPanel() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* 初期化 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 すべてのメモ・登場人物・メモグループ・画像データを削除します。セッション自体は残ります。
               </span>
               <div>
@@ -578,7 +578,7 @@ export function SettingsPanel() {
                     border: `1px solid ${isDemo ? 'var(--border-subtle)' : 'var(--danger)'}`,
                     borderRadius: 'var(--radius-sm)',
                     color: isDemo ? 'var(--text-faint)' : 'var(--danger)',
-                    fontSize: 12,
+                    fontSize: 13,
                     padding: '6px 14px',
                     cursor: isDemo ? 'not-allowed' : 'pointer',
                     transition: 'background 0.15s, color 0.15s',
@@ -590,7 +590,7 @@ export function SettingsPanel() {
                   初期化する
                 </button>
                 {isDemo && (
-                  <span style={{ fontSize: 11, color: 'var(--text-faint)', marginLeft: 8 }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-faint)', marginLeft: 8 }}>
                     サンプルシナリオは初期化できません
                   </span>
                 )}
@@ -599,7 +599,7 @@ export function SettingsPanel() {
 
             {/* 削除 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 セッションとそのデータをすべて削除します。
               </span>
               <div>
@@ -611,7 +611,7 @@ export function SettingsPanel() {
                     border: `1px solid ${isDemo || sessions.length <= 1 ? 'var(--border-subtle)' : 'var(--danger)'}`,
                     borderRadius: 'var(--radius-sm)',
                     color: isDemo || sessions.length <= 1 ? 'var(--text-faint)' : 'var(--danger)',
-                    fontSize: 12,
+                    fontSize: 13,
                     padding: '6px 14px',
                     cursor: isDemo || sessions.length <= 1 ? 'not-allowed' : 'pointer',
                     transition: 'background 0.15s, color 0.15s',
@@ -623,11 +623,11 @@ export function SettingsPanel() {
                   セッションを削除
                 </button>
                 {isDemo ? (
-                  <span style={{ fontSize: 11, color: 'var(--text-faint)', marginLeft: 8 }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-faint)', marginLeft: 8 }}>
                     サンプルシナリオは削除できません
                   </span>
                 ) : sessions.length <= 1 && (
-                  <span style={{ fontSize: 11, color: 'var(--text-faint)', marginLeft: 8 }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-faint)', marginLeft: 8 }}>
                     最後のセッションは削除できません
                   </span>
                 )}
@@ -641,7 +641,7 @@ export function SettingsPanel() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               すべてのセッション・設定・保存データを完全に削除し、アプリを初期状態に戻します。
             </span>
             <div>
@@ -652,7 +652,7 @@ export function SettingsPanel() {
                   border: '1px solid var(--danger)',
                   borderRadius: 'var(--radius-sm)',
                   color: 'var(--danger)',
-                  fontSize: 12,
+                  fontSize: 13,
                   padding: '6px 14px',
                   cursor: 'pointer',
                   transition: 'background 0.15s, color 0.15s',
@@ -671,7 +671,7 @@ export function SettingsPanel() {
       open={showClearConfirm}
       onClose={() => setShowClearConfirm(false)}
       title="現在のセッションを初期化しますか？"
-      confirmationLabel="すべてのメモ・登場人物・画像データが削除されます。この操作は取り消せません。"
+      confirmationLabel="すべてのメモ・登場人物・画像データが削除されることを理解しました"
       actions={[{
         label: '初期化する',
         color: 'var(--danger)',
@@ -684,7 +684,7 @@ export function SettingsPanel() {
       open={showDeleteConfirm}
       onClose={() => setShowDeleteConfirm(false)}
       title="現在のセッションを削除しますか？"
-      confirmationLabel="セッションとそのすべてのデータが完全に削除されます。この操作は取り消せません。"
+      confirmationLabel="セッションとそのすべてのデータが完全に削除されることを理解しました"
       actions={[{
         label: '削除する',
         color: 'var(--danger)',
@@ -697,7 +697,7 @@ export function SettingsPanel() {
       open={showResetAllConfirm}
       onClose={() => setShowResetAllConfirm(false)}
       title="アプリを完全にリセットしますか？"
-      confirmationLabel="すべてのセッション・メモ・登場人物・設定・画像データが完全に削除されます。この操作は取り消せません。"
+      confirmationLabel="すべてのセッション・メモ・登場人物・設定・画像データが完全に削除されることを理解しました"
       actions={[{
         label: '完全リセット',
         color: 'var(--danger)',

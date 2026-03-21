@@ -23,6 +23,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
   const updateMemoGroup = useStore((s) => s.updateMemoGroup);
   const addMemoGroup = useStore((s) => s.addMemoGroup);
   const reorderEntries = useStore((s) => s.reorderEntries);
+  const reorderMemoGroups = useStore((s) => s.reorderMemoGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
 
   const panelGroups = useMemo(
@@ -51,6 +52,17 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
     [reorderEntries, panel],
   );
 
+  const swapGroup = useCallback(
+    (index: number, direction: -1 | 1) => {
+      const ids = panelGroups.map((g) => g.id);
+      const target = index + direction;
+      if (target < 0 || target >= ids.length) return;
+      [ids[index], ids[target]] = [ids[target], ids[index]];
+      reorderMemoGroups(ids);
+    },
+    [panelGroups, reorderMemoGroups],
+  );
+
   const hasGroups = panelGroups.length > 0;
   const isEmpty = entries.length === 0 && !hasGroups;
 
@@ -71,27 +83,32 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
             {groupedData.uncategorized.length > 0 && (
               <MemoGroupSection
                 group={null}
+                panel={panel}
                 entries={groupedData.uncategorized}
                 accentColor={accentColor}
                 onReorderEntries={handleReorder}
               />
             )}
-            {groupedData.grouped.map(({ group, entries: groupEntries }) => (
+            {groupedData.grouped.map(({ group, entries: groupEntries }, i) => (
               <MemoGroupSection
                 key={group.id}
                 group={group}
+                panel={panel}
                 entries={groupEntries}
                 accentColor={accentColor}
                 onToggleCollapse={toggleMemoGroupCollapse}
                 onRemove={removeMemoGroup}
                 onUpdate={updateMemoGroup}
                 onReorderEntries={handleReorder}
+                onMoveUp={i > 0 ? () => swapGroup(i, -1) : undefined}
+                onMoveDown={i < panelGroups.length - 1 ? () => swapGroup(i, 1) : undefined}
               />
             ))}
           </>
         ) : (
           <MemoGroupSection
             group={null}
+            panel={panel}
             entries={entries}
             accentColor={accentColor}
             onReorderEntries={handleReorder}

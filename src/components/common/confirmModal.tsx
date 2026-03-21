@@ -68,8 +68,8 @@ export function ConfirmModal({
         {confirmationLabel && (
           <label
             id="confirm-modal-desc"
-            className="flex items-start gap-2 cursor-pointer text-xs leading-relaxed select-none transition-colors"
-            style={{ color: confirmed ? 'var(--text-secondary)' : 'var(--text-muted)' }}
+            className="flex items-start gap-2 cursor-pointer leading-relaxed select-none transition-colors"
+            style={{ color: confirmed ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: 14 }}
           >
             {/* トグル */}
             <span

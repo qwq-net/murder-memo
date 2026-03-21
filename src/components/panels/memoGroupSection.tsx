@@ -1,18 +1,22 @@
 import { useCallback, useState } from 'react';
 
-import type { MemoEntry, MemoGroup } from '@/types/memo';
+import { useStore } from '@/store';
+import type { MemoEntry, MemoGroup, PanelId } from '@/types/memo';
 import { ConfirmModal } from '@/components/common/confirmModal';
 import { SortableEntryList } from '@/components/entries/sortableEntryList';
-import { IconChevronDown, IconClose, IconEditSquare } from '@/components/icons';
+import { ArrowDown, ArrowUp, ChevronDown, SquarePen, X } from '@/components/icons';
 
 interface MemoGroupSectionProps {
   group: MemoGroup | null; // null = 未分類
+  panel: PanelId;
   entries: MemoEntry[];
   accentColor: string;
   onToggleCollapse?: (id: string) => void;
   onRemove?: (id: string) => Promise<void>;
   onUpdate?: (id: string, patch: Partial<Pick<MemoGroup, 'label' | 'collapsed'>>) => Promise<void>;
   onReorderEntries: (orderedIds: string[]) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
 export function MemoGroupSection({
@@ -23,11 +27,15 @@ export function MemoGroupSection({
   onRemove,
   onUpdate,
   onReorderEntries,
+  onMoveUp,
+  onMoveDown,
+  panel,
 }: MemoGroupSectionProps) {
   const isUncategorized = group === null;
   const label = group?.label ?? '未分類';
 
-  const [uncategorizedCollapsed, setUncategorizedCollapsed] = useState(false);
+  const uncategorizedCollapsed = useStore((s) => s.uncategorizedCollapsed[panel] ?? false);
+  const setUncategorizedCollapsed = useStore((s) => s.setUncategorizedCollapsed);
   const collapsed = isUncategorized ? uncategorizedCollapsed : (group?.collapsed ?? false);
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
@@ -45,7 +53,7 @@ export function MemoGroupSection({
 
   const handleToggle = () => {
     if (isUncategorized) {
-      setUncategorizedCollapsed((v) => !v);
+      setUncategorizedCollapsed(panel, !uncategorizedCollapsed);
     } else if (group && onToggleCollapse) {
       onToggleCollapse(group.id);
     }
@@ -76,7 +84,7 @@ export function MemoGroupSection({
             transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
           }}
         >
-          <IconChevronDown />
+          <ChevronDown size={12} />
         </span>
 
         {/* ラベル */}
@@ -95,7 +103,7 @@ export function MemoGroupSection({
               }
             }}
             aria-label="メモグループ名を編集"
-            className="flex-1 bg-bg-base rounded-sm text-xs font-semibold px-1.5 py-px outline-none"
+            className="flex-1 bg-bg-base rounded-sm text-sm font-semibold px-1.5 py-px outline-none"
             style={{
               border: `1px solid ${accentColor}`,
               color: accentColor,
@@ -103,13 +111,44 @@ export function MemoGroupSection({
           />
         ) : (
           <span
-            className="flex-1 text-xs tracking-[0.06em]"
+            className="flex-1 text-sm tracking-[0.06em]"
             style={{
               fontWeight: isUncategorized ? 400 : 600,
               color: isUncategorized ? 'var(--text-muted)' : accentColor,
             }}
           >
             {label}
+          </span>
+        )}
+
+        {/* 並び替え矢印 — ユーザー作成グループのみ、ホバー時表示 */}
+        {!isUncategorized && group && !isEditingLabel && (onMoveUp || onMoveDown) && (
+          <span
+            className="flex items-center gap-px"
+            style={{ opacity: headerHovered ? 0.8 : 0, transition: 'opacity 0.15s' }}
+          >
+            <button
+              disabled={!onMoveUp}
+              onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
+              aria-label={`${group.label}を上に移動`}
+              className="bg-transparent border-none cursor-pointer p-0 flex items-center transition-colors duration-150"
+              style={{ color: onMoveUp ? 'var(--text-faint)' : 'var(--text-faint)', opacity: onMoveUp ? 1 : 0.3 }}
+              onMouseEnter={(e) => { if (onMoveUp) e.currentTarget.style.color = accentColor; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
+            >
+              <ArrowUp size={14} />
+            </button>
+            <button
+              disabled={!onMoveDown}
+              onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
+              aria-label={`${group.label}を下に移動`}
+              className="bg-transparent border-none cursor-pointer p-0 flex items-center transition-colors duration-150"
+              style={{ color: onMoveDown ? 'var(--text-faint)' : 'var(--text-faint)', opacity: onMoveDown ? 1 : 0.3 }}
+              onMouseEnter={(e) => { if (onMoveDown) e.currentTarget.style.color = accentColor; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
+            >
+              <ArrowDown size={14} />
+            </button>
           </span>
         )}
 
@@ -130,7 +169,7 @@ export function MemoGroupSection({
             onMouseEnter={(e) => { e.currentTarget.style.color = accentColor; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
           >
-            <IconEditSquare />
+            <SquarePen size={14} />
           </button>
         )}
 
@@ -154,12 +193,12 @@ export function MemoGroupSection({
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
           >
-            <IconClose />
+            <X size={14} />
           </button>
         )}
 
         {/* エントリ数 — 常に右端 */}
-        <span className="text-xs text-text-muted font-mono min-w-4 text-right opacity-70 shrink-0">
+        <span className="text-sm text-text-muted font-mono min-w-4 text-right opacity-70 shrink-0">
           {entries.length}
         </span>
       </div>
@@ -172,7 +211,7 @@ export function MemoGroupSection({
             onReorder={onReorderEntries}
           />
         ) : !isUncategorized ? (
-          <div className="py-3.5 px-3 text-xs text-text-faint text-center">
+          <div className="py-3.5 px-3 text-sm text-text-faint text-center">
             メモを追加してください
           </div>
         ) : null

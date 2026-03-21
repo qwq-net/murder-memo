@@ -29,96 +29,105 @@ export interface SessionsSlice {
 export const createSessionsSlice = (
   set: (fn: (s: StoreState) => Partial<StoreState>) => void,
   get: () => StoreState,
-): SessionsSlice => ({
-  sessions: [],
-  activeSessionId: null,
+): SessionsSlice => {
+  // StrictMode 等による多重呼び出しを防止
+  let initPromise: Promise<void> | null = null;
 
-  initSessions: async () => {
-    let sessions = await getAllSessions();
+  return {
+    sessions: [],
+    activeSessionId: null,
 
-    // デモセッションが存在しなければ自動作成
-    const hasDemo = sessions.some((s) => s.isDemo);
-    if (!hasDemo) {
-      const demo = buildDemoSession();
-      await putSession(demo.session);
-      await bulkPutCharacters(demo.characters, demo.session.id);
-      await bulkPutTimelineGroups(demo.timelineGroups);
-      await bulkPutMemoGroups(demo.memoGroups);
-      await bulkPutEntries(demo.entries, demo.session.id);
-      sessions.push(demo.session);
-    }
+    initSessions: () => {
+      if (initPromise) return initPromise;
+      initPromise = (async () => {
+        let sessions = await getAllSessions();
 
-    sessions.sort((a, b) => a.createdAt - b.createdAt);
-    set(() => ({
-      sessions,
-      activeSessionId: sessions[0].id,
-    }));
-  },
+        // デモセッションが存在しなければ自動作成
+        const hasDemo = sessions.some((s) => s.isDemo);
+        if (!hasDemo) {
+          const demo = buildDemoSession();
+          await putSession(demo.session);
+          await bulkPutCharacters(demo.characters, demo.session.id);
+          await bulkPutTimelineGroups(demo.timelineGroups);
+          await bulkPutMemoGroups(demo.memoGroups);
+          await bulkPutEntries(demo.entries, demo.session.id);
+          sessions.push(demo.session);
+        }
 
-  createSession: async (name) => {
-    const session: GameSession = {
-      id: nanoid(),
-      name,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    await putSession(session);
-    set((s) => ({ sessions: [...s.sessions, session], activeSessionId: session.id }));
-    return session;
-  },
+        sessions.sort((a, b) => a.createdAt - b.createdAt);
+        set(() => ({
+          sessions,
+          activeSessionId: sessions[0].id,
+        }));
+      })();
+      return initPromise;
+    },
 
-  switchSession: (id) => {
-    set(() => ({ activeSessionId: id }));
-  },
+    createSession: async (name) => {
+      const session: GameSession = {
+        id: nanoid(),
+        name,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      await putSession(session);
+      set((s) => ({ sessions: [...s.sessions, session], activeSessionId: session.id }));
+      return session;
+    },
 
-  renameSession: async (id, name) => {
-    const session = get().sessions.find((s) => s.id === id);
-    if (!session) return;
-    const updated = { ...session, name, updatedAt: Date.now() };
-    await putSession(updated);
-    set((s) => ({ sessions: s.sessions.map((s2) => (s2.id === id ? updated : s2)) }));
-  },
+    switchSession: (id) => {
+      set(() => ({ activeSessionId: id }));
+    },
 
-  removeSession: async (id) => {
-    // デモセッションは削除不可
-    const session = get().sessions.find((s) => s.id === id);
-    if (session?.isDemo) return;
-
-    await deleteSession(id);
-    set((s) => {
-      const remaining = s.sessions.filter((s2) => s2.id !== id);
-      const nextActiveId =
-        s.activeSessionId === id ? (remaining[0]?.id ?? null) : s.activeSessionId;
-      return { sessions: remaining, activeSessionId: nextActiveId };
-    });
-  },
-
-  clearCurrentSession: async () => {
-    const { activeSessionId, sessions } = get();
-    if (!activeSessionId) return;
-
-    // デモセッションは初期化不可
-    const current = sessions.find((s) => s.id === activeSessionId);
-    if (current?.isDemo) return;
-
-    await clearSessionData(activeSessionId);
-
-    // updatedAt を更新
-    const session = sessions.find((s) => s.id === activeSessionId);
-    if (session) {
-      const updated = { ...session, updatedAt: Date.now() };
+    renameSession: async (id, name) => {
+      const session = get().sessions.find((s) => s.id === id);
+      if (!session) return;
+      const updated = { ...session, name, updatedAt: Date.now() };
       await putSession(updated);
-      set((s) => ({
-        sessions: s.sessions.map((s2) => (s2.id === activeSessionId ? updated : s2)),
-      }));
-    }
+      set((s) => ({ sessions: s.sessions.map((s2) => (s2.id === id ? updated : s2)) }));
+    },
 
-    // インメモリ状態をリセット
-    set(() => ({
-      entries: [],
-      characters: [],
-      timelineGroups: [],
-      memoGroups: [],
-    }));
-  },
-});
+    removeSession: async (id) => {
+      // デモセッションは削除不可
+      const session = get().sessions.find((s) => s.id === id);
+      if (session?.isDemo) return;
+
+      await deleteSession(id);
+      set((s) => {
+        const remaining = s.sessions.filter((s2) => s2.id !== id);
+        const nextActiveId =
+          s.activeSessionId === id ? (remaining[0]?.id ?? null) : s.activeSessionId;
+        return { sessions: remaining, activeSessionId: nextActiveId };
+      });
+    },
+
+    clearCurrentSession: async () => {
+      const { activeSessionId, sessions } = get();
+      if (!activeSessionId) return;
+
+      // デモセッションは初期化不可
+      const current = sessions.find((s) => s.id === activeSessionId);
+      if (current?.isDemo) return;
+
+      await clearSessionData(activeSessionId);
+
+      // updatedAt を更新
+      const session = sessions.find((s) => s.id === activeSessionId);
+      if (session) {
+        const updated = { ...session, updatedAt: Date.now() };
+        await putSession(updated);
+        set((s) => ({
+          sessions: s.sessions.map((s2) => (s2.id === activeSessionId ? updated : s2)),
+        }));
+      }
+
+      // インメモリ状態をリセット
+      set(() => ({
+        entries: [],
+        characters: [],
+        timelineGroups: [],
+        memoGroups: [],
+      }));
+    },
+  };
+};

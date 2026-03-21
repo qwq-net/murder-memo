@@ -102,7 +102,7 @@ const ITEM_STYLE: React.CSSProperties = {
   background: 'none',
   border: 'none',
   textAlign: 'left',
-  fontSize: 12,
+  fontSize: 13,
   color: 'var(--text-primary)',
   cursor: 'pointer',
   transition: 'background 0.1s',
@@ -288,7 +288,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
           }
           if (isHeader(item)) {
             return (
-              <div key={`hdr-${i}`} style={{ padding: '5px 14px 2px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <div key={`hdr-${i}`} style={{ padding: '5px 14px 2px', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 {item.label}
               </div>
             );
@@ -416,7 +416,7 @@ const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
         {items.map((item, i) => {
           if (isSeparator(item)) return <div key={`sep-${i}`} style={{ height: 1, background: 'var(--border-subtle)', margin: '4px 0' }} />;
           if (isHeader(item)) return (
-            <div key={`hdr-${i}`} style={{ padding: '5px 14px 2px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            <div key={`hdr-${i}`} style={{ padding: '5px 14px 2px', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               {item.label}
             </div>
           );

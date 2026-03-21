@@ -20,19 +20,19 @@ export function ImageEntry({ entry }: ImageEntryProps) {
           style={{ maxHeight: 300 }}
         />
       ) : (
-        <div className="p-3 text-text-muted text-xs text-center">
+        <div className="p-3 text-text-muted text-sm text-center">
           画像を読み込み中…
         </div>
       )}
       {entry.content && (
-        <div className="mt-1 text-xs text-text-secondary whitespace-pre-wrap break-words">
+        <div className="mt-1 text-sm text-text-secondary whitespace-pre-wrap break-words">
           {entry.content}
         </div>
       )}
       <button
         onClick={() => deleteEntry(entry.id)}
         title="画像を削除"
-        className="absolute top-2 right-2.5 w-5 h-5 flex items-center justify-center border-none rounded-sm text-text-secondary text-xs cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-150"
+        className="absolute top-2 right-2.5 w-5 h-5 flex items-center justify-center border-none rounded-sm text-text-secondary text-sm cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-150"
         style={{ background: 'rgba(0,0,0,0.6)' }}
       >
         ×

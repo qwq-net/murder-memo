@@ -184,17 +184,17 @@ button:focus-visible {
 @utility btn-sm {
   gap: 6px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 13px;
 }
 @utility btn-md {
   gap: 8px;
   padding: 5px 12px;
-  font-size: 12px;
+  font-size: 13px;
 }
 @utility btn-lg {
   gap: 8px;
   padding: 6px 14px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -254,7 +254,7 @@ button:focus-visible {
   border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 13px;
   padding: 3px 8px;
   outline: none;
   transition: border-color 0.15s;
