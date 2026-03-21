@@ -1,6 +1,60 @@
 @import 'tailwindcss';
 
-/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+/* ─── Tailwind CSS 4 テーマトークン ────────────────────────────────────────── */
+/* :root の CSS変数を Tailwind ユーティリティクラスとしても使えるようにマッピング */
+@theme {
+  /* Surface */
+  --color-bg-base:       #0d0c0a;
+  --color-bg-surface:    #131210;
+  --color-bg-panel:      #161513;
+  --color-bg-elevated:   #1e1c19;
+  --color-bg-hover:      #252320;
+  --color-bg-active:     #2a2824;
+
+  /* Borders */
+  --color-border-subtle:  #252320;
+  --color-border-default: #302d28;
+  --color-border-strong:  #3d3a33;
+
+  /* Text */
+  --color-text-primary:   #e8dfc8;
+  --color-text-secondary: #a89f8a;
+  --color-text-muted:     #6b6458;
+  --color-text-faint:     #3d3a33;
+
+  /* Accent — 琥珀の捜査灯 */
+  --color-accent:      #c8891a;
+  --color-accent-dim:  #8a5e10;
+  --color-accent-glow: rgba(200, 137, 26, 0.15);
+
+  /* パネルアイデンティティカラー */
+  --color-panel-free-accent:     #c8891a;
+  --color-panel-personal-accent: #4a8fa8;
+  --color-panel-timeline-accent: #7a6aa8;
+
+  /* 設定ボタンアクセント */
+  --color-settings-accent: #c45a2a;
+
+  /* Functional */
+  --color-danger:  #b04040;
+  --color-success: #4a8a50;
+
+  /* 重要度 */
+  --color-importance-high:   #e05555;
+  --color-importance-medium: #e0a030;
+  --color-importance-low:    #6bab6b;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+  --font-mono: 'Cascadia Mono', 'Cascadia Code', Consolas, Menlo, Monaco, monospace;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+}
+
+/* ─── Design Tokens（後方互換用 CSS変数） ──────────────────────────────────── */
 :root {
   /* Surface */
   --bg-base:       #0d0c0a;
@@ -95,4 +149,137 @@ button:focus-visible {
   outline: 1.5px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+}
+
+/* ─── 共通ユーティリティ ─────────────────────────────────────────────────────── */
+/* onMouseEnter/onMouseLeave による命令的ホバー操作を CSS hover: で置き換える */
+
+/* ゴーストボタン — 枠線のみ、ホバーで色変化 */
+@utility btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  letter-spacing: 0.02em;
+  &:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+    &:hover {
+      color: var(--text-secondary);
+      border-color: var(--border-default);
+    }
+  }
+}
+
+/* ボタンサイズ — 3段階 */
+@utility btn-sm {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+@utility btn-md {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+@utility btn-lg {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* プライマリボタン — アクセント色塗り */
+@utility btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-settings-accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  &:hover {
+    opacity: 0.85;
+  }
+  &:disabled {
+    background: var(--border-subtle);
+    color: var(--text-faint);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+}
+
+/* 危険アクションボタン — ゴーストからホバーで塗りに変化 */
+@utility btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  &:hover {
+    background: var(--danger);
+    color: var(--bg-base);
+  }
+  &:disabled {
+    border-color: var(--border-subtle);
+    color: var(--text-faint);
+    cursor: not-allowed;
+    opacity: 0.6;
+    &:hover {
+      background: none;
+      color: var(--text-faint);
+    }
+  }
+}
+
+/* 標準入力フィールド */
+@utility input-base {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 3px 8px;
+  outline: none;
+  transition: border-color 0.15s;
+  &:focus {
+    border-color: var(--border-strong);
+  }
+}
+
+/* モーダルオーバーレイ */
+@utility modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+/* スクリーンリーダー専用（視覚的に非表示、ARIAには有効） */
+@utility sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
