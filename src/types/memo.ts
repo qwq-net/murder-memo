@@ -78,6 +78,7 @@ export interface GameSession {
   name: string;
   createdAt: number;
   updatedAt: number;
+  isDemo?: boolean; // デモセッションフラグ
 }
 
 // ─── Layout ──────────────────────────────────────────────────────────────────

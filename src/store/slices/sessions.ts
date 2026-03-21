@@ -1,6 +1,16 @@
 import { nanoid } from 'nanoid';
 
-import { clearSessionData, deleteSession, getAllSessions, putSession } from '@/lib/idb';
+import { buildDemoSession } from '@/lib/demoData';
+import {
+  bulkPutCharacters,
+  bulkPutEntries,
+  bulkPutMemoGroups,
+  bulkPutTimelineGroups,
+  clearSessionData,
+  deleteSession,
+  getAllSessions,
+  putSession,
+} from '@/lib/idb';
 import type { GameSession } from '@/types/memo';
 import type { StoreState } from '@/store/index';
 
@@ -25,16 +35,19 @@ export const createSessionsSlice = (
 
   initSessions: async () => {
     let sessions = await getAllSessions();
-    if (sessions.length === 0) {
-      const first: GameSession = {
-        id: nanoid(),
-        name: 'セッション 1',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-      await putSession(first);
-      sessions = [first];
+
+    // デモセッションが存在しなければ自動作成
+    const hasDemo = sessions.some((s) => s.isDemo);
+    if (!hasDemo) {
+      const demo = buildDemoSession();
+      await putSession(demo.session);
+      await bulkPutCharacters(demo.characters, demo.session.id);
+      await bulkPutTimelineGroups(demo.timelineGroups);
+      await bulkPutMemoGroups(demo.memoGroups);
+      await bulkPutEntries(demo.entries, demo.session.id);
+      sessions.push(demo.session);
     }
+
     sessions.sort((a, b) => a.createdAt - b.createdAt);
     set(() => ({
       sessions,
@@ -67,6 +80,10 @@ export const createSessionsSlice = (
   },
 
   removeSession: async (id) => {
+    // デモセッションは削除不可
+    const session = get().sessions.find((s) => s.id === id);
+    if (session?.isDemo) return;
+
     await deleteSession(id);
     set((s) => {
       const remaining = s.sessions.filter((s2) => s2.id !== id);
@@ -79,6 +96,10 @@ export const createSessionsSlice = (
   clearCurrentSession: async () => {
     const { activeSessionId, sessions } = get();
     if (!activeSessionId) return;
+
+    // デモセッションは初期化不可
+    const current = sessions.find((s) => s.id === activeSessionId);
+    if (current?.isDemo) return;
 
     await clearSessionData(activeSessionId);
 

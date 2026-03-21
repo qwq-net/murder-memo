@@ -33,7 +33,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'ja',
   theme: 'dark',
   defaultCharacterDisplay: {
-    free:     { format: 'full', visibility: 'always' },
+    free:     { format: 'full', visibility: 'minimal' },
     timeline: { format: 'full', visibility: 'minimal' },
     personal: { format: 'full', visibility: 'off' },
   },

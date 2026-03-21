@@ -302,3 +302,19 @@ export async function deleteImage(key: string): Promise<void> {
   const db = await getDb();
   await db.delete('images', key);
 }
+
+// ─── 完全リセット ─────────────────────────────────────────────────────────
+
+/** IndexedDB データベースを完全に削除し、内部キャッシュをクリアする */
+export async function destroyDatabase(): Promise<void> {
+  if (dbPromise) {
+    const db = await dbPromise;
+    db.close();
+    dbPromise = null;
+  }
+  const req = indexedDB.deleteDatabase(DB_NAME);
+  await new Promise<void>((resolve, reject) => {
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}

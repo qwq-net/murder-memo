@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { useStore } from '@/store';
+import { destroyDatabase } from '@/lib/idb';
 import type { AppSettings } from '@/store/slices/settings';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
 import { CharacterBadge } from '@/components/characters/characterBadge';
@@ -386,8 +387,10 @@ export function SettingsPanel() {
   const removeSession = useStore((s) => s.removeSession);
   const sessions = useStore((s) => s.sessions);
   const activeSessionId = useStore((s) => s.activeSessionId);
+  const isDemo = sessions.find((s) => s.id === activeSessionId)?.isDemo ?? false;
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showResetAllConfirm, setShowResetAllConfirm] = useState(false);
 
   const handleClearSession = useCallback(async () => {
     await clearCurrentSession();
@@ -399,6 +402,12 @@ export function SettingsPanel() {
     await removeSession(activeSessionId);
     setOpen(false);
   }, [activeSessionId, removeSession, setOpen]);
+
+  const handleResetAll = useCallback(async () => {
+    localStorage.clear();
+    await destroyDatabase();
+    location.reload();
+  }, []);
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     updateSettings({ [key]: value });
@@ -417,7 +426,7 @@ export function SettingsPanel() {
     <>
     <ModalFrame
       open={isOpen}
-      onClose={() => { if (!showClearConfirm && !showDeleteConfirm) setOpen(false); }}
+      onClose={() => { if (!showClearConfirm && !showDeleteConfirm && !showResetAllConfirm) setOpen(false); }}
       width={480}
       ariaLabel="アプリ設定"
     >
@@ -515,13 +524,13 @@ export function SettingsPanel() {
           <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
             <SectionHeader
               onReset={() => update('defaultCharacterDisplay', {
-                free:     { format: 'full', visibility: 'always' },
+                free:     { format: 'full', visibility: 'minimal' },
                 timeline: { format: 'full', visibility: 'minimal' },
                 personal: { format: 'full', visibility: 'off' },
               })}
               resetDisabled={
                 settings.defaultCharacterDisplay.free.format === 'full' &&
-                settings.defaultCharacterDisplay.free.visibility === 'always' &&
+                settings.defaultCharacterDisplay.free.visibility === 'minimal' &&
                 settings.defaultCharacterDisplay.timeline.format === 'full' &&
                 settings.defaultCharacterDisplay.timeline.visibility === 'minimal' &&
                 settings.defaultCharacterDisplay.personal.format === 'full' &&
@@ -563,21 +572,28 @@ export function SettingsPanel() {
               <div>
                 <button
                   onClick={() => setShowClearConfirm(true)}
+                  disabled={isDemo}
                   style={{
                     background: 'none',
-                    border: '1px solid var(--danger)',
+                    border: `1px solid ${isDemo ? 'var(--border-subtle)' : 'var(--danger)'}`,
                     borderRadius: 'var(--radius-sm)',
-                    color: 'var(--danger)',
+                    color: isDemo ? 'var(--text-faint)' : 'var(--danger)',
                     fontSize: 12,
                     padding: '6px 14px',
-                    cursor: 'pointer',
+                    cursor: isDemo ? 'not-allowed' : 'pointer',
                     transition: 'background 0.15s, color 0.15s',
+                    opacity: isDemo ? 0.6 : 1,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = 'var(--bg-base)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--danger)'; }}
+                  onMouseEnter={(e) => { if (!isDemo) { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = 'var(--bg-base)'; } }}
+                  onMouseLeave={(e) => { if (!isDemo) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--danger)'; } }}
                 >
                   初期化する
                 </button>
+                {isDemo && (
+                  <span style={{ fontSize: 11, color: 'var(--text-faint)', marginLeft: 8 }}>
+                    サンプルシナリオは初期化できません
+                  </span>
+                )}
               </div>
             </div>
 
@@ -589,29 +605,63 @@ export function SettingsPanel() {
               <div>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  disabled={sessions.length <= 1}
+                  disabled={isDemo || sessions.length <= 1}
                   style={{
                     background: 'none',
-                    border: `1px solid ${sessions.length <= 1 ? 'var(--border-subtle)' : 'var(--danger)'}`,
+                    border: `1px solid ${isDemo || sessions.length <= 1 ? 'var(--border-subtle)' : 'var(--danger)'}`,
                     borderRadius: 'var(--radius-sm)',
-                    color: sessions.length <= 1 ? 'var(--text-faint)' : 'var(--danger)',
+                    color: isDemo || sessions.length <= 1 ? 'var(--text-faint)' : 'var(--danger)',
                     fontSize: 12,
                     padding: '6px 14px',
-                    cursor: sessions.length <= 1 ? 'not-allowed' : 'pointer',
+                    cursor: isDemo || sessions.length <= 1 ? 'not-allowed' : 'pointer',
                     transition: 'background 0.15s, color 0.15s',
-                    opacity: sessions.length <= 1 ? 0.6 : 1,
+                    opacity: isDemo || sessions.length <= 1 ? 0.6 : 1,
                   }}
-                  onMouseEnter={(e) => { if (sessions.length > 1) { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = 'var(--bg-base)'; } }}
-                  onMouseLeave={(e) => { if (sessions.length > 1) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--danger)'; } }}
+                  onMouseEnter={(e) => { if (!isDemo && sessions.length > 1) { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = 'var(--bg-base)'; } }}
+                  onMouseLeave={(e) => { if (!isDemo && sessions.length > 1) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--danger)'; } }}
                 >
                   セッションを削除
                 </button>
-                {sessions.length <= 1 && (
+                {isDemo ? (
+                  <span style={{ fontSize: 11, color: 'var(--text-faint)', marginLeft: 8 }}>
+                    サンプルシナリオは削除できません
+                  </span>
+                ) : sessions.length <= 1 && (
                   <span style={{ fontSize: 11, color: 'var(--text-faint)', marginLeft: 8 }}>
                     最後のセッションは削除できません
                   </span>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* ── 完全リセット ── */}
+          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
+            <SectionHeader>完全リセット</SectionHeader>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              すべてのセッション・設定・保存データを完全に削除し、アプリを初期状態に戻します。
+            </span>
+            <div>
+              <button
+                onClick={() => setShowResetAllConfirm(true)}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--danger)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--danger)',
+                  fontSize: 12,
+                  padding: '6px 14px',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = 'var(--bg-base)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--danger)'; }}
+              >
+                完全リセット
+              </button>
             </div>
           </div>
         </div>
@@ -640,6 +690,19 @@ export function SettingsPanel() {
         color: 'var(--danger)',
         requiresConfirmation: true,
         onClick: handleDeleteSession,
+      }]}
+    />
+
+    <ConfirmModal
+      open={showResetAllConfirm}
+      onClose={() => setShowResetAllConfirm(false)}
+      title="アプリを完全にリセットしますか？"
+      confirmationLabel="すべてのセッション・メモ・登場人物・設定・画像データが完全に削除されます。この操作は取り消せません。"
+      actions={[{
+        label: '完全リセット',
+        color: 'var(--danger)',
+        requiresConfirmation: true,
+        onClick: handleResetAll,
       }]}
     />
     </>
