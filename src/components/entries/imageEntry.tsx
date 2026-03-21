@@ -1,14 +1,21 @@
 import { useImageBlob } from '@/hooks/useImageBlob';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
+import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
 
 interface ImageEntryProps {
   entry: MemoEntry;
+  isHovered: boolean;
 }
 
-export function ImageEntry({ entry }: ImageEntryProps) {
+export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   const src = useImageBlob(entry.imageBlobKey);
   const deleteEntry = useStore((s) => s.deleteEntry);
+  const settings = useStore((s) => s.settings);
+
+  const panelDefault = settings.defaultCharacterDisplay[entry.panel];
+  const effectiveFormat = entry.characterDisplayFormat ?? panelDefault.format;
+  const effectiveVisibility = entry.characterDisplayVisibility ?? panelDefault.visibility;
 
   return (
     <div className="relative px-2 py-1.5">
@@ -37,6 +44,14 @@ export function ImageEntry({ entry }: ImageEntryProps) {
       >
         ×
       </button>
+
+      {/* 役職マーカー */}
+      <CharacterBadgeBar
+        entry={entry}
+        format={effectiveFormat}
+        visibility={effectiveVisibility}
+        isEntryHovered={isHovered}
+      />
     </div>
   );
 }

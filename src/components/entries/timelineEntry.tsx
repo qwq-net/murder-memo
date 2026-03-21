@@ -1,194 +1,156 @@
+/**
+ * タイムラインエントリ。時刻列 + EntryContent（テキスト+バッジ）で構成。
+ * 時刻の編集・表示ロジックのみ保持し、テキスト編集は EntryContent に委譲する。
+ */
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
-import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
-import { useCaretPosition } from '@/hooks/useCaretPosition';
 import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
+import { EntryContent } from '@/components/entries/entryContent';
 
 interface TimelineEntryProps {
   entry: MemoEntry;
   hideTime?: boolean;
+  isHovered: boolean;
 }
 
-export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
+export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps) {
   const updateEntry = useStore((s) => s.updateEntry);
   const focusedEntryId = useStore((s) => s.focusedEntryId);
   const setFocusedEntry = useStore((s) => s.setFocusedEntry);
 
   const isEditing = focusedEntryId === entry.id;
-  const [draftContent, setDraftContent] = useState(entry.content);
   const [draftTime, setDraftTime] = useState(entry.eventTime ?? '');
-  const contentRef = useRef<HTMLTextAreaElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const focusTargetRef = useRef<'time' | 'content'>('content');
-  const cancelledRef = useRef(false);
-  const blurHandledRef = useRef(false);
-  const { applyPendingCursor, captureFromMouseEvent } = useCaretPosition();
-  const { resize } = useAutoResizeTextarea();
 
-  // 編集モードに入った瞬間だけ focus + カーソル復元を行う（毎レンダーでは実行しない）
-  const editInitRef = useRef(false);
-  useLayoutEffect(() => {
-    if (!isEditing) {
-      editInitRef.current = false;
-      return;
-    }
-    if (editInitRef.current) return;
-    editInitRef.current = true;
-    cancelledRef.current = false;
-    blurHandledRef.current = false;
-    resize(contentRef.current);
-
-    if (focusTargetRef.current === 'time') {
-      timeRef.current?.focus();
-    } else {
-      const el = contentRef.current;
-      if (!el) return;
-      el.focus();
-      applyPendingCursor(el);
-    }
-  }, [isEditing, resize, applyPendingCursor]);
-
-  const [prevSyncKey, setPrevSyncKey] = useState({
-    content: entry.content,
-    eventTime: entry.eventTime,
-    isEditing,
-  });
-  if (
-    entry.content !== prevSyncKey.content ||
-    entry.eventTime !== prevSyncKey.eventTime ||
-    isEditing !== prevSyncKey.isEditing
-  ) {
-    setPrevSyncKey({ content: entry.content, eventTime: entry.eventTime, isEditing });
-    if (!isEditing) {
-      setDraftContent(entry.content);
-      setDraftTime(entry.eventTime ?? '');
-    }
+  // 時刻の props → draft 同期（非編集時のみ）
+  const [prevTimeSync, setPrevTimeSync] = useState({ eventTime: entry.eventTime, isEditing });
+  if (entry.eventTime !== prevTimeSync.eventTime || isEditing !== prevTimeSync.isEditing) {
+    setPrevTimeSync({ eventTime: entry.eventTime, isEditing });
+    if (!isEditing) setDraftTime(entry.eventTime ?? '');
   }
 
-  // onBlurから呼ばれる唯一の保存ポイント（二重実行防止付き）
-  const handleBlur = useCallback(() => {
-
-    if (blurHandledRef.current) return;
-    blurHandledRef.current = true;
-    if (cancelledRef.current) {
-      cancelledRef.current = false;
-      setFocusedEntry(null);
+  // 時刻フォーカス: 編集開始時に focusTargetRef が 'time' なら時刻 input にフォーカス
+  const timeInitRef = useRef(false);
+  useLayoutEffect(() => {
+    if (!isEditing) {
+      timeInitRef.current = false;
       return;
     }
-    const timeTrimmed = autoCompleteTime(draftTime);
-    const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
-    updateEntry(entry.id, {
-      content: draftContent.trim(),
-      eventTime: timeTrimmed || undefined,
-      eventTimeSortKey: sortKey,
-    });
-    setFocusedEntry(null);
+    if (timeInitRef.current) return;
+    timeInitRef.current = true;
+    if (focusTargetRef.current === 'time') {
+      timeRef.current?.focus();
+    }
+  }, [isEditing]);
 
-  }, [draftContent, draftTime, entry.id, updateEntry, setFocusedEntry]);
+  // EntryContent に渡す保存コールバック（content + 時刻をまとめて保存）
+  const handleSave = useCallback(
+    (content: string) => {
+      const timeTrimmed = autoCompleteTime(draftTime);
+      const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
+      updateEntry(entry.id, {
+        content,
+        eventTime: timeTrimmed || undefined,
+        eventTimeSortKey: sortKey,
+      });
+    },
+    [draftTime, entry.id, updateEntry],
+  );
+
+  // 時刻 input の blur（コンテナ内フォーカス移動なら保存スキップ）
+  const handleTimeBlur = useCallback(
+    (e: React.FocusEvent) => {
+      (e.currentTarget as HTMLInputElement).style.borderColor = 'var(--border-subtle)';
+      setDraftTime((v) => autoCompleteTime(v));
+      // コンテナ内の別要素（content textarea）への移動なら保存しない
+      if (containerRef.current?.contains(e.relatedTarget as Node)) return;
+      // コンテナ外への移動 → 保存して編集終了
+      const timeTrimmed = autoCompleteTime(draftTime);
+      const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
+      updateEntry(entry.id, {
+        content: entry.content,
+        eventTime: timeTrimmed || undefined,
+        eventTimeSortKey: sortKey,
+      });
+      setFocusedEntry(null);
+    },
+    [draftTime, entry.id, entry.content, updateEntry, setFocusedEntry],
+  );
+
+  // ── 時刻列の共通スタイル ──
+  const timeStyle = {
+    width: 'var(--tl-time-width)',
+    flexShrink: 0,
+    boxSizing: 'border-box' as const,
+    fontFamily: 'var(--font-mono)',
+    fontSize: 13,
+    lineHeight: 1.2,
+    letterSpacing: '0.04em',
+    textAlign: 'center' as const,
+    padding: '2px 4px',
+  };
 
   if (isEditing) {
     return (
-      <div style={{
-        padding: '1px 4px 2px var(--tl-entry-pad-left)',
-        display: 'flex',
-        gap: 'var(--tl-time-gap)',
-        alignItems: 'flex-start',
-      }}>
+      <div
+        ref={containerRef}
+        style={{
+          padding: '1px 4px 2px var(--tl-entry-pad-left)',
+          display: 'flex',
+          gap: 'var(--tl-time-gap)',
+          alignItems: 'flex-start',
+        }}
+      >
+        {/* 時刻 input */}
         <input
           ref={timeRef}
           value={draftTime}
           onChange={(e) => setDraftTime(normalizeTimeInput(e.target.value))}
           onKeyDown={(e) => {
-            // 編集中のキーイベントが dnd-kit の KeyboardSensor に到達するのを防止
             e.stopPropagation();
-            if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); contentRef.current?.focus(); }
+            if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              // 時刻確定 → コンテナ内の textarea にフォーカス移動（blur で保存しない）
+              containerRef.current?.querySelector('textarea')?.focus();
+            }
             if (e.key === 'Escape') {
               e.preventDefault();
-              cancelledRef.current = true;
-              setDraftContent(entry.content);
               setDraftTime(entry.eventTime ?? '');
               timeRef.current?.blur();
             }
             if (e.key === 'Tab') {
               e.preventDefault();
-              contentRef.current?.focus();
+              containerRef.current?.querySelector('textarea')?.focus();
             }
           }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'var(--border-subtle)';
-            setDraftTime((v) => autoCompleteTime(v));
-            // コンテンツtextareaへの移動でなければ保存
-            if (!e.relatedTarget || e.relatedTarget !== contentRef.current) {
-              handleBlur();
-            }
+          onBlur={handleTimeBlur}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = 'var(--panel-timeline-accent)';
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--panel-timeline-accent)'; }}
           placeholder="--:--"
           aria-label="時刻"
           style={{
-            width: 'var(--tl-time-width)',
-            flexShrink: 0,
-            boxSizing: 'border-box',
+            ...timeStyle,
             background: 'var(--bg-elevated)',
             border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-sm)',
             outline: 'none',
             color: draftTime ? 'var(--panel-timeline-accent)' : 'var(--text-faint)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 13,
-            lineHeight: 1.2,
-            padding: '2px 4px',
-            textAlign: 'center',
-            letterSpacing: '0.04em',
             transition: 'border-color 0.15s',
           }}
         />
-        <textarea
-          ref={contentRef}
-          value={draftContent}
-          onChange={(e) => {
-            setDraftContent(e.target.value);
-            resize(e.target);
-          }}
-          onBlur={handleBlur}
-          onKeyDown={(e) => {
-            // 編集中のキーイベントが dnd-kit の KeyboardSensor に到達するのを防止
-            e.stopPropagation();
-
-            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              contentRef.current?.blur();
-            }
-            if (e.key === 'Escape') {
-              e.preventDefault();
-              cancelledRef.current = true;
-              setDraftContent(entry.content);
-              setDraftTime(entry.eventTime ?? '');
-              contentRef.current?.blur();
-            }
-            if (e.key === 'Tab') {
-              e.preventDefault();
-            }
-          }}
-          rows={1}
-          style={{
-            flex: 1,
-            minWidth: 0,
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            color: 'var(--text-primary)',
-            fontFamily: 'var(--font-sans)',
-            fontSize: 13,
-            lineHeight: 1.2,
-            padding: '3px 0 0 6px',
-            margin: 0,
-            resize: 'none',
-            overflow: 'hidden',
-            boxSizing: 'border-box',
-          }}
+        {/* テキスト + バッジ */}
+        <EntryContent
+          entry={entry}
+          onSave={handleSave}
+          isHovered={isHovered}
+          onEscape={() => setDraftTime(entry.eventTime ?? '')}
+          autoFocus={focusTargetRef.current !== 'time'}
+          containerRef={containerRef}
         />
       </div>
     );
@@ -196,6 +158,7 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
 
   return (
     <div
+      ref={containerRef}
       style={{
         cursor: 'text',
         padding: '1px 4px 0 var(--tl-entry-pad-left)',
@@ -205,57 +168,30 @@ export function TimelineEntry({ entry, hideTime }: TimelineEntryProps) {
         minHeight: 22,
       }}
     >
-      {/* 時刻 or 不明 — クリックで時刻にフォーカス */}
+      {/* 時刻表示 — クリックで時刻にフォーカス */}
       <span
         onClick={(e) => {
           if (e.shiftKey) return;
-
           focusTargetRef.current = 'time';
           setFocusedEntry(entry.id);
         }}
         style={{
-          width: 'var(--tl-time-width)',
-          flexShrink: 0,
+          ...timeStyle,
           border: '1px solid transparent',
-          padding: '2px 4px',
-          boxSizing: 'border-box' as const,
-          fontFamily: 'var(--font-mono)',
-          fontSize: 13,
-          letterSpacing: '0.04em',
-          color: entry.eventTime
-            ? 'var(--panel-timeline-accent)'
-            : 'var(--text-faint)',
-          textAlign: 'center',
+          color: entry.eventTime ? 'var(--panel-timeline-accent)' : 'var(--text-faint)',
           cursor: 'text',
         }}
       >
         {hideTime ? '' : (entry.eventTime ?? '')}
       </span>
 
-      {/* テキスト */}
-      <span
-        onMouseUp={(e) => {
-          if (e.shiftKey) return;
-
-          focusTargetRef.current = 'content';
-          captureFromMouseEvent(e, entry.content.length);
-          setFocusedEntry(entry.id);
-        }}
-        style={{
-          fontSize: 13,
-          lineHeight: 1.2,
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-          flex: 1,
-          color: 'var(--text-primary)',
-          paddingTop: 3,
-          paddingLeft: 6,
-        }}
-      >
-        {entry.content || (
-          <span style={{ color: 'var(--text-faint)' }}>空のメモ</span>
-        )}
-      </span>
+      {/* テキスト + バッジ */}
+      <EntryContent
+        entry={entry}
+        onSave={handleSave}
+        isHovered={isHovered}
+        containerRef={containerRef}
+      />
     </div>
   );
 }

@@ -88,7 +88,7 @@ function MarkerPreview({
       style={containerStyle}
     >
       <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-        {MOCK_CHARACTERS.map((c, i) => {
+        {MOCK_CHARACTERS.map((c) => {
           const badge = (
             <CharacterBadge
               key={c.name}
@@ -102,7 +102,7 @@ function MarkerPreview({
 
           if (isMinimal) {
             return (
-              <MinimalSlot key={c.name} revealed={hovered || c.active} isActive={c.active} isFirst={i === 0}>
+              <MinimalSlot key={c.name} revealed={hovered || c.active} isActive={c.active}>
                 {badge}
               </MinimalSlot>
             );

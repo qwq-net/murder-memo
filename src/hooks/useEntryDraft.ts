@@ -25,6 +25,7 @@ export function useEntryDraft<T extends Record<string, unknown>>({
   const setFocusedEntry = useStore((s) => s.setFocusedEntry);
   const [draft, setDraftState] = useState<T>(currentValues);
   const cancelledRef = useRef(false);
+  const blurHandledRef = useRef(false);
 
   // props → draft 同期（非編集時のみ）
   // currentValues はオブジェクトなので JSON シリアライズで変更検出
@@ -41,7 +42,10 @@ export function useEntryDraft<T extends Record<string, unknown>>({
     setDraftState((prev) => ({ ...prev, ...patch }));
   }, []);
 
+  // 二重実行防止付き blur ハンドラー
   const handleBlur = useCallback(() => {
+    if (blurHandledRef.current) return;
+    blurHandledRef.current = true;
     if (cancelledRef.current) {
       cancelledRef.current = false;
       setFocusedEntry(null);
@@ -56,11 +60,19 @@ export function useEntryDraft<T extends Record<string, unknown>>({
     setDraftState(currentValues);
   }, [currentValues]);
 
+  // 編集開始時にガードをリセット
+  const resetGuards = useCallback(() => {
+    cancelledRef.current = false;
+    blurHandledRef.current = false;
+  }, []);
+
   return {
     draft,
     setDraft,
     cancelledRef,
+    blurHandledRef,
     handleBlur,
     handleEscape,
+    resetGuards,
   };
 }

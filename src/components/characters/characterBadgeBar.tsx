@@ -4,8 +4,6 @@ import { CharacterBadge } from '@/components/characters/characterBadge';
 
 interface CharacterBadgeBarProps {
   entry: MemoEntry;
-  /** 時刻欄分のインデントを追加（タイムラインエントリ用） */
-  indent?: boolean;
   format: CharacterDisplayFormat;
   visibility: CharacterDisplayVisibility;
   isEntryHovered: boolean;
@@ -14,21 +12,20 @@ interface CharacterBadgeBarProps {
 /**
  * ミニマルモード用ラッパー。非選択バッジを max-width + opacity で
  * 滑り込むようにアニメーション表示する。
+ * 非表示時は幅・マージンともに 0 にして余白を生まない。
  */
 export function MinimalSlot({
   revealed,
   isActive,
-  isFirst,
   children,
 }: {
   revealed: boolean;
   isActive: boolean;
-  isFirst: boolean;
   children: React.ReactNode;
 }) {
-  // 選択済みバッジは常に表示（gap=0 なので自前でマージン）
+  // 選択済みバッジは常に表示（gap:0 なのでマージンでスペーシング）
   if (isActive) {
-    return <span style={{ display: 'inline-flex', marginLeft: isFirst ? 0 : 4 }}>{children}</span>;
+    return <span style={{ display: 'inline-flex', marginRight: 1 }}>{children}</span>;
   }
 
   return (
@@ -36,21 +33,21 @@ export function MinimalSlot({
       style={revealed ? {
         display: 'inline-flex',
         maxWidth: 120,
-        marginLeft: isFirst ? 0 : 4,
+        marginRight: 1,
         opacity: 1,
         overflow: 'hidden',
-        transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out, margin-left 0.2s ease-out',
+        transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out, margin 0.2s ease-out',
       } : {
         display: 'inline-flex',
         maxWidth: 0,
         minWidth: 0,
         width: 0,
-        marginLeft: 0,
+        marginRight: 0,
         padding: 0,
         opacity: 0,
         overflow: 'hidden',
         flex: '0 0 0',
-        transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out, margin-left 0.2s ease-out',
+        transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out, margin 0.2s ease-out',
       }}
     >
       {children}
@@ -58,7 +55,16 @@ export function MinimalSlot({
   );
 }
 
-export function CharacterBadgeBar({ entry, indent, format, visibility, isEntryHovered }: CharacterBadgeBarProps) {
+/**
+ * エントリに紐づくキャラクターバッジ一覧。
+ *
+ * レイアウトの責務分担:
+ *   - 外側の padding（テキストとの左揃え）は親コンポーネント（EntryContent）が担当
+ *   - このコンポーネントはバッジ間の間隔のみ管理（CSS gap）
+ *   - ミニマルモードでは gap が非表示要素に効かないよう gap: 0 にし、
+ *     MinimalSlot 側で幅制御のみ行う
+ */
+export function CharacterBadgeBar({ entry, format, visibility, isEntryHovered }: CharacterBadgeBarProps) {
   const allCharacters = useStore((s) => s.characters);
   const toggleCharacterTag = useStore((s) => s.toggleCharacterTag);
 
@@ -82,27 +88,23 @@ export function CharacterBadgeBar({ entry, indent, format, visibility, isEntryHo
     <div
       style={{
         display: 'flex',
-        gap: isMinimal ? 0 : 4,
+        // ミニマルモードでは gap が非表示(width:0)要素にも効くため 0 にする
+        // 通常モードは gap で均等スペーシング（折り返し時も2行目先頭にズレなし）
+        columnGap: isMinimal ? 0 : 1,
+        rowGap: isMinimal ? 0 : 1,
         alignItems: 'center',
         flexShrink: 0,
         flexWrap: 'wrap',
-        padding: indent
-          ? '0 10px 4px calc(var(--tl-content-left) + 6px)'
-          : '0 10px 1px',
+        // 外側 padding は親（EntryContent）に委譲。ここでは上下余白のみ
+        padding: 0,
         opacity: collapsed ? 0 : 1,
         height: collapsed ? 0 : 'auto',
         transition: 'opacity 0.15s ease-out',
       }}
     >
-      {characters.map((char, i) => {
+      {characters.map((char) => {
         const isActive = entry.characterTags.includes(char.id);
         const revealed = isEntryHovered || isActive;
-        // 最初に「表示される」バッジかどうか（ホバー時は0番目、非ホバー時は最初のアクティブ）
-        const isFirstVisible = isMinimal && (
-          isEntryHovered
-            ? i === 0
-            : characters.findIndex((c) => entry.characterTags.includes(c.id)) === i
-        );
         const badge = (
           <CharacterBadge
             key={char.id}
@@ -116,7 +118,7 @@ export function CharacterBadgeBar({ entry, indent, format, visibility, isEntryHo
 
         if (isMinimal) {
           return (
-            <MinimalSlot key={char.id} revealed={revealed} isActive={isActive} isFirst={isFirstVisible}>
+            <MinimalSlot key={char.id} revealed={revealed} isActive={isActive}>
               {badge}
             </MinimalSlot>
           );

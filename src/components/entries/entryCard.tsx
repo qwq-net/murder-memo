@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
-import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
 import { IconImportance } from '@/components/icons';
 import { BulkContextMenu } from '@/components/entries/actions/bulkContextMenu';
 import { EntryContextMenu } from '@/components/entries/actions/entryContextMenu';
@@ -35,14 +34,10 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
   const accent = PANEL_ACCENT[entry.panel] ?? 'var(--border-default)';
 
   const { isSelected, selectedIds, clearSelection } = useSelection();
-  const settings = useStore((s) => s.settings);
   const focusedEntryId = useStore((s) => s.focusedEntryId);
   const selected = isSelected(entry.id);
   const isEditing = focusedEntryId === entry.id;
-
-  const panelDefault = settings.defaultCharacterDisplay[entry.panel];
-  const effectiveFormat = entry.characterDisplayFormat ?? panelDefault.format;
-  const effectiveVisibility = entry.characterDisplayVisibility ?? panelDefault.visibility;
+  const isEntryHovered = (hovered && !ctxMenu && !bulkCtxMenu) || isEditing;
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -61,11 +56,11 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
   const renderContent = () => {
     switch (entry.type) {
       case 'image':
-        return <ImageEntry entry={entry} />;
+        return <ImageEntry entry={entry} isHovered={isEntryHovered} />;
       case 'timeline':
-        return <TimelineEntry entry={entry} hideTime={hideTime} />;
+        return <TimelineEntry entry={entry} hideTime={hideTime} isHovered={isEntryHovered} />;
       default:
-        return <TextEntry entry={entry} />;
+        return <TextEntry entry={entry} isHovered={isEntryHovered} />;
     }
   };
 
@@ -101,8 +96,8 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         className="absolute rounded-sm pointer-events-none"
         style={{
           left: entry.type === 'timeline' ? 'var(--tl-content-left)' : 4,
-          top: entry.type === 'timeline' ? -1 : 2,
-          bottom: entry.type === 'timeline' ? -1 : 2,
+          top: -1,
+          bottom: -1,
           width: selected ? 4 : 3,
           background: selected ? 'var(--accent)' : accent,
           opacity: selected ? 0.9 : (hovered ? 0.6 : 0.45),
@@ -146,7 +141,6 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         </>
       )}
 
-
       {/* 重要度マーカー — エントリ全体の右端・上下中央 */}
       {importanceColor && (
         <IconImportance
@@ -162,19 +156,10 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         />
       )}
 
-      {/* Row 1: Content */}
+      {/* コンテンツ（テキスト+バッジは各エントリ内で管理） */}
       <div className="min-w-0" style={{ paddingRight: importanceColor ? 20 : 0 }}>
         {renderContent()}
       </div>
-
-      {/* Row 2: Character badges */}
-      <CharacterBadgeBar
-        entry={entry}
-        indent={entry.type === 'timeline'}
-        format={effectiveFormat}
-        visibility={effectiveVisibility}
-        isEntryHovered={(hovered && !ctxMenu && !bulkCtxMenu) || isEditing}
-      />
 
       {/* 単体コンテキストメニュー */}
       {ctxMenu && (
