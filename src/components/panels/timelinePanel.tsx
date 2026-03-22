@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
@@ -6,11 +6,10 @@ import { useGroupSwap } from '@/hooks/useGroupSwap';
 import { groupEntriesByTimeline } from '@/lib/grouping';
 import { useStore } from '@/store';
 import type { MemoEntry, TimelineGroup } from '@/types/memo';
-import { ConfirmModal } from '@/components/common/confirmModal';
 import { EmptyState } from '@/components/common/emptyState';
+import { GroupHeader } from '@/components/common/groupHeader';
 import { EntryInput } from '@/components/entries/entryInput';
 import { SortableEntryList } from '@/components/entries/sortableEntryList';
-import { ArrowDown, ArrowUp, ChevronDown, SquarePen, X } from '@/components/icons';
 
 export function TimelinePanel() {
   const allEntries = useStore((s) => s.entries);
@@ -108,7 +107,6 @@ function TimelineGroupSection({
   onMoveUp,
   onMoveDown,
 }: TimelineGroupSectionProps) {
-  const [headerHovered, setHeaderHovered] = useState(false);
   const entryCount = hourGroups.reduce((sum, hg) => sum + hg.entries.length, 0) + unknownEntries.length;
 
   const labelEditor = useGroupLabelEditor({
@@ -125,119 +123,20 @@ function TimelineGroupSection({
 
   return (
     <div>
-      {/* グループヘッダー */}
-      <div
-        onMouseEnter={() => setHeaderHovered(true)}
-        onMouseLeave={() => setHeaderHovered(false)}
-        onClick={labelEditor.isEditing ? undefined : () => onToggleCollapse(group.id)}
-        className="flex items-center gap-2 px-2.5 py-[7px] cursor-pointer select-none"
-        style={{
-          background: 'color-mix(in srgb, var(--panel-timeline-accent) 5%, transparent)',
-          borderBottom: '1px solid color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
+      <GroupHeader
+        label={group.label}
+        collapsed={group.collapsed}
+        accentColor="var(--panel-timeline-accent)"
+        onToggle={() => onToggleCollapse(group.id)}
+        labelEditor={labelEditor}
+        deleteConfirm={deleteConfirm}
+        onMoveUp={onMoveUp}
+        onMoveDown={onMoveDown}
+        deleteModal={{
+          title: `「${group.label}」を削除`,
+          confirmationLabel: `メモが ${entryCount}件 一緒に削除されることを理解しました`,
         }}
-      >
-        {/* 折りたたみ矢印 */}
-        <span
-          className="flex items-center shrink-0 text-panel-timeline-accent transition-transform duration-150"
-          style={{
-            transform: group.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-          }}
-        >
-          <ChevronDown size={12} />
-        </span>
-
-        {/* ラベル */}
-        {labelEditor.isEditing ? (
-          <input
-            autoFocus
-            value={labelEditor.draftLabel}
-            onChange={(e) => labelEditor.setDraftLabel(e.target.value)}
-            onBlur={labelEditor.saveLabel}
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={labelEditor.handleKeyDown}
-            aria-label="メモグループ名を編集"
-            className="flex-1 bg-bg-base border border-panel-timeline-accent rounded-sm text-panel-timeline-accent text-sm font-semibold px-1.5 py-px outline-none"
-          />
-        ) : (
-          <span className="flex-1 text-sm font-semibold text-panel-timeline-accent tracking-[0.06em]">
-            {group.label}
-          </span>
-        )}
-
-        {/* 並び替え矢印 — ホバー時のみ表示 */}
-        {!labelEditor.isEditing && (onMoveUp || onMoveDown) && (
-          <span
-            className="flex items-center gap-px"
-            style={{ opacity: headerHovered ? 0.8 : 0, transition: 'opacity 0.15s' }}
-          >
-            <button
-              disabled={!onMoveUp}
-              onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
-              aria-label={`${group.label}を上に移動`}
-              className="bg-transparent border-none cursor-pointer p-0 flex items-center transition-colors duration-150"
-              style={{ color: 'var(--text-faint)', opacity: onMoveUp ? 1 : 0.3 }}
-              onMouseEnter={(e) => { if (onMoveUp) e.currentTarget.style.color = 'var(--panel-timeline-accent)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
-            >
-              <ArrowUp size={14} />
-            </button>
-            <button
-              disabled={!onMoveDown}
-              onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
-              aria-label={`${group.label}を下に移動`}
-              className="bg-transparent border-none cursor-pointer p-0 flex items-center transition-colors duration-150"
-              style={{ color: 'var(--text-faint)', opacity: onMoveDown ? 1 : 0.3 }}
-              onMouseEnter={(e) => { if (onMoveDown) e.currentTarget.style.color = 'var(--panel-timeline-accent)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
-            >
-              <ArrowDown size={14} />
-            </button>
-          </span>
-        )}
-
-        {/* 編集ボタン — ホバー時のみ表示 */}
-        {!labelEditor.isEditing && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              labelEditor.startEditing();
-            }}
-            title="メモグループ名を変更"
-            aria-label={`${group.label}の名前を変更`}
-            className="bg-transparent border-none text-text-faint cursor-pointer px-0.5 flex items-center transition-[color,opacity] duration-150"
-            style={{
-              opacity: headerHovered ? 0.8 : 0,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--panel-timeline-accent)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
-          >
-            <SquarePen size={14} />
-          </button>
-        )}
-
-        {/* 削除ボタン — ホバー時のみ表示 */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            deleteConfirm.requestDelete();
-          }}
-          title="メモグループを削除"
-          aria-label={`${group.label}を削除`}
-          className="bg-transparent border-none text-text-faint cursor-pointer px-0.5 flex items-center transition-[color,opacity] duration-150"
-          style={{
-            opacity: headerHovered ? 1 : 0,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
-        >
-          <X size={14} />
-        </button>
-
-        {/* エントリ数 — 常に右端 */}
-        <span className="text-sm text-text-muted font-mono min-w-4 text-right opacity-70 shrink-0">
-          {entryCount}
-        </span>
-      </div>
+      />
 
       {/* グループ内容 */}
       {!group.collapsed && (
@@ -305,22 +204,6 @@ function TimelineGroupSection({
           </div>
         </div>
       )}
-
-      {/* 削除確認モーダル */}
-      <ConfirmModal
-        open={deleteConfirm.isModalOpen}
-        onClose={deleteConfirm.closeModal}
-        title={`「${group.label}」を削除`}
-        confirmationLabel={`メモが ${entryCount}件 一緒に削除されることを理解しました`}
-        actions={[
-          {
-            label: '削除',
-            color: 'var(--danger)',
-            requiresConfirmation: true,
-            onClick: deleteConfirm.executeDelete,
-          },
-        ]}
-      />
     </div>
   );
 }
