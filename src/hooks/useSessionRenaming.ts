@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 
+import { useStore } from '@/store';
 import type { GameSession } from '@/types/memo';
 
 interface UseSessionRenamingParams {
@@ -30,6 +31,7 @@ export function useSessionRenaming({
     const trimmed = renameValue.trim();
     if (trimmed && activeSessionId) {
       renameSession(activeSessionId, trimmed);
+      useStore.getState().addToast('セッション名を変更しました');
     }
     setIsRenaming(false);
   }, [renameValue, activeSessionId, renameSession]);

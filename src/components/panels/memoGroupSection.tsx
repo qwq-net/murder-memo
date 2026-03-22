@@ -44,14 +44,14 @@ export function MemoGroupSection({
 
   const labelEditor = useGroupLabelEditor({
     initialLabel: group?.label ?? '',
-    onSave: (newLabel) => {
-      if (group && onUpdate) onUpdate(group.id, { label: newLabel });
-    },
+    onSave: (newLabel) => { if (group && onUpdate) onUpdate(group.id, { label: newLabel }); },
+    toastMessage: 'グループ名を変更しました',
   });
 
   const deleteConfirm = useDeleteWithConfirmation(
     entries.length > 0,
-    () => { if (group && onRemove) onRemove(group.id); },
+    () => { if (group && onRemove) return onRemove(group.id); },
+    'グループを削除しました',
   );
 
   const handleToggle = () => {
@@ -221,7 +221,7 @@ export function MemoGroupSection({
               label: '削除',
               color: 'var(--danger)',
               requiresConfirmation: true,
-              onClick: () => onRemove(group.id),
+              onClick: deleteConfirm.executeDelete,
             },
           ]}
         />

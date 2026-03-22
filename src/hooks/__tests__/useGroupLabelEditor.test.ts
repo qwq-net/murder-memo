@@ -24,36 +24,36 @@ describe('useGroupLabelEditor', () => {
     expect(result.current.draftLabel).toBe('テスト');
   });
 
-  it('saveLabel で有効な値が保存される', () => {
+  it('saveLabel で有効な値が保存される', async () => {
     const { result } = renderHook(() =>
       useGroupLabelEditor({ initialLabel: 'テスト', onSave }),
     );
     act(() => result.current.startEditing());
     act(() => result.current.setDraftLabel('新しい名前'));
-    act(() => result.current.saveLabel());
+    await act(async () => result.current.saveLabel());
 
     expect(onSave).toHaveBeenCalledWith('新しい名前');
     expect(result.current.isEditing).toBe(false);
   });
 
-  it('saveLabel で空白のみの場合は onSave が呼ばれない', () => {
+  it('saveLabel で空白のみの場合は onSave が呼ばれない', async () => {
     const { result } = renderHook(() =>
       useGroupLabelEditor({ initialLabel: 'テスト', onSave }),
     );
     act(() => result.current.startEditing());
     act(() => result.current.setDraftLabel('   '));
-    act(() => result.current.saveLabel());
+    await act(async () => result.current.saveLabel());
 
     expect(onSave).not.toHaveBeenCalled();
     expect(result.current.isEditing).toBe(false);
   });
 
-  it('saveLabel で変更なしの場合は onSave が呼ばれない', () => {
+  it('saveLabel で変更なしの場合は onSave が呼ばれない', async () => {
     const { result } = renderHook(() =>
       useGroupLabelEditor({ initialLabel: 'テスト', onSave }),
     );
     act(() => result.current.startEditing());
-    act(() => result.current.saveLabel());
+    await act(async () => result.current.saveLabel());
 
     expect(onSave).not.toHaveBeenCalled();
   });
@@ -70,13 +70,13 @@ describe('useGroupLabelEditor', () => {
     expect(result.current.draftLabel).toBe('テスト');
   });
 
-  it('handleKeyDown Enter で保存される', () => {
+  it('handleKeyDown Enter で保存される', async () => {
     const { result } = renderHook(() =>
       useGroupLabelEditor({ initialLabel: 'テスト', onSave }),
     );
     act(() => result.current.startEditing());
     act(() => result.current.setDraftLabel('Enter保存'));
-    act(() => result.current.handleKeyDown({ key: 'Enter' } as React.KeyboardEvent));
+    await act(async () => result.current.handleKeyDown({ key: 'Enter' } as React.KeyboardEvent));
 
     expect(onSave).toHaveBeenCalledWith('Enter保存');
   });

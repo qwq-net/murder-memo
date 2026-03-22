@@ -11,6 +11,7 @@ import {
   buildGroupMoveItems,
   buildImportanceItems,
 } from '@/components/entries/actions/menuItems';
+import { useMenuContext } from '@/hooks/useMenuContext';
 
 interface EntryContextMenuProps {
   entry: MemoEntry;
@@ -20,16 +21,10 @@ interface EntryContextMenuProps {
 }
 
 export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps) {
-  const moveEntryToPanel = useStore((s) => s.moveEntryToPanel);
-  const updateEntry = useStore((s) => s.updateEntry);
-  const deleteEntry = useStore((s) => s.deleteEntry);
-  const timelineGroups = useStore((s) => s.timelineGroups);
-  const memoGroups = useStore((s) => s.memoGroups);
-  const settings = useStore((s) => s.settings);
+  const ctx = useMenuContext();
 
   const items = useMemo<ContextMenuEntry[]>(() => {
     const entries = [entry];
-    const ctx = { timelineGroups, memoGroups, moveEntryToPanel, updateEntry, deleteEntry, settings };
 
     const result: ContextMenuEntry[] = [
       ...buildCategoryMoveItems(entries, ctx),
@@ -47,9 +42,9 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
           label: hasTime ? '不明にする' : '時刻を設定',
           onClick: () => {
             if (hasTime) {
-              updateEntry(entry.id, { eventTime: undefined, eventTimeSortKey: undefined });
+              ctx.updateEntry(entry.id, { eventTime: undefined, eventTimeSortKey: undefined });
             } else {
-              updateEntry(entry.id, {});
+              ctx.updateEntry(entry.id, {});
               const { setFocusedEntry } = useStore.getState();
               setFocusedEntry(entry.id);
             }
@@ -61,7 +56,7 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
     result.push(...buildDeleteItems(entries, ctx));
 
     return result;
-  }, [entry, moveEntryToPanel, updateEntry, deleteEntry, timelineGroups, memoGroups, settings]);
+  }, [entry, ctx]);
 
   return <ContextMenu x={x} y={y} items={items} onClose={onClose} />;
 }

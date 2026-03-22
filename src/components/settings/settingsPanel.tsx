@@ -383,6 +383,7 @@ export function SettingsPanel() {
   const updateSettings = useStore((s) => s.updateSettings);
   const clearCurrentSession = useStore((s) => s.clearCurrentSession);
   const removeSession = useStore((s) => s.removeSession);
+  const addToast = useStore((s) => s.addToast);
   const sessions = useStore((s) => s.sessions);
   const activeSessionId = useStore((s) => s.activeSessionId);
   const isDemo = sessions.find((s) => s.id === activeSessionId)?.isDemo ?? false;
@@ -392,14 +393,16 @@ export function SettingsPanel() {
 
   const handleClearSession = useCallback(async () => {
     await clearCurrentSession();
+    addToast('セッションを初期化しました');
     setOpen(false);
-  }, [clearCurrentSession, setOpen]);
+  }, [clearCurrentSession, addToast, setOpen]);
 
   const handleDeleteSession = useCallback(async () => {
     if (!activeSessionId) return;
     await removeSession(activeSessionId);
+    addToast('セッションを削除しました');
     setOpen(false);
-  }, [activeSessionId, removeSession, setOpen]);
+  }, [activeSessionId, removeSession, addToast, setOpen]);
 
   const handleResetAll = useCallback(async () => {
     localStorage.clear();

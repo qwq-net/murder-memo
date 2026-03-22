@@ -18,6 +18,7 @@ export function EntryInput({ panel }: EntryInputProps) {
   const addMemoGroup = useStore((s) => s.addMemoGroup);
   const addTimelineGroup = useStore((s) => s.addTimelineGroup);
   const inputPosition = useStore((s) => s.settings.inputPosition);
+  const addToast = useStore((s) => s.addToast);
 
   const [value, setValue] = useState('');
   const [timeValue, setTimeValue] = useState('');
@@ -84,6 +85,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         } : {}),
         ...(memoGroupId ? { groupId: memoGroupId } : {}),
       });
+      addToast('メモを追加しました');
       setValue('');
       setTimeValue('');
 
@@ -109,9 +111,10 @@ export function EntryInput({ panel }: EntryInputProps) {
       const group = await addMemoGroup(label, panel as 'free' | 'personal');
       persistGroupId(group.id);
     }
+    addToast('グループを追加しました');
     setNewGroupLabel('');
     setIsAddingGroup(false);
-  }, [newGroupLabel, isTimeline, isMemoPanel, panel, addTimelineGroup, addMemoGroup, persistGroupId]);
+  }, [newGroupLabel, isTimeline, isMemoPanel, panel, addTimelineGroup, addMemoGroup, persistGroupId, addToast]);
 
   const disabled = isTimeline && timelineGroups.length === 0;
   const isTop = inputPosition === 'top';

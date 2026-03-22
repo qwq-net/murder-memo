@@ -24,6 +24,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
   const removeMemoGroup = useStore((s) => s.removeMemoGroup);
   const updateMemoGroup = useStore((s) => s.updateMemoGroup);
   const addMemoGroup = useStore((s) => s.addMemoGroup);
+  const addToast = useStore((s) => s.addToast);
   const reorderEntries = useStore((s) => s.reorderEntries);
   const reorderMemoGroups = useStore((s) => s.reorderMemoGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
@@ -72,7 +73,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
           <EmptyState
             accentColor={accentColor}
             message={emptyMessage}
-            onAddGroup={(label) => addMemoGroup(label, panel)}
+            onAddGroup={async (label) => { await addMemoGroup(label, panel); addToast('グループを追加しました'); }}
           />
         ) : hasGroups ? (
           <>

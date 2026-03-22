@@ -3,6 +3,18 @@ import type { StoreState } from '@/store/index';
 
 const EMPTY_FILTER: Record<PanelId, string[]> = { free: [], personal: [], timeline: [] };
 
+// ─── トースト ─────────────────────────────────────────────────────────────────
+
+export type ToastType = 'info' | 'success' | 'error';
+
+export interface ToastItem {
+  id: string;
+  message: string;
+  type: ToastType;
+}
+
+let toastId = 0;
+
 export interface UiSlice {
   layout: PanelLayoutConfig;
   activePanel: PanelId;
@@ -15,6 +27,8 @@ export interface UiSlice {
   uncategorizedCollapsed: Record<string, boolean>;
   /** キャラクターフィルター（パネル別、選択中のキャラクター ID 配列） */
   characterFilter: Record<PanelId, string[]>;
+  /** アクティブなトースト通知 */
+  toasts: ToastItem[];
 
   setLayout: (layout: Partial<PanelLayoutConfig>) => void;
   setActivePanel: (panel: PanelId) => void;
@@ -27,6 +41,8 @@ export interface UiSlice {
   toggleCharacterFilter: (panel: PanelId, characterId: string) => void;
   clearCharacterFilter: (panel: PanelId) => void;
   clearAllCharacterFilters: () => void;
+  addToast: (message: string, type?: ToastType) => void;
+  removeToast: (id: string) => void;
 }
 
 const DEFAULT_LAYOUT: PanelLayoutConfig = {
@@ -46,6 +62,7 @@ export const createUiSlice = (
   focusedEntryId: null,
   uncategorizedCollapsed: {},
   characterFilter: { ...EMPTY_FILTER },
+  toasts: [],
 
   setLayout: (patch) =>
     set((s) => ({ layout: { ...s.layout, ...patch } })),
@@ -79,4 +96,12 @@ export const createUiSlice = (
 
   clearAllCharacterFilters: () =>
     set(() => ({ characterFilter: { ...EMPTY_FILTER } })),
+
+  addToast: (message, type = 'info') =>
+    set((s) => ({
+      toasts: [...s.toasts, { id: String(++toastId), message, type }],
+    })),
+
+  removeToast: (id) =>
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 });

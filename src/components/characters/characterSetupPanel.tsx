@@ -36,6 +36,7 @@ export function CharacterSetupPanel() {
   const updateCharacter = useStore((s) => s.updateCharacter);
   const removeCharacter = useStore((s) => s.removeCharacter);
   const reorderCharacters = useStore((s) => s.reorderCharacters);
+  const addToast = useStore((s) => s.addToast);
 
   const [activeTab, setActiveTab] = useState<CharacterRole>('pl');
   const [newName, setNewName] = useState('');
@@ -79,9 +80,10 @@ export function CharacterSetupPanel() {
     const usedColors = new Set(characters.map((c) => c.color));
     const nextColor = DEFAULT_COLORS.find((c) => !usedColors.has(c)) ?? '#888888';
     await addCharacter({ name, color: nextColor, role: activeTab, showInEntries: true });
+    addToast('登場人物を追加しました');
     setNewName('');
     requestAnimationFrame(() => nameInputRef.current?.focus());
-  }, [newName, characters, addCharacter, activeTab]);
+  }, [newName, characters, addCharacter, activeTab, addToast]);
 
   const tabStyle = (tab: CharacterRole): React.CSSProperties => ({
     flex: 1,
@@ -183,7 +185,7 @@ export function CharacterSetupPanel() {
                   char={char}
                   isLast={i === activeChars.length - 1}
                   onUpdate={updateCharacter}
-                  onRemove={removeCharacter}
+                  onRemove={(id) => { removeCharacter(id); addToast('登場人物を削除しました'); }}
                 />
               ))}
             </SortableContext>

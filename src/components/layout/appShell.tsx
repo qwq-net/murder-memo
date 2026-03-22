@@ -5,6 +5,7 @@ import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 import { CharacterFilterBar } from '@/components/characters/characterFilterBar';
 import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel';
+import { ToastContainer } from '@/components/common/toast';
 import { useSelection } from '@/components/entries/selectionContext';
 import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Settings, User } from '@/components/icons';
 import { FreeMemoPanel } from '@/components/panels/freeMemoPanel';
@@ -86,6 +87,7 @@ export function AppShell() {
   const activePanel = useStore((s) => s.activePanel);
   const setCharacterSetupOpen = useStore((s) => s.setCharacterSetupOpen);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
+  const addToast = useStore((s) => s.addToast);
   const sessions = useStore((s) => s.sessions);
   const activeSessionId = useStore((s) => s.activeSessionId);
   const switchSession = useStore((s) => s.switchSession);
@@ -283,6 +285,7 @@ export function AppShell() {
                   .map((m) => Number(m![1]));
                 const next = nums.length > 0 ? Math.max(...nums) + 1 : sessions.length + 1;
                 createSession(`セッション ${next}`);
+                addToast('セッションを作成しました');
               }}
               title="新しいセッション"
               className="btn-ghost"
@@ -359,6 +362,9 @@ export function AppShell() {
           &copy; 2026 マダめもくん
         </span>
       </footer>
+
+      {/* Toast */}
+      <ToastContainer />
 
       {/* Modals */}
       <CharacterSetupPanel />

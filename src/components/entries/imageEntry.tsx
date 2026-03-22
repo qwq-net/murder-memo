@@ -11,6 +11,7 @@ interface ImageEntryProps {
 export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   const src = useImageBlob(entry.imageBlobKey);
   const deleteEntry = useStore((s) => s.deleteEntry);
+  const addToast = useStore((s) => s.addToast);
   const settings = useStore((s) => s.settings);
 
   const panelDefault = settings.defaultCharacterDisplay[entry.panel];
@@ -37,7 +38,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
         </div>
       )}
       <button
-        onClick={() => deleteEntry(entry.id)}
+        onClick={async () => { await deleteEntry(entry.id); addToast('画像を削除しました'); }}
         title="画像を削除"
         className="absolute top-2 right-2.5 w-5 h-5 flex items-center justify-center border-none rounded-sm text-text-secondary text-sm cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-150"
         style={{ background: 'rgba(0,0,0,0.6)' }}

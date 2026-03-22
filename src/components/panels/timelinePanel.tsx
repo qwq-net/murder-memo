@@ -19,6 +19,7 @@ export function TimelinePanel() {
   const removeTimelineGroup = useStore((s) => s.removeTimelineGroup);
   const updateTimelineGroup = useStore((s) => s.updateTimelineGroup);
   const addTimelineGroup = useStore((s) => s.addTimelineGroup);
+  const addToast = useStore((s) => s.addToast);
   const reorderEntries = useStore((s) => s.reorderEntries);
   const reorderTimelineGroups = useStore((s) => s.reorderTimelineGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
@@ -57,7 +58,7 @@ export function TimelinePanel() {
           <EmptyState
             accentColor="var(--panel-timeline-accent)"
             message="メモグループを追加してタイムラインを整理しよう"
-            onAddGroup={(label) => addTimelineGroup(label)}
+            onAddGroup={async (label) => { await addTimelineGroup(label); addToast('グループを追加しました'); }}
           />
         ) : (
           groupedData.map(({ group, hourGroups, unknown }, i) => (
@@ -113,11 +114,13 @@ function TimelineGroupSection({
   const labelEditor = useGroupLabelEditor({
     initialLabel: group.label,
     onSave: (newLabel) => onUpdate(group.id, { label: newLabel }),
+    toastMessage: 'グループ名を変更しました',
   });
 
   const deleteConfirm = useDeleteWithConfirmation(
     entryCount > 0,
     () => onRemove(group.id),
+    'グループを削除しました',
   );
 
   return (
@@ -314,7 +317,7 @@ function TimelineGroupSection({
             label: '削除',
             color: 'var(--danger)',
             requiresConfirmation: true,
-            onClick: () => onRemove(group.id),
+            onClick: deleteConfirm.executeDelete,
           },
         ]}
       />

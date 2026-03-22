@@ -1,15 +1,19 @@
 import { useCallback, useState } from 'react';
 
+import { useStore } from '@/store';
+
 interface UseGroupLabelEditorParams {
   initialLabel: string;
-  onSave: (label: string) => void;
+  onSave: (label: string) => void | Promise<void>;
+  /** 保存成功後に表示するトーストメッセージ */
+  toastMessage?: string;
 }
 
 /**
  * グループラベル編集のステート管理を共通化するフック。
  * MemoGroupSection と TimelineGroupSection で利用。
  */
-export function useGroupLabelEditor({ initialLabel, onSave }: UseGroupLabelEditorParams) {
+export function useGroupLabelEditor({ initialLabel, onSave, toastMessage }: UseGroupLabelEditorParams) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftLabel, setDraftLabel] = useState(initialLabel);
 
@@ -18,13 +22,16 @@ export function useGroupLabelEditor({ initialLabel, onSave }: UseGroupLabelEdito
     setIsEditing(true);
   }, [initialLabel]);
 
-  const saveLabel = useCallback(() => {
+  const saveLabel = useCallback(async () => {
     const trimmed = draftLabel.trim();
     if (trimmed && trimmed !== initialLabel) {
-      onSave(trimmed);
+      await onSave(trimmed);
+      if (toastMessage) {
+        useStore.getState().addToast(toastMessage);
+      }
     }
     setIsEditing(false);
-  }, [draftLabel, initialLabel, onSave]);
+  }, [draftLabel, initialLabel, onSave, toastMessage]);
 
   const cancelEditing = useCallback(() => {
     setDraftLabel(initialLabel);

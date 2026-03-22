@@ -41,7 +41,7 @@ export const IMPORTANCE_LABELS: Record<string, string> = {
 
 // ─── ヘルパー型 ──────────────────────────────────────────────────────────────
 
-interface MenuContext {
+export interface MenuContext {
   timelineGroups: TimelineGroup[];
   memoGroups: MemoGroup[];
   moveEntryToPanel: (id: string, panel: PanelId) => Promise<void>;
@@ -50,21 +50,37 @@ interface MenuContext {
   settings: {
     defaultCharacterDisplay: Record<PanelId, { format: CharacterDisplayFormat; visibility: CharacterDisplayVisibility }>;
   };
+  /** トースト通知 */
+  addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
   /** 一括操作後のコールバック（BulkContextMenu用） */
   onDone?: () => void;
 }
 
+/** forEntries のトースト設定 */
+interface ToastConfig {
+  singular: string;
+  plural: (n: number) => string;
+}
+
 // ─── ユーティリティ: 単一/一括の統一処理 ─────────────────────────────────────
 
+/**
+ * entries を順次処理し、完了後に onDone コールバックとトースト通知を発火する。
+ * toast を省略すると通知なしで処理のみ行う（役職表示設定など）。
+ */
 async function forEntries(
   entries: MemoEntry[],
   fn: (entry: MemoEntry) => Promise<void>,
-  onDone?: () => void,
+  ctx: Pick<MenuContext, 'onDone' | 'addToast'>,
+  toast?: ToastConfig,
 ) {
   for (const entry of entries) {
     await fn(entry);
   }
-  onDone?.();
+  ctx.onDone?.();
+  if (toast) {
+    ctx.addToast(entries.length > 1 ? toast.plural(entries.length) : toast.singular);
+  }
 }
 
 // ─── カテゴリ移動セクション ──────────────────────────────────────────────────
@@ -78,6 +94,12 @@ export function buildCategoryMoveItems(
   const commonPanel = entries.every((e) => e.panel === entries[0].panel) ? entries[0].panel : null;
 
   result.push({ header: true as const, label: isBulk ? `カテゴリ移動 (${entries.length}件)` : 'カテゴリ移動' });
+
+  /** パネル移動用のトースト設定を生成 */
+  const moveToast = (p: PanelId): ToastConfig => ({
+    singular: `${PANEL_LABELS[p]}に移動しました`,
+    plural: (n) => `${n}件のメモを${PANEL_LABELS[p]}に移動しました`,
+  });
 
   for (const p of ['free', 'personal', 'timeline'] as PanelId[]) {
     // 同じパネルは除外（単一の場合はentry.panel、一括の場合はcommonPanel）
@@ -94,7 +116,7 @@ export function buildCategoryMoveItems(
               if (entry.panel === p) return;
               await ctx.moveEntryToPanel(entry.id, p);
               await ctx.updateEntry(entry.id, { timelineGroupId: ctx.timelineGroups[0].id, type: 'timeline' });
-            }, ctx.onDone);
+            }, ctx, moveToast(p));
           },
         });
       } else {
@@ -107,7 +129,7 @@ export function buildCategoryMoveItems(
                 if (entry.panel === p) return;
                 await ctx.moveEntryToPanel(entry.id, p);
                 await ctx.updateEntry(entry.id, { timelineGroupId: g.id, type: 'timeline' });
-              }, ctx.onDone);
+              }, ctx, moveToast(p));
             },
           })),
         });
@@ -124,7 +146,7 @@ export function buildCategoryMoveItems(
                 if (entry.panel === p) return;
                 await ctx.moveEntryToPanel(entry.id, p);
                 await ctx.updateEntry(entry.id, { groupId: undefined });
-              }, ctx.onDone);
+              }, ctx, moveToast(p));
             },
           },
           ...panelGroups.map((g) => ({
@@ -134,7 +156,7 @@ export function buildCategoryMoveItems(
                 if (entry.panel === p) return;
                 await ctx.moveEntryToPanel(entry.id, p);
                 await ctx.updateEntry(entry.id, { groupId: g.id });
-              }, ctx.onDone);
+              }, ctx, moveToast(p));
             },
           })),
         ],
@@ -169,6 +191,12 @@ export function buildGroupMoveItems(
   result.push({ separator: true as const });
   result.push({ header: true as const, label: isBulk ? `メモグループ移動 (${entries.length}件)` : 'メモグループ移動' });
 
+  /** グループ移動用のトースト設定を生成 */
+  const groupToast = (label: string): ToastConfig => ({
+    singular: `${label}に移動しました`,
+    plural: (n) => `${n}件のメモを${label}に移動しました`,
+  });
+
   if (panel === 'free' || panel === 'personal') {
     const panelGroups = ctx.memoGroups.filter((g) => g.panel === panel);
 
@@ -179,7 +207,7 @@ export function buildGroupMoveItems(
         onClick: async () => {
           await forEntries(entries, async (entry) => {
             if (entry.groupId) await ctx.updateEntry(entry.id, { groupId: undefined });
-          }, ctx.onDone);
+          }, ctx, groupToast('未分類'));
         },
       });
     }
@@ -191,7 +219,7 @@ export function buildGroupMoveItems(
         onClick: async () => {
           await forEntries(entries, async (entry) => {
             if (entry.groupId !== g.id) await ctx.updateEntry(entry.id, { groupId: g.id });
-          }, ctx.onDone);
+          }, ctx, groupToast(`「${g.label}」`));
         },
       });
     }
@@ -205,7 +233,7 @@ export function buildGroupMoveItems(
         onClick: async () => {
           await forEntries(entries, async (entry) => {
             if (entry.timelineGroupId !== g.id) await ctx.updateEntry(entry.id, { timelineGroupId: g.id });
-          }, ctx.onDone);
+          }, ctx, groupToast(`「${g.label}」`));
         },
       });
     }
@@ -235,7 +263,10 @@ export function buildImportanceItems(
       onClick: async () => {
         await forEntries(entries, async (entry) => {
           if (entry.type !== 'image') await ctx.updateEntry(entry.id, { importance: key as MemoEntry['importance'] });
-        }, ctx.onDone);
+        }, ctx, {
+          singular: `重要度を「${label}」に設定しました`,
+          plural: (n) => `${n}件の重要度を「${label}」に設定しました`,
+        });
       },
     });
   }
@@ -249,7 +280,10 @@ export function buildImportanceItems(
         ? async () => {
             await forEntries(entries, async (entry) => {
               if (entry.importance) await ctx.updateEntry(entry.id, { importance: undefined });
-            }, ctx.onDone);
+            }, ctx, {
+              singular: '重要度を解除しました',
+              plural: (n) => `${n}件の重要度を解除しました`,
+            });
           }
         : () => {},
     });
@@ -290,7 +324,7 @@ export function buildDisplayItems(
           : async () => {
               await forEntries(entries, async (entry) => {
                 await ctx.updateEntry(entry.id, { characterDisplayFormat: fmt });
-              }, ctx.onDone);
+              }, ctx);
             },
       });
     }
@@ -319,7 +353,7 @@ export function buildDisplayItems(
           : async () => {
               await forEntries(entries, async (entry) => {
                 await ctx.updateEntry(entry.id, { characterDisplayVisibility: vis });
-              }, ctx.onDone);
+              }, ctx);
             },
       });
     }
@@ -348,7 +382,7 @@ export function buildDisplayItems(
                   characterDisplayVisibility: undefined,
                 });
               }
-            }, ctx.onDone);
+            }, ctx);
           }
         : () => {},
     });
@@ -363,16 +397,18 @@ export function buildDeleteItems(
   entries: MemoEntry[],
   ctx: MenuContext,
 ): ContextMenuEntry[] {
-  const isBulk = entries.length > 1;
   return [
     { separator: true as const },
     {
-      label: isBulk ? `削除 (${entries.length}件)` : '削除',
+      label: entries.length > 1 ? `削除 (${entries.length}件)` : '削除',
       danger: true,
       onClick: async () => {
         await forEntries(entries, async (entry) => {
           await ctx.deleteEntry(entry.id);
-        }, ctx.onDone);
+        }, ctx, {
+          singular: 'メモを削除しました',
+          plural: (n) => `${n}件のメモを削除しました`,
+        });
       },
     },
   ];
