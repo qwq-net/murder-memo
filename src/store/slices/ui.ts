@@ -29,6 +29,8 @@ export interface UiSlice {
   characterFilter: Record<PanelId, string[]>;
   /** アクティブなトースト通知 */
   toasts: ToastItem[];
+  /** ウェルカムモーダルの表示状態 */
+  isWelcomeOpen: boolean;
 
   setLayout: (layout: Partial<PanelLayoutConfig>) => void;
   setActivePanel: (panel: PanelId) => void;
@@ -43,6 +45,7 @@ export interface UiSlice {
   clearAllCharacterFilters: () => void;
   addToast: (message: string, type?: ToastType) => void;
   removeToast: (id: string) => void;
+  setWelcomeOpen: (open: boolean) => void;
 }
 
 const DEFAULT_LAYOUT: PanelLayoutConfig = {
@@ -63,6 +66,7 @@ export const createUiSlice = (
   uncategorizedCollapsed: {},
   characterFilter: { ...EMPTY_FILTER },
   toasts: [],
+  isWelcomeOpen: false,
 
   setLayout: (patch) =>
     set((s) => ({ layout: { ...s.layout, ...patch } })),
@@ -104,4 +108,6 @@ export const createUiSlice = (
 
   removeToast: (id) =>
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+
+  setWelcomeOpen: (open) => set(() => ({ isWelcomeOpen: open })),
 });

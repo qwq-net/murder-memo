@@ -19,12 +19,16 @@ export interface AppSettings {
 
 export interface SettingsSlice {
   settings: AppSettings;
+  /** ウェルカムモーダルを最後に閉じた時点のアプリバージョン */
+  lastSeenVersion: string | null;
 
   loadSettings: () => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
+  setLastSeenVersion: (version: string) => void;
 }
 
 const STORAGE_KEY = 'murder-memo-settings';
+const VERSION_KEY = 'murder-memo-last-seen-version';
 
 const DEFAULT_SETTINGS: AppSettings = {
   inputPosition: 'bottom',
@@ -56,6 +60,7 @@ export const createSettingsSlice = (
   set: (fn: (s: StoreState) => Partial<StoreState>) => void,
 ): SettingsSlice => ({
   settings: readSettings(),
+  lastSeenVersion: localStorage.getItem(VERSION_KEY),
 
   loadSettings: () => {
     set(() => ({ settings: readSettings() }));
@@ -67,5 +72,10 @@ export const createSettingsSlice = (
       writeSettings(updated);
       return { settings: updated };
     });
+  },
+
+  setLastSeenVersion: (version) => {
+    localStorage.setItem(VERSION_KEY, version);
+    set(() => ({ lastSeenVersion: version }));
   },
 });

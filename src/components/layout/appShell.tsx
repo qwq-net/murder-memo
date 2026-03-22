@@ -6,6 +6,7 @@ import type { PanelId } from '@/types/memo';
 import { CharacterFilterBar } from '@/components/characters/characterFilterBar';
 import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel';
 import { ToastContainer } from '@/components/common/toast';
+import { WelcomeModal } from '@/components/common/welcomeModal';
 import { useSelection } from '@/components/entries/selectionContext';
 import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Settings, User } from '@/components/icons';
 import { FreeMemoPanel } from '@/components/panels/freeMemoPanel';
@@ -367,6 +368,7 @@ export function AppShell() {
       <ToastContainer />
 
       {/* Modals */}
+      <WelcomeModal />
       <CharacterSetupPanel />
       <SettingsPanel />
     </div>
