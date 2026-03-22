@@ -188,11 +188,6 @@ export function MemoGroupSection({
             <X size={14} />
           </button>
         )}
-
-        {/* エントリ数 — 常に右端 */}
-        <span className="text-sm text-text-muted font-mono min-w-4 text-right opacity-70 shrink-0">
-          {entries.length}
-        </span>
       </div>
 
       {/* エントリリスト */}
