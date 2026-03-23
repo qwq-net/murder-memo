@@ -16,6 +16,8 @@ import type { TimelineGroupsSlice } from '@/store/slices/timelineGroups';
 import { createTimelineGroupsSlice } from '@/store/slices/timelineGroups';
 import type { DeductionsSlice } from '@/store/slices/deductions';
 import { createDeductionsSlice } from '@/store/slices/deductions';
+import type { RelationsSlice } from '@/store/slices/relations';
+import { createRelationsSlice } from '@/store/slices/relations';
 import type { UiSlice } from '@/store/slices/ui';
 import { createUiSlice } from '@/store/slices/ui';
 
@@ -25,6 +27,7 @@ export type StoreState = SessionsSlice &
   TimelineGroupsSlice &
   MemoGroupsSlice &
   DeductionsSlice &
+  RelationsSlice &
   SettingsSlice &
   UiSlice;
 
@@ -36,6 +39,7 @@ export const useStore = create<StoreState>()(
   ...createTimelineGroupsSlice(set as Parameters<typeof createTimelineGroupsSlice>[0], get),
   ...createMemoGroupsSlice(set as Parameters<typeof createMemoGroupsSlice>[0], get),
   ...createDeductionsSlice(set as Parameters<typeof createDeductionsSlice>[0], get),
+  ...createRelationsSlice(set as Parameters<typeof createRelationsSlice>[0], get),
   ...createSettingsSlice(set as Parameters<typeof createSettingsSlice>[0]),
     ...createUiSlice(set as Parameters<typeof createUiSlice>[0]),
   })),
@@ -67,7 +71,7 @@ useStore.subscribe(
   (state) => state.activeSessionId,
   async (sessionId) => {
     if (!sessionId) return;
-    const { loadCharacters, loadEntries, loadTimelineGroups, loadMemoGroups, loadDeductions, clearAllCharacterFilters } =
+    const { loadCharacters, loadEntries, loadTimelineGroups, loadMemoGroups, loadDeductions, loadRelations, clearAllCharacterFilters } =
       useStore.getState();
     clearAllCharacterFilters();
     const [entries] = await Promise.all([
@@ -76,6 +80,7 @@ useStore.subscribe(
       loadTimelineGroups(sessionId),
       loadMemoGroups(sessionId),
       loadDeductions(sessionId),
+      loadRelations(sessionId),
     ]);
     loadEntries(entries.sort((a, b) => a.sortOrder - b.sortOrder));
   },

@@ -125,6 +125,7 @@ export const createSessionsSlice = (
         timelineGroups: [],
         memoGroups: [],
         deductions: [],
+        relations: [],
       }));
     },
   };

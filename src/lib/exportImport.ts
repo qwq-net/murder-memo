@@ -4,11 +4,13 @@ import {
   bulkPutCharacters,
   bulkPutDeductions,
   bulkPutEntries,
+  bulkPutRelations,
   bulkPutMemoGroups,
   bulkPutTimelineGroups,
   getCharactersBySession,
   getDeductionsBySession,
   getEntriesBySession,
+  getRelationsBySession,
   getImage,
   getMemoGroupsBySession,
   getTimelineGroupsBySession,
@@ -118,12 +120,13 @@ export const EXPORT_WARN_BYTES = 50 * 1024 * 1024;
 
 /** セッションの全データをエクスポート用オブジェクトに変換 */
 export async function exportSession(session: GameSession): Promise<MurderMemoExport> {
-  const [entries, characters, timelineGroups, memoGroups, deductions] = await Promise.all([
+  const [entries, characters, timelineGroups, memoGroups, deductions, relations] = await Promise.all([
     getEntriesBySession(session.id),
     getCharactersBySession(session.id),
     getTimelineGroupsBySession(session.id),
     getMemoGroupsBySession(session.id),
     getDeductionsBySession(session.id),
+    getRelationsBySession(session.id),
   ]);
 
   // 画像の収集
@@ -153,6 +156,7 @@ export async function exportSession(session: GameSession): Promise<MurderMemoExp
     memoGroups,
     images,
     deductions,
+    relations,
   };
 }
 
@@ -257,6 +261,15 @@ export async function importSession(file: File): Promise<GameSession> {
     characterId: remap(d.characterId),
   }));
 
+  // 相関図（optional）
+  const newRelations = (data.relations ?? []).map((r) => ({
+    ...r,
+    id: remap(r.id),
+    sessionId: newSession.id,
+    fromCharacterId: remap(r.fromCharacterId),
+    toCharacterId: remap(r.toCharacterId),
+  }));
+
   // IDB に書き込み
   await putSession(newSession);
   await bulkPutCharacters(newCharacters, newSession.id);
@@ -264,6 +277,7 @@ export async function importSession(file: File): Promise<GameSession> {
   await bulkPutMemoGroups(newMemoGroups);
   await bulkPutEntries(newEntries, newSession.id);
   if (newDeductions.length > 0) await bulkPutDeductions(newDeductions);
+  if (newRelations.length > 0) await bulkPutRelations(newRelations);
 
   // 画像の復元
   for (const img of data.images) {

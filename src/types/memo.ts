@@ -71,6 +71,19 @@ export interface Character {
   showInEntries: boolean; // エントリのマーカーに表示するか
 }
 
+// ─── Relation（相関図） ──────────────────────────────────────────────────────
+
+export interface CharacterRelation {
+  id: string;
+  sessionId: string;
+  fromCharacterId: string;
+  toCharacterId: string;
+  label: string;
+  color?: string;
+  memo?: string;
+  sortOrder: number;
+}
+
 // ─── Deduction（推理メモ / 犯人投票） ────────────────────────────────────────
 
 export interface CharacterDeduction {
@@ -120,4 +133,5 @@ export interface MurderMemoExport {
   memoGroups: MemoGroup[];
   images: ExportedImage[];
   deductions?: CharacterDeduction[];
+  relations?: CharacterRelation[];
 }

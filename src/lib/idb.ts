@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
 
-import type { Character, CharacterDeduction, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
+import type { Character, CharacterDeduction, CharacterRelation, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
 
 // ─── スキーマ ────────────────────────────────────────────────────────────────
 
@@ -34,6 +34,11 @@ interface MurderMemoDB extends DBSchema {
     value: CharacterDeduction;
     indexes: { 'by-session': string };
   };
+  relations: {
+    key: string;
+    value: CharacterRelation;
+    indexes: { 'by-session': string };
+  };
   sessions: {
     key: string;
     value: GameSession;
@@ -48,7 +53,7 @@ interface MurderMemoDB extends DBSchema {
 }
 
 const DB_NAME = 'murder-memo';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 let dbPromise: Promise<IDBPDatabase<MurderMemoDB>> | null = null;
 
@@ -90,6 +95,12 @@ export function getDb(): Promise<IDBPDatabase<MurderMemoDB>> {
           const deductionsStore = db.createObjectStore('deductions', { keyPath: 'id' });
           deductionsStore.createIndex('by-session', 'sessionId');
         }
+
+        if (oldVersion < 5) {
+          // 相関図
+          const relationsStore = db.createObjectStore('relations', { keyPath: 'id' });
+          relationsStore.createIndex('by-session', 'sessionId');
+        }
       },
     });
   }
@@ -111,7 +122,7 @@ export async function putSession(session: GameSession): Promise<void> {
 export async function deleteSession(id: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
-    ['sessions', 'entries', 'characters', 'timeline-groups', 'memo-groups', 'deductions', 'images'],
+    ['sessions', 'entries', 'characters', 'timeline-groups', 'memo-groups', 'deductions', 'relations', 'images'],
     'readwrite',
   );
 
@@ -144,6 +155,11 @@ export async function deleteSession(id: string): Promise<void> {
     await tx.objectStore('deductions').delete(d.id);
   }
 
+  const relations = await tx.objectStore('relations').index('by-session').getAll(id);
+  for (const r of relations) {
+    await tx.objectStore('relations').delete(r.id);
+  }
+
   await tx.objectStore('sessions').delete(id);
   await tx.done;
 }
@@ -152,7 +168,7 @@ export async function deleteSession(id: string): Promise<void> {
 export async function clearSessionData(id: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
-    ['entries', 'characters', 'timeline-groups', 'memo-groups', 'deductions', 'images'],
+    ['entries', 'characters', 'timeline-groups', 'memo-groups', 'deductions', 'relations', 'images'],
     'readwrite',
   );
 
@@ -182,6 +198,11 @@ export async function clearSessionData(id: string): Promise<void> {
   const deductions = await tx.objectStore('deductions').index('by-session').getAll(id);
   for (const d of deductions) {
     await tx.objectStore('deductions').delete(d.id);
+  }
+
+  const relations = await tx.objectStore('relations').index('by-session').getAll(id);
+  for (const r of relations) {
+    await tx.objectStore('relations').delete(r.id);
   }
 
   await tx.done;
@@ -347,6 +368,32 @@ export async function bulkPutDeductions(deductions: CharacterDeduction[]): Promi
   const db = await getDb();
   const tx = db.transaction('deductions', 'readwrite');
   await Promise.all(deductions.map((d) => tx.store.put(d)));
+  await tx.done;
+}
+
+// ─── 相関図 ───────────────────────────────────────────────────────────────
+
+export async function getRelationsBySession(
+  sessionId: string,
+): Promise<CharacterRelation[]> {
+  const db = await getDb();
+  return db.getAllFromIndex('relations', 'by-session', sessionId);
+}
+
+export async function putRelation(relation: CharacterRelation): Promise<void> {
+  const db = await getDb();
+  await db.put('relations', relation);
+}
+
+export async function deleteRelation(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete('relations', id);
+}
+
+export async function bulkPutRelations(relations: CharacterRelation[]): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction('relations', 'readwrite');
+  await Promise.all(relations.map((r) => tx.store.put(r)));
   await tx.done;
 }
 

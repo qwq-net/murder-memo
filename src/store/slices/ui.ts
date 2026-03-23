@@ -35,6 +35,8 @@ export interface UiSlice {
   isSearchOpen: boolean;
   /** 推理メモモーダルの表示状態 */
   isDeductionOpen: boolean;
+  /** 相関図モーダルの表示状態 */
+  isRelationDiagramOpen: boolean;
 
   setLayout: (layout: Partial<PanelLayoutConfig>) => void;
   setActivePanel: (panel: PanelId) => void;
@@ -52,6 +54,7 @@ export interface UiSlice {
   setWelcomeOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
   setDeductionOpen: (open: boolean) => void;
+  setRelationDiagramOpen: (open: boolean) => void;
 }
 
 const DEFAULT_LAYOUT: PanelLayoutConfig = {
@@ -75,6 +78,7 @@ export const createUiSlice = (
   isWelcomeOpen: false,
   isSearchOpen: false,
   isDeductionOpen: false,
+  isRelationDiagramOpen: false,
 
   setLayout: (patch) =>
     set((s) => ({ layout: { ...s.layout, ...patch } })),
@@ -122,4 +126,6 @@ export const createUiSlice = (
   setSearchOpen: (open) => set(() => ({ isSearchOpen: open })),
 
   setDeductionOpen: (open) => set(() => ({ isDeductionOpen: open })),
+
+  setRelationDiagramOpen: (open) => set(() => ({ isRelationDiagramOpen: open })),
 });

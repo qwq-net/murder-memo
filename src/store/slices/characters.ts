@@ -60,6 +60,12 @@ export const createCharactersSlice = (
 
   removeCharacter: async (id) => {
     await deleteCharacter(id);
+    // 関連する相関図の関係も削除
+    const { relations, removeRelation } = get();
+    const related = relations.filter((r) => r.fromCharacterId === id || r.toCharacterId === id);
+    for (const r of related) {
+      await removeRelation(r.id);
+    }
     set((s) => ({ characters: s.characters.filter((c) => c.id !== id) }));
   },
 
