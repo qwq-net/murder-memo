@@ -82,6 +82,38 @@ async function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
+/** エクスポート前のサイズ推定。画像の合計バイト数を返す */
+export async function estimateExportSize(sessionId: string): Promise<{ imageCount: number; totalBytes: number }> {
+  const entries = await getEntriesBySession(sessionId);
+  const seenKeys = new Set<string>();
+  let totalBytes = 0;
+  let imageCount = 0;
+
+  for (const entry of entries) {
+    if (entry.imageBlobKey && !seenKeys.has(entry.imageBlobKey)) {
+      seenKeys.add(entry.imageBlobKey);
+      const blob = await getImage(entry.imageBlobKey);
+      if (blob) {
+        imageCount++;
+        // base64 化で約1.33倍 + JSON オーバーヘッド
+        totalBytes += Math.ceil(blob.size * 1.34);
+      }
+    }
+  }
+
+  return { imageCount, totalBytes };
+}
+
+/** バイト数を人間が読みやすい文字列に変換 */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** 推定サイズが警告閾値を超えているか（50MB） */
+export const EXPORT_WARN_BYTES = 50 * 1024 * 1024;
+
 /** セッションの全データをエクスポート用オブジェクトに変換 */
 export async function exportSession(session: GameSession): Promise<MurderMemoExport> {
   const [entries, characters, timelineGroups, memoGroups] = await Promise.all([

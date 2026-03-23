@@ -1,6 +1,6 @@
 import type { Character, MemoEntry, MemoGroup, MurderMemoExport, TimelineGroup } from '@/types/memo';
 import { EXPORT_VERSION } from '@/types/memo';
-import { validateExport } from '../exportImport';
+import { formatBytes, validateExport } from '../exportImport';
 
 // ─── テストデータ生成ヘルパー ─────────────────────────────────────────────────
 
@@ -148,5 +148,23 @@ describe('validateExport', () => {
     expect(validateExport(makeValidExport({
       images: [{ blobKey: 'k1', mimeType: 'image/png', base64: 'abc123' }],
     }))).toBe(true);
+  });
+});
+
+// ─── formatBytes ────────────────────────────────────────────────────────────
+
+describe('formatBytes', () => {
+  it('バイト単位', () => {
+    expect(formatBytes(512)).toBe('512 B');
+  });
+
+  it('KB 単位', () => {
+    expect(formatBytes(1024)).toBe('1 KB');
+    expect(formatBytes(10240)).toBe('10 KB');
+  });
+
+  it('MB 単位', () => {
+    expect(formatBytes(1024 * 1024)).toBe('1.0 MB');
+    expect(formatBytes(52.5 * 1024 * 1024)).toBe('52.5 MB');
   });
 });

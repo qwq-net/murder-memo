@@ -1,7 +1,7 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { useStore } from '@/store';
-import { downloadJson, exportSession, importSession } from '@/lib/exportImport';
+import { EXPORT_WARN_BYTES, downloadJson, estimateExportSize, exportSession, formatBytes, importSession } from '@/lib/exportImport';
 import { destroyDatabase } from '@/lib/idb';
 import { copyToClipboard, formatSessionAsText } from '@/lib/textExport';
 import type { AppSettings } from '@/store/slices/settings';
@@ -389,9 +389,19 @@ export function SettingsPanel() {
   const sessions = useStore((s) => s.sessions);
   const activeSessionId = useStore((s) => s.activeSessionId);
   const isDemo = sessions.find((s) => s.id === activeSessionId)?.isDemo ?? false;
+
+  // バックアップセクション用の統計（エントリ型ごとのカウント）
+  const entries = useStore((s) => s.entries);
+  const characters = useStore((s) => s.characters);
+  const stats = useMemo(() => {
+    const imageCount = entries.filter((e) => e.type === 'image').length;
+    return { total: entries.length, imageCount, characterCount: characters.length };
+  }, [entries, characters]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showResetAllConfirm, setShowResetAllConfirm] = useState(false);
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
+  const [exportSizeInfo, setExportSizeInfo] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClearSession = useCallback(async () => {
@@ -439,7 +449,7 @@ export function SettingsPanel() {
     }
   }, [sessions, activeSessionId, addToast]);
 
-  const handleExportBackup = useCallback(async () => {
+  const doExport = useCallback(async () => {
     const session = sessions.find((s) => s.id === activeSessionId);
     if (!session) return;
     try {
@@ -450,6 +460,23 @@ export function SettingsPanel() {
       addToast('エクスポートに失敗しました', 'error');
     }
   }, [sessions, activeSessionId, addToast]);
+
+  const handleExportBackup = useCallback(async () => {
+    if (!activeSessionId) return;
+    try {
+      const { imageCount, totalBytes } = await estimateExportSize(activeSessionId);
+      if (totalBytes > EXPORT_WARN_BYTES) {
+        setExportSizeInfo(
+          `画像 ${imageCount} 枚（推定 ${formatBytes(totalBytes)}）を含みます。\nファイルが大きいため、エクスポートに時間がかかる場合があります。`,
+        );
+        setShowExportConfirm(true);
+      } else {
+        await doExport();
+      }
+    } catch {
+      addToast('エクスポートに失敗しました', 'error');
+    }
+  }, [activeSessionId, doExport, addToast]);
 
   const handleImportBackup = useCallback(async (file: File) => {
     try {
@@ -484,7 +511,7 @@ export function SettingsPanel() {
     <>
     <ModalFrame
       open={isOpen}
-      onClose={() => { if (!showClearConfirm && !showDeleteConfirm && !showResetAllConfirm) setOpen(false); }}
+      onClose={() => { if (!showClearConfirm && !showDeleteConfirm && !showResetAllConfirm && !showExportConfirm) setOpen(false); }}
       width={480}
       ariaLabel="アプリ設定"
     >
@@ -641,8 +668,38 @@ export function SettingsPanel() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              現在のセッションのデータ（メモ・登場人物・画像）を JSON ファイルとしてエクスポート、またはファイルからインポートして復元します。
+              現在のセッションのデータを JSON ファイルとしてエクスポート、またはファイルからインポートして復元します。
             </span>
+
+            {/* 統計 */}
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', gap: 12 }}>
+              <span>メモ {stats.total} 件</span>
+              <span>画像 {stats.imageCount} 件</span>
+              <span>登場人物 {stats.characterCount} 人</span>
+            </div>
+
+            {stats.imageCount > 100 && (
+              <div style={{
+                fontSize: 13,
+                color: 'var(--importance-medium)',
+                lineHeight: 1.6,
+                padding: '6px 10px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'color-mix(in srgb, var(--importance-medium) 10%, transparent)',
+                display: 'flex',
+                gap: 8,
+                alignItems: 'flex-start',
+              }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.3" />
+                  <path d="M8 7v4M8 5.5v-.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                <span>
+                  画像が {stats.imageCount} 件あります。エクスポート時にファイルが大きくなったり、インポート時にデータが破損するおそれがあります。
+                </span>
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               <button
                 onClick={handleExportBackup}
@@ -781,6 +838,18 @@ export function SettingsPanel() {
         color: 'var(--danger)',
         requiresConfirmation: true,
         onClick: handleResetAll,
+      }]}
+    />
+
+    <ConfirmModal
+      open={showExportConfirm}
+      onClose={() => setShowExportConfirm(false)}
+      title="エクスポートファイルが大きくなります"
+      confirmationLabel={exportSizeInfo}
+      actions={[{
+        label: 'エクスポートする',
+        requiresConfirmation: true,
+        onClick: doExport,
       }]}
     />
     </>
