@@ -5,11 +5,11 @@ import type { MemoEntry } from '@/types/memo';
 import type { ContextMenuEntry } from '@/components/common/contextMenu';
 import { ContextMenu } from '@/components/common/contextMenu';
 import {
-  buildCategoryMoveItems,
   buildDeleteItems,
-  buildDisplayItems,
-  buildGroupMoveItems,
-  buildImportanceItems,
+  buildDisplaySubmenu,
+  buildDuplicateItems,
+  buildImportanceSubmenu,
+  buildMoveSubmenu,
 } from '@/components/entries/actions/menuItems';
 import { useMenuContext } from '@/hooks/useMenuContext';
 
@@ -27,32 +27,30 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
     const entries = [entry];
 
     const result: ContextMenuEntry[] = [
-      ...buildCategoryMoveItems(entries, ctx),
-      ...buildGroupMoveItems(entries, ctx),
-      ...buildImportanceItems(entries, ctx),
-      ...buildDisplayItems(entries, ctx),
+      ...buildMoveSubmenu(entries, ctx),
+      ...buildImportanceSubmenu(entries, ctx),
+      ...buildDisplaySubmenu(entries, ctx),
     ];
 
     // ── タイムライン固有: 時刻トグル ──
     if (entry.panel === 'timeline') {
       const hasTime = entry.eventTime != null;
-      result.push(
-        { separator: true as const },
-        {
-          label: hasTime ? '不明にする' : '時刻を設定',
-          onClick: () => {
-            if (hasTime) {
-              ctx.updateEntry(entry.id, { eventTime: undefined, eventTimeSortKey: undefined });
-            } else {
-              ctx.updateEntry(entry.id, {});
-              const { setFocusedEntry } = useStore.getState();
-              setFocusedEntry(entry.id);
-            }
-          },
+      result.push({
+        label: hasTime ? '時刻を不明にする' : '時刻を設定',
+        onClick: () => {
+          if (hasTime) {
+            ctx.updateEntry(entry.id, { eventTime: undefined, eventTimeSortKey: undefined });
+          } else {
+            ctx.updateEntry(entry.id, {});
+            const { setFocusedEntry } = useStore.getState();
+            setFocusedEntry(entry.id);
+          }
         },
-      );
+      });
     }
 
+    result.push({ separator: true as const });
+    result.push(...buildDuplicateItems(entries, ctx));
     result.push(...buildDeleteItems(entries, ctx));
 
     return result;

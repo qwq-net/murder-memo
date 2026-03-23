@@ -4,11 +4,11 @@ import type { MemoEntry } from '@/types/memo';
 import type { ContextMenuEntry } from '@/components/common/contextMenu';
 import { ContextMenu } from '@/components/common/contextMenu';
 import {
-  buildCategoryMoveItems,
   buildDeleteItems,
-  buildDisplayItems,
-  buildGroupMoveItems,
-  buildImportanceItems,
+  buildDisplaySubmenu,
+  buildDuplicateItems,
+  buildImportanceSubmenu,
+  buildMoveSubmenu,
 } from '@/components/entries/actions/menuItems';
 import { useMenuContext } from '@/hooks/useMenuContext';
 
@@ -25,10 +25,11 @@ export function BulkContextMenu({ entries, x, y, onClose, onDone }: BulkContextM
 
   const items = useMemo<ContextMenuEntry[]>(() => {
     return [
-      ...buildCategoryMoveItems(entries, ctx),
-      ...buildGroupMoveItems(entries, ctx),
-      ...buildImportanceItems(entries, ctx),
-      ...buildDisplayItems(entries, ctx),
+      ...buildMoveSubmenu(entries, ctx),
+      ...buildImportanceSubmenu(entries, ctx),
+      ...buildDisplaySubmenu(entries, ctx),
+      { separator: true as const },
+      ...buildDuplicateItems(entries, ctx),
       ...buildDeleteItems(entries, ctx),
     ];
   }, [entries, ctx]);

@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "version": "node src/lib/version-stamp.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

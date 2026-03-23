@@ -98,7 +98,7 @@ function isInsideRect(x: number, y: number, r: DOMRect): boolean {
 const ITEM_STYLE: React.CSSProperties = {
   display: 'block',
   width: '100%',
-  padding: '5px 14px 5px 22px',
+  padding: '3px 10px 3px 12px',
   background: 'none',
   border: 'none',
   textAlign: 'left',
@@ -140,8 +140,12 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     const el = menuRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    if (r.right > window.innerWidth) el.style.left = `${x - r.width}px`;
-    if (r.bottom > window.innerHeight) el.style.top = `${y - r.height}px`;
+    const pad = 4; // 画面端からの最小マージン
+    if (r.right > window.innerWidth) el.style.left = `${Math.max(pad, x - r.width)}px`;
+    if (r.bottom > window.innerHeight) {
+      const newTop = Math.max(pad, window.innerHeight - r.height - pad);
+      el.style.top = `${newTop}px`;
+    }
   }, [x, y]);
 
   // ── 外側クリックで閉じる ──
@@ -276,19 +280,20 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
         role="menu"
         aria-label="コンテキストメニュー"
         style={{
-          position: 'fixed', top: y, left: x, zIndex: 200, minWidth: 170,
+          position: 'fixed', top: y, left: x, zIndex: 200, minWidth: 160,
           background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-md)', padding: '4px 0',
+          borderRadius: 'var(--radius-md)', padding: '3px 0',
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          maxHeight: 'calc(100vh - 8px)', overflowY: 'auto',
         }}
       >
         {items.map((item, i) => {
           if (isSeparator(item)) {
-            return <div key={`sep-${i}`} style={{ height: 1, background: 'var(--border-subtle)', margin: '4px 0' }} />;
+            return <div key={`sep-${i}`} style={{ height: 1, background: 'var(--border-subtle)', margin: '2px 0' }} />;
           }
           if (isHeader(item)) {
             return (
-              <div key={`hdr-${i}`} style={{ padding: '5px 14px 2px', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <div key={`hdr-${i}`} style={{ padding: '4px 10px 1px 12px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
                 {item.label}
               </div>
             );
@@ -307,7 +312,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
                 onMouseLeave={(e) => { e.currentTarget.style.background = isOpen ? 'var(--bg-active)' : 'none'; }}
                 style={{
                   ...ITEM_STYLE, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '5px 10px 5px 22px',
+                  padding: '3px 8px 3px 12px',
                   background: isOpen ? 'var(--bg-active)' : 'none',
                   color: item.disabled ? 'var(--text-faint)' : 'var(--text-primary)',
                   cursor: item.disabled ? 'default' : 'pointer',
@@ -327,7 +332,6 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
               disabled={item.disabled}
               onClick={() => { item.onClick(); onClose(); }}
               onMouseEnter={(e) => {
-                if (openIndex !== null) setOpenIndex(null);
                 if (!item.disabled) e.currentTarget.style.background = 'var(--bg-hover)';
               }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
@@ -406,14 +410,15 @@ const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
         style={{
           position: 'fixed', top: y, left: x, zIndex: 201, minWidth: SUBMENU_MIN_WIDTH,
           background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-md)', padding: '4px 0',
+          borderRadius: 'var(--radius-md)', padding: '3px 0',
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          maxHeight: 'calc(100vh - 8px)', overflowY: 'auto',
         }}
       >
         {items.map((item, i) => {
-          if (isSeparator(item)) return <div key={`sep-${i}`} style={{ height: 1, background: 'var(--border-subtle)', margin: '4px 0' }} />;
+          if (isSeparator(item)) return <div key={`sep-${i}`} style={{ height: 1, background: 'var(--border-subtle)', margin: '2px 0' }} />;
           if (isHeader(item)) return (
-            <div key={`hdr-${i}`} style={{ padding: '5px 14px 2px', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            <div key={`hdr-${i}`} style={{ padding: '4px 10px 1px 12px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
               {item.label}
             </div>
           );
@@ -427,7 +432,7 @@ const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
               onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = 'var(--bg-hover)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
               style={{
-                ...ITEM_STYLE, padding: '5px 14px',
+                ...ITEM_STYLE, padding: '3px 10px',
                 color: item.disabled ? 'var(--text-faint)' : item.danger ? 'var(--danger)' : 'var(--text-primary)',
                 cursor: item.disabled ? 'default' : 'pointer',
               }}
