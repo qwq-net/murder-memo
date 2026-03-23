@@ -2,10 +2,12 @@ import { useCallback, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 
 import { putImage } from '@/lib/idb';
+import { resizeImage } from '@/lib/imageResize';
 
 /**
  * クリップボードからの画像ペーストを検知するフック。
  * FreeMemoPanel の画像ペースト処理を分離。
+ * 画像は最大 1200×1200px にリサイズしてから保存する。
  */
 export function useClipboardPaste(
   onImagePaste: (blobKey: string) => void,
@@ -20,8 +22,9 @@ export function useClipboardPaste(
         e.preventDefault();
         const blob = item.getAsFile();
         if (!blob) continue;
+        const resized = await resizeImage(blob);
         const blobKey = nanoid();
-        await putImage(blobKey, blob);
+        await putImage(blobKey, resized);
         onImagePaste(blobKey);
         break;
       }

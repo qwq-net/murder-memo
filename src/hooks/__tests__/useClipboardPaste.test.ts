@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { useClipboardPaste } from '../useClipboardPaste';
 
-// IndexedDB・nanoid モック
+// IndexedDB・nanoid・imageResize モック
 vi.mock('@/lib/idb', () => ({
   putImage: vi.fn().mockResolvedValue(undefined),
   getImage: vi.fn(),
@@ -13,6 +13,11 @@ vi.mock('@/lib/idb', () => ({
 
 vi.mock('nanoid', () => ({
   nanoid: () => 'test-nanoid-123',
+}));
+
+// resizeImage は Blob をそのまま返すモック
+vi.mock('@/lib/imageResize', () => ({
+  resizeImage: vi.fn((blob: Blob) => Promise.resolve(blob)),
 }));
 
 function createPasteEvent(type: string): ClipboardEvent {
