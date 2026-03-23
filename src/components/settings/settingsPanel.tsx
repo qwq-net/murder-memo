@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 
 import { useStore } from '@/store';
 import { destroyDatabase } from '@/lib/idb';
+import { copyToClipboard, formatSessionAsText } from '@/lib/textExport';
 import type { AppSettings } from '@/store/slices/settings';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
 import { CharacterBadge } from '@/components/characters/characterBadge';
@@ -410,6 +411,32 @@ export function SettingsPanel() {
     location.reload();
   }, []);
 
+  const handleTextExport = useCallback(async (panelFilter?: PanelId) => {
+    // レンダリングに不要なデータはコールバック内で取得（再レンダリング抑制）
+    const { entries, characters, timelineGroups, memoGroups, settings: s } = useStore.getState();
+    const session = sessions.find((ss) => ss.id === activeSessionId);
+    if (!session) return;
+    const text = formatSessionAsText(
+      session.name,
+      entries,
+      characters,
+      timelineGroups,
+      memoGroups,
+      s.panelOrder,
+      panelFilter,
+    );
+    if (!text) {
+      addToast('エクスポートするメモがありません');
+      return;
+    }
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      addToast('クリップボードにコピーしました', 'success');
+    } else {
+      addToast('コピーに失敗しました', 'error');
+    }
+  }, [sessions, activeSessionId, addToast]);
+
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     updateSettings({ [key]: value });
   };
@@ -546,6 +573,35 @@ export function SettingsPanel() {
                 onChangeVisibility={(v) => updateMarker(panel, { visibility: v })}
               />
             ))}
+          </div>
+
+          {/* ── Text export ── */}
+          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
+            <SectionHeader>テキストエクスポート</SectionHeader>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              メモ内容を Markdown テキストとしてクリップボードにコピーします。
+            </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <button
+                onClick={() => handleTextExport()}
+                className="btn-ghost btn-sm"
+              >
+                全パネル
+              </button>
+              {settings.panelOrder.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => handleTextExport(p)}
+                  className="btn-ghost btn-sm"
+                  style={{ color: PANEL_CARD_ACCENT[p], borderColor: PANEL_CARD_ACCENT[p] }}
+                >
+                  {PANEL_ORDER_LABELS[p]}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* ── Session management ── */}

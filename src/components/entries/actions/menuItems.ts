@@ -399,16 +399,13 @@ export function buildDuplicateItems(
     {
       label: entries.length > 1 ? `複製 (${entries.length}件)` : '複製',
       onClick: async () => {
-        for (const entry of entries) {
+        await forEntries(entries, async (entry) => {
           const { id, createdAt, updatedAt, sortOrder, ...rest } = entry;
           await ctx.addEntry({ ...rest });
-        }
-        ctx.addToast(
-          entries.length > 1
-            ? `${entries.length}件のメモを複製しました`
-            : 'メモを複製しました',
-        );
-        ctx.onDone?.();
+        }, ctx, {
+          singular: 'メモを複製しました',
+          plural: (n) => `${n}件のメモを複製しました`,
+        });
       },
     },
   ];

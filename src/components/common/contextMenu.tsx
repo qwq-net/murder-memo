@@ -312,7 +312,6 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
                 onMouseLeave={(e) => { e.currentTarget.style.background = isOpen ? 'var(--bg-active)' : 'none'; }}
                 style={{
                   ...ITEM_STYLE, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '3px 8px 3px 12px',
                   background: isOpen ? 'var(--bg-active)' : 'none',
                   color: item.disabled ? 'var(--text-faint)' : 'var(--text-primary)',
                   cursor: item.disabled ? 'default' : 'pointer',
@@ -432,7 +431,7 @@ const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
               onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = 'var(--bg-hover)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
               style={{
-                ...ITEM_STYLE, padding: '3px 10px',
+                ...ITEM_STYLE,
                 color: item.disabled ? 'var(--text-faint)' : item.danger ? 'var(--danger)' : 'var(--text-primary)',
                 cursor: item.disabled ? 'default' : 'pointer',
               }}
