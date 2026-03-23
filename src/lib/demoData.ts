@@ -1,6 +1,42 @@
 import { nanoid } from 'nanoid';
 
+import { putImage } from '@/lib/idb';
 import type { Character, CharacterDeduction, CharacterRelation, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
+
+/** OffscreenCanvas でプレースホルダ画像を生成し IndexedDB に保存 */
+async function createPlaceholderImage(
+  label: string,
+  bgColor: string,
+  textColor: string,
+  width = 320,
+  height = 200,
+): Promise<string> {
+  const blobKey = nanoid();
+  const canvas = new OffscreenCanvas(width, height);
+  const ctx = canvas.getContext('2d')!;
+
+  // 背景
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, width, height);
+
+  // 枠線
+  ctx.strokeStyle = textColor;
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(4, 4, width - 8, height - 8);
+  ctx.globalAlpha = 1;
+
+  // テキスト
+  ctx.fillStyle = textColor;
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, width / 2, height / 2);
+
+  const blob = await canvas.convertToBlob({ type: 'image/png' });
+  await putImage(blobKey, blob);
+  return blobKey;
+}
 
 /**
  * デモセッション用のデータを一括生成する。
@@ -160,19 +196,19 @@ export function buildDemoSession(): {
     ),
     tlEntry(
       tlGroupIds.previous,
-      '夕食。実業家が乾杯の挨拶。被害者は終始無口だった',
+      '夕食。実業家が乾杯の挨拶。被害者は発言が少なく、何か考え込んでいる様子だった',
       [charIds.businessman, charIds.victim],
       '19:00',
     ),
     tlEntry(
       tlGroupIds.previous,
-      '被害者と実業家が庭で口論しているのを目撃。内容は聞き取れず',
+      '被害者と実業家が別室で言い争っていたらしい。メイドが声を聞いたと証言。内容は不明',
       [charIds.businessman, charIds.victim],
       '20:00',
     ),
     tlEntry(
       tlGroupIds.previous,
-      '元刑事が庭を散歩中、実業家が電話で「明日までに片付ける」と話しているのを聞いた',
+      '元刑事の証言：廊下で実業家が電話しているのを見かけた。「明日までに片付ける」と話していたとのこと',
       [charIds.detective, charIds.businessman],
       '20:00',
     ),
@@ -293,7 +329,7 @@ export function buildDemoSession(): {
       { groupId: memoGroupIds.freePoints },
     ),
     freeEntry(
-      '元刑事によると、書斎のドアの鍵は内側からかかっていた。窓も施錠。いわゆる密室状態',
+      '元刑事が書斎を調査。暖炉の通気口は大人が通れるサイズではないとのこと → 密室トリックの脱出経路は別にある？',
       [charIds.detective],
       { groupId: memoGroupIds.freePoints, importance: 'high', type: 'clue' },
     ),
@@ -359,7 +395,7 @@ export function buildDemoSession(): {
       [charIds.detective],
     ),
     freeEntry(
-      '作家が何か隠している印象。議論中に目が泳いでいた',
+      '作家が何か隠している印象。質問すると回答を濁す場面が多かった',
       [charIds.writer],
     ),
 
@@ -440,6 +476,31 @@ export function buildDemoSession(): {
     ),
   ];
 
+  // ── エントリ間リンク ──────────────────────────────────────────────────────
+  // content の先頭文字列でエントリを検索して ID を取得するヘルパー
+  const findEntry = (prefix: string) => entries.find((e) => e.content.startsWith(prefix));
+
+  // 実業家が書斎方向から戻ってきた ↔ 書斎の窓は内側から施錠（密室と実業家の行動の関連）
+  const tlBusinessmanStudy = findEntry('元刑事の証言：実業家が書斎の方向');
+  const freeLockedRoom = findEntry('書斎の窓は内側から施錠');
+  if (tlBusinessmanStudy && freeLockedRoom) {
+    tlBusinessmanStudy.linkedEntryIds = [freeLockedRoom.id];
+  }
+
+  // 「ある人物に弱みを握られている」 ↔ 作家「脅されていた人がいる」
+  const personalBlackmail = findEntry('被害者は「ある人物に弱みを握られている」');
+  const freeWriterThreat = findEntry('作家が「被害者に脅されていた人がいる」');
+  if (personalBlackmail && freeWriterThreat) {
+    personalBlackmail.linkedEntryIds = [freeWriterThreat.id];
+  }
+
+  // 犯行タイムライン仮説 ↔ 実業家10:00の証言 + メイド10:30の証言
+  const freeTimeline = findEntry('犯行タイムライン仮説');
+  const tlMaidStudy = findEntry('メイドの証言：被害者が書斎に向かう');
+  if (freeTimeline && tlBusinessmanStudy && tlMaidStudy) {
+    freeTimeline.linkedEntryIds = [tlBusinessmanStudy.id, tlMaidStudy.id];
+  }
+
   // ── 推理メモ（弁護士視点でのサンプル） ──────────────────────────────────
   const deductions: CharacterDeduction[] = [
     { id: nanoid(), sessionId, characterId: charIds.businessman, suspicionLevel: 3, memo: '10:00に書斎方向から戻ってきた。動機（遺産トラブル）もある。最有力', updatedAt: now },
@@ -461,5 +522,77 @@ export function buildDemoSession(): {
     { id: nanoid(), sessionId, fromCharacterId: charIds.maid, toCharacterId: charIds.victim, label: '上司部下', color: '#8e44ad', sortOrder: 5 },
   ];
 
-  return { session, characters, timelineGroups, memoGroups, entries, deductions, relations };
+  return {
+    session, characters, timelineGroups, memoGroups, entries, deductions, relations,
+    /** 画像エントリ生成に必要な ID */
+    _imageContext: {
+      charIds: { detective: charIds.detective, victim: charIds.victim },
+      freePointsGroupId: memoGroupIds.freePoints,
+      nextFreeSort: sortCounter.free,
+    },
+  };
+}
+
+/**
+ * デモセッションの画像エントリを非同期で生成し、IndexedDB に保存する。
+ * buildDemoSession() の後に呼ぶ。entries 配列に画像エントリを追加して返す。
+ */
+export async function buildDemoImageEntries(
+  sessionId: string,
+  groupId: string,
+  charIds: { detective: string; victim: string },
+  baseSort: number,
+): Promise<MemoEntry[]> {
+  const now = Date.now();
+  let sort = baseSort;
+
+  const [floorPlanKey, evidenceKey, memoFragmentKey] = await Promise.all([
+    createPlaceholderImage('書斎 見取り図', '#2c3e50', '#ecf0f1', 360, 240),
+    createPlaceholderImage('証拠: ペーパーナイフ', '#4a1a1a', '#e8c8c8', 320, 200),
+    createPlaceholderImage('証拠: メモの断片', '#3d3520', '#e8dfc8', 280, 180),
+  ]);
+
+  const imageEntries: MemoEntry[] = [
+    {
+      id: nanoid(),
+      type: 'image',
+      content: '書斎の見取り図。窓は南側、暖炉は北壁、入口は東側の1箇所のみ',
+      panel: 'free',
+      characterTags: [charIds.detective],
+      createdAt: now,
+      updatedAt: now,
+      sortOrder: sort++,
+      groupId,
+      imageBlobKey: floorPlanKey,
+      importance: 'high',
+    },
+    {
+      id: nanoid(),
+      type: 'image',
+      content: '凶器のペーパーナイフ。指紋なし。刃渡り約15cm',
+      panel: 'free',
+      characterTags: [charIds.detective],
+      createdAt: now,
+      updatedAt: now,
+      sortOrder: sort++,
+      groupId,
+      imageBlobKey: evidenceKey,
+      importance: 'medium',
+    },
+    {
+      id: nanoid(),
+      type: 'image',
+      content: '被害者のポケットから見つかったメモの断片',
+      panel: 'free',
+      characterTags: [charIds.victim],
+      createdAt: now,
+      updatedAt: now,
+      sortOrder: sort++,
+      groupId,
+      imageBlobKey: memoFragmentKey,
+      importance: 'high',
+    },
+  ];
+
+  return imageEntries;
 }
