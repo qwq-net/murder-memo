@@ -66,6 +66,7 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
     (e: React.FocusEvent<HTMLInputElement>) => {
       e.currentTarget.style.borderColor = 'transparent';
       e.currentTarget.style.background = 'transparent';
+      e.currentTarget.placeholder = '';
       // テキストエントリ: コンテナ内（textarea）への移動なら時刻だけ保存しない
       if (!isImage && containerRef.current?.contains(e.relatedTarget as Node)) return;
       // コンテナ外 or 画像エントリ → 時刻を保存
@@ -152,7 +153,6 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
         <input
           autoFocus={focusTimeRef.current}
           ref={(el) => {
-            // autoFocus 後にフラグをリセット
             if (el && focusTimeRef.current) {
               el.focus();
               focusTimeRef.current = false;
@@ -165,8 +165,9 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
           onFocus={(e) => {
             e.currentTarget.style.borderColor = 'var(--panel-timeline-accent)';
             e.currentTarget.style.background = 'var(--bg-elevated)';
+            e.currentTarget.placeholder = '--:--';
           }}
-          placeholder="--:--"
+          placeholder=""
           aria-label="時刻"
           className="outline-none"
           style={timeStyle}
