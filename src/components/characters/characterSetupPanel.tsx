@@ -91,7 +91,7 @@ export function CharacterSetupPanel() {
     border: 'none',
     borderBottom: activeTab === tab ? '2px solid var(--color-settings-accent)' : '2px solid transparent',
     color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: activeTab === tab ? 600 : 400,
     padding: '8px 0',
     cursor: 'pointer',
@@ -129,7 +129,7 @@ export function CharacterSetupPanel() {
           >
             登場人物
           </span>
-          <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>
+          <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>
             ドラッグで行動順を変更
           </span>
           <button
@@ -163,7 +163,7 @@ export function CharacterSetupPanel() {
                 textAlign: 'center',
                 padding: '24px 16px',
                 color: 'var(--text-faint)',
-                fontSize: 13,
+                fontSize: 14,
               }}
             >
               {activeTab === 'pl' ? 'PLを追加してください' : 'NPCを追加してください'}
@@ -319,7 +319,7 @@ function CharacterRow({
           style={{
             cursor: 'grab',
             color: 'var(--text-faint)',
-            fontSize: 13,
+            fontSize: 14,
             flexShrink: 0,
             lineHeight: 1,
             touchAction: 'none',
@@ -364,7 +364,7 @@ function CharacterRow({
             background: 'transparent',
             border: 'none',
             color: 'var(--text-primary)',
-            fontSize: 13,
+            fontSize: 14,
             outline: 'none',
             padding: '2px 0',
           }}

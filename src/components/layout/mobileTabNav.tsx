@@ -50,7 +50,7 @@ export function MobileTabNav() {
               border: 'none',
               cursor: 'pointer',
               color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-              fontSize: 13,
+              fontSize: 14,
               letterSpacing: '0.04em',
               transition: 'color 0.15s',
               position: 'relative',
@@ -69,7 +69,7 @@ export function MobileTabNav() {
                 }}
               />
             )}
-            <span style={{ fontSize: 13 }}>{PANEL_LABELS[id]}</span>
+            <span style={{ fontSize: 14 }}>{PANEL_LABELS[id]}</span>
           </button>
         );
       })}

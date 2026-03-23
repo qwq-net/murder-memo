@@ -87,7 +87,7 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
     flexShrink: 0,
     boxSizing: 'border-box' as const,
     fontFamily: 'var(--font-mono)',
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 1.2,
     letterSpacing: '0.04em',
     textAlign: 'center' as const,

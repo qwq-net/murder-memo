@@ -243,7 +243,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         aria-invalid={textError || undefined}
         aria-describedby={textError ? 'entry-text-error' : undefined}
         rows={1}
-        className="flex-1 min-w-0 bg-transparent border-0 text-text-primary font-sans text-[13px] leading-[1.2] py-px resize-none outline-none overflow-hidden"
+        className="flex-1 min-w-0 bg-transparent border-0 text-text-primary font-sans text-sm leading-[1.2] py-px resize-none outline-none overflow-hidden"
         style={{
           borderBottom: textError ? '1px solid var(--importance-high)' : undefined,
           opacity: disabled ? 0.4 : undefined,

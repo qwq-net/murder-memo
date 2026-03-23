@@ -76,7 +76,7 @@ export const SearchResultItem = memo(function SearchResultItem({
         style={{ width: 3, background: accent, opacity: 0.6 }}
       />
       {/* テキストスニペット */}
-      <span className="text-[13px] leading-[1.6] text-text-secondary whitespace-pre-wrap break-all min-w-0">
+      <span className="text-sm leading-[1.6] text-text-secondary whitespace-pre-wrap break-all min-w-0">
         {snippet}
       </span>
     </button>

@@ -102,7 +102,7 @@ const ITEM_STYLE: React.CSSProperties = {
   background: 'none',
   border: 'none',
   textAlign: 'left',
-  fontSize: 13,
+  fontSize: 14,
   color: 'var(--text-primary)',
   cursor: 'pointer',
   transition: 'background 0.1s',

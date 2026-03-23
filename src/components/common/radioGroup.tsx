@@ -49,7 +49,7 @@ export function RadioGroup<T extends string>({
                 : active
                   ? '#c45a2a'
                   : 'var(--text-secondary)',
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: active ? 600 : 400,
               padding: stretch ? '5px 0' : '5px 14px',
               cursor: opt.disabled ? 'not-allowed' : 'pointer',

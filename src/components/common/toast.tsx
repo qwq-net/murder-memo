@@ -47,7 +47,7 @@ function ToastMessage({ toast, onRemove }: { toast: ToastItem; onRemove: (id: st
         boxShadow: '0 4px 20px var(--shadow-menu)',
         maxWidth: 360,
         minWidth: 200,
-        fontSize: 13,
+        fontSize: 14,
         color: 'var(--text-primary)',
         pointerEvents: 'auto',
         animation: exiting

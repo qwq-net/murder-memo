@@ -115,7 +115,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
             onBlur={draftBlur}
             onKeyDown={handleKeyDown}
             rows={2}
-            className="w-full bg-transparent border-none outline-none text-text-primary font-sans text-[13px] leading-[1.2] p-0 m-0 resize-none overflow-hidden block"
+            className="w-full bg-transparent border-none outline-none text-text-primary font-sans text-sm leading-[1.2] p-0 m-0 resize-none overflow-hidden block"
             style={{ minHeight: THUMB_HEIGHT }}
           />
         ) : (
@@ -124,7 +124,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
               if (e.shiftKey) return;
               setFocusedEntry(entry.id);
             }}
-            className="cursor-text pt-px whitespace-pre-wrap break-words text-[13px] leading-[1.2] min-w-0 flex-1"
+            className="cursor-text pt-px whitespace-pre-wrap break-words text-sm leading-[1.2] min-w-0 flex-1"
             style={{ minHeight: THUMB_HEIGHT }}
           >
             {entry.content || (

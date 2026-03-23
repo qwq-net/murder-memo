@@ -118,7 +118,7 @@ export function EntryContent({
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             rows={1}
-            className="w-full bg-transparent border-none outline-none text-text-primary font-sans text-[13px] leading-[1.2] p-0 m-0 resize-none overflow-hidden block"
+            className="w-full bg-transparent border-none outline-none text-text-primary font-sans text-sm leading-[1.2] p-0 m-0 resize-none overflow-hidden block"
           />
         </div>
       ) : (
@@ -128,7 +128,7 @@ export function EntryContent({
             captureFromMouseEvent(e, entry.content.length);
             setFocusedEntry(entry.id);
           }}
-          className="cursor-text pt-px pr-1 pb-0 pl-3.5 whitespace-pre-wrap break-words text-[13px] leading-[1.2]"
+          className="cursor-text pt-px pr-1 pb-0 pl-3.5 whitespace-pre-wrap break-words text-sm leading-[1.2]"
         >
           {entry.content || <span className="text-text-faint">空のメモ</span>}
         </div>

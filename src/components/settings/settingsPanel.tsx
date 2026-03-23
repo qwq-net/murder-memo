@@ -36,7 +36,7 @@ function SettingRow<T extends string>({
         padding: '8px 0',
       }}
     >
-      <span style={{ fontSize: 13, color: 'var(--text-primary)', flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 14, color: 'var(--text-primary)', flexShrink: 0 }}>{label}</span>
       <RadioGroup options={options} value={value} onChange={onChange} />
     </div>
   );
@@ -76,7 +76,7 @@ function MarkerPreview({
   if (visibility === 'off') {
     return (
       <div style={{ ...containerStyle, justifyContent: 'center' }}>
-        <span style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>非表示</span>
+        <span style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic' }}>非表示</span>
       </div>
     );
   }
@@ -141,7 +141,7 @@ function SectionHeader({
     >
       <span
         style={{
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: 600,
           color: 'var(--text-primary)',
           letterSpacing: '0.06em',
@@ -150,7 +150,7 @@ function SectionHeader({
         {children}
       </span>
       {hint && (
-        <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 400 }}>
+        <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 400 }}>
           {hint}
         </span>
       )}
@@ -162,7 +162,7 @@ function SectionHeader({
             marginLeft: 'auto',
             background: 'none',
             border: 'none',
-            fontSize: 13,
+            fontSize: 14,
             color: resetDisabled ? 'var(--text-muted)' : 'var(--text-secondary)',
             cursor: resetDisabled ? 'default' : 'pointer',
             padding: '0 2px',
@@ -225,7 +225,7 @@ function PanelOrderEditor({
           />
 
           {/* label */}
-          <span style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }}>
+          <span style={{ flex: 1, fontSize: 14, color: 'var(--text-primary)' }}>
             {PANEL_ORDER_LABELS[panelId]}
           </span>
 
@@ -325,9 +325,9 @@ function MarkerCard({
             flexShrink: 0,
           }}
         />
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</span>
         {hint && (
-          <span style={{ fontSize: 13, color: 'var(--text-secondary)', marginLeft: 'auto' }}>{hint}</span>
+          <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginLeft: 'auto' }}>{hint}</span>
         )}
       </div>
 
@@ -341,7 +341,7 @@ function MarkerCard({
       >
         {/* format column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>形式</span>
+          <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>形式</span>
           <RadioGroup<CharacterDisplayFormat>
             stretch
             options={[
@@ -356,7 +356,7 @@ function MarkerCard({
 
         {/* mode column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>モード</span>
+          <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>モード</span>
           <RadioGroup<CharacterDisplayVisibility>
             stretch
             options={[
@@ -639,7 +639,7 @@ export function SettingsPanel() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               メモ内容を Markdown テキストとしてクリップボードにコピーします。
             </span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -668,12 +668,12 @@ export function SettingsPanel() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               現在のセッションのデータを JSON ファイルとしてエクスポート、またはファイルからインポートして復元します。
             </span>
 
             {/* 統計 */}
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', gap: 12 }}>
+            <div style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', gap: 12 }}>
               <span>メモ {stats.total} 件</span>
               <span>画像 {stats.imageCount} 件</span>
               <span>登場人物 {stats.characterCount} 人</span>
@@ -681,7 +681,7 @@ export function SettingsPanel() {
 
             {stats.imageCount > 100 && (
               <div style={{
-                fontSize: 13,
+                fontSize: 14,
                 color: 'var(--importance-medium)',
                 lineHeight: 1.6,
                 padding: '6px 10px',
@@ -737,7 +737,7 @@ export function SettingsPanel() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* 初期化 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 すべてのメモ・登場人物・メモグループ・画像データを削除します。セッション自体は残ります。
               </span>
               <div>
@@ -749,7 +749,7 @@ export function SettingsPanel() {
                   初期化する
                 </button>
                 {isDemo && (
-                  <span style={{ fontSize: 13, color: 'var(--text-faint)', marginLeft: 8 }}>
+                  <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
                     サンプルシナリオは初期化できません
                   </span>
                 )}
@@ -758,7 +758,7 @@ export function SettingsPanel() {
 
             {/* 削除 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 セッションとそのデータをすべて削除します。
               </span>
               <div>
@@ -770,11 +770,11 @@ export function SettingsPanel() {
                   セッションを削除
                 </button>
                 {isDemo ? (
-                  <span style={{ fontSize: 13, color: 'var(--text-faint)', marginLeft: 8 }}>
+                  <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
                     サンプルシナリオは削除できません
                   </span>
                 ) : sessions.length <= 1 && (
-                  <span style={{ fontSize: 13, color: 'var(--text-faint)', marginLeft: 8 }}>
+                  <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
                     最後のセッションは削除できません
                   </span>
                 )}
@@ -788,7 +788,7 @@ export function SettingsPanel() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               すべてのセッション・設定・保存データを完全に削除し、アプリを初期状態に戻します。
             </span>
             <div>

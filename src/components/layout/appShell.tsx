@@ -143,7 +143,7 @@ export function AppShell() {
           {/* Logo / title */}
           <div className="flex items-center gap-2">
             <img src="/logo.svg" alt="マダめもくん" width="20" height="20" />
-            <span className="text-[13px] text-text-primary tracking-[0.08em] font-semibold">
+            <span className="text-sm text-text-primary tracking-[0.08em] font-semibold">
               マダめもくん
             </span>
           </div>
@@ -161,7 +161,7 @@ export function AppShell() {
               border: '1px solid var(--header-btn-border)',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--text-secondary)',
-              fontSize: 13,
+              fontSize: 14,
               padding: '4px 10px',
               cursor: 'pointer',
               transition: 'color 0.15s, border-color 0.15s',
@@ -190,7 +190,7 @@ export function AppShell() {
               border: '1px solid var(--header-btn-border)',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--text-secondary)',
-              fontSize: 13,
+              fontSize: 14,
               padding: '4px 10px',
               cursor: 'pointer',
               transition: 'color 0.15s, border-color 0.15s',
@@ -220,7 +220,7 @@ export function AppShell() {
               border: '1px solid color-mix(in srgb, var(--color-settings-accent) 40%, transparent)',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--color-settings-accent)',
-              fontSize: 13,
+              fontSize: 14,
               padding: '4px 10px', // btn-sm と同サイズ
               cursor: 'pointer',
               transition: 'color 0.15s, border-color 0.15s',
@@ -257,7 +257,7 @@ export function AppShell() {
                   color: 'var(--text-primary)',
                   border: '1px solid var(--color-settings-accent)',
                   borderRadius: 'var(--radius-sm)',
-                  fontSize: 13,
+                  fontSize: 14,
                   padding: '3px 8px',
                   minWidth: 0,
                   maxWidth: 200,
@@ -274,7 +274,7 @@ export function AppShell() {
                   color: 'var(--text-secondary)',
                   border: '1px solid var(--border-default)',
                   borderRadius: 'var(--radius-sm)',
-                  fontSize: 13,
+                  fontSize: 14,
                   padding: '3px 24px 3px 8px',
                   cursor: 'pointer',
                   appearance: 'none',

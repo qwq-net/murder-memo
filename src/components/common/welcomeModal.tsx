@@ -63,7 +63,7 @@ export function WelcomeModal() {
         <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <h3
             style={{
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 600,
               color: 'var(--accent)',
               letterSpacing: '0.04em',
@@ -74,7 +74,7 @@ export function WelcomeModal() {
           </h3>
           <p
             style={{
-              fontSize: 13,
+              fontSize: 14,
               color: 'var(--text-secondary)',
               lineHeight: 1.7,
               margin: 0,
@@ -90,7 +90,7 @@ export function WelcomeModal() {
         <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <h3
             style={{
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 600,
               color: 'var(--accent)',
               letterSpacing: '0.04em',
@@ -101,7 +101,7 @@ export function WelcomeModal() {
           </h3>
           <p
             style={{
-              fontSize: 13,
+              fontSize: 14,
               color: 'var(--text-secondary)',
               lineHeight: 1.7,
               margin: 0,
@@ -117,7 +117,7 @@ export function WelcomeModal() {
         <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <h3
             style={{
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 600,
               color: 'var(--accent)',
               letterSpacing: '0.04em',
@@ -128,7 +128,7 @@ export function WelcomeModal() {
           </h3>
           <p
             style={{
-              fontSize: 13,
+              fontSize: 14,
               color: 'var(--text-secondary)',
               lineHeight: 1.7,
               margin: 0,

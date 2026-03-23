@@ -146,7 +146,7 @@ export function SearchOverlay() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="エントリを検索…"
             autoComplete="off"
-            className="flex-1 bg-transparent border-none outline-none text-[13px] text-text-primary placeholder:text-text-faint"
+            className="flex-1 bg-transparent border-none outline-none text-sm text-text-primary placeholder:text-text-faint"
             style={{ boxShadow: 'none' }}
           />
           {query && (
@@ -163,7 +163,7 @@ export function SearchOverlay() {
         {/* 結果エリア */}
         <div className="overflow-y-auto" style={{ maxHeight: 'min(60vh, 480px)' }}>
           {debouncedQuery && totalCount === 0 && (
-            <div className="px-3 py-6 text-center text-[13px] text-text-muted">
+            <div className="px-3 py-6 text-center text-sm text-text-muted">
               該当するエントリが見つかりません
             </div>
           )}

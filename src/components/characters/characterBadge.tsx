@@ -26,7 +26,7 @@ export function CharacterBadge({ color, name, isActive, onClick, format, ariaLab
           border: isActive ? `1px solid color-mix(in srgb, ${color} 40%, transparent)` : '1px solid transparent',
           borderRadius: 'var(--radius-sm)',
           color: isActive ? color : `color-mix(in srgb, ${color} 35%, transparent)`,
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: isActive ? 600 : 400,
           lineHeight: 1,
           padding: '2px 5px',
@@ -97,7 +97,7 @@ export function CharacterBadge({ color, name, isActive, onClick, format, ariaLab
         {badge}
         <span
           style={{
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: isActive ? 600 : 400,
             color: isActive ? color : `color-mix(in srgb, ${color} 40%, transparent)`,
             lineHeight: 1,
