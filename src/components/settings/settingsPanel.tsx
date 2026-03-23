@@ -405,16 +405,22 @@ export function SettingsPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClearSession = useCallback(async () => {
+    const { pause, resume, clear } = useStore.temporal.getState();
+    pause();
     await clearCurrentSession();
-    useStore.temporal.getState().clear();
+    clear();
+    resume();
     addToast('セッションを初期化しました');
     setOpen(false);
   }, [clearCurrentSession, addToast, setOpen]);
 
   const handleDeleteSession = useCallback(async () => {
     if (!activeSessionId) return;
+    const { pause, resume, clear } = useStore.temporal.getState();
+    pause();
     await removeSession(activeSessionId);
-    useStore.temporal.getState().clear();
+    clear();
+    resume();
     addToast('セッションを削除しました');
     setOpen(false);
   }, [activeSessionId, removeSession, addToast, setOpen]);
@@ -482,14 +488,16 @@ export function SettingsPanel() {
 
   const handleImportBackup = useCallback(async (file: File) => {
     try {
+      const { pause, resume, clear } = useStore.temporal.getState();
+      pause();
       const newSession = await importSession(file);
-      // ストアにセッションを追加して切替
       const { sessions: current } = useStore.getState();
       useStore.setState({
         sessions: [...current, newSession],
         activeSessionId: newSession.id,
       });
-      useStore.temporal.getState().clear();
+      clear();
+      resume();
       addToast(`「${newSession.name}」をインポートしました`, 'success');
       setOpen(false);
     } catch (e) {

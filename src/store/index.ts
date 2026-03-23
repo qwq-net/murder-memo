@@ -110,6 +110,9 @@ useStore.subscribe(
     const { loadCharacters, loadEntries, loadTimelineGroups, loadMemoGroups, loadDeductions, loadRelations, clearAllCharacterFilters } =
       useStore.getState();
     clearAllCharacterFilters();
+    // ロード中は履歴記録を停止（ロード操作自体を undo できないように）
+    const { pause, resume, clear } = useStore.temporal.getState();
+    pause();
     const [entries] = await Promise.all([
       getEntriesBySession(sessionId),
       loadCharacters(sessionId),
@@ -119,8 +122,8 @@ useStore.subscribe(
       loadRelations(sessionId),
     ]);
     loadEntries(entries.sort((a, b) => a.sortOrder - b.sortOrder));
-    // データロード完了後に Undo 履歴をクリア（ロード自体を undo できないように）
-    useStore.temporal.getState().clear();
+    clear();
+    resume();
   },
 );
 

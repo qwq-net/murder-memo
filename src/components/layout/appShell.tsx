@@ -388,6 +388,7 @@ export function AppShell() {
                   .filter(Boolean)
                   .map((m) => Number(m![1]));
                 const next = nums.length > 0 ? Math.max(...nums) + 1 : sessions.length + 1;
+                useStore.temporal.getState().pause();
                 createSession(`セッション ${next}`);
                 addToast('セッションを作成しました');
               }}
