@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { useStore } from '@/store';
+import { downloadJson, exportSession, importSession } from '@/lib/exportImport';
 import { destroyDatabase } from '@/lib/idb';
 import { copyToClipboard, formatSessionAsText } from '@/lib/textExport';
 import type { AppSettings } from '@/store/slices/settings';
@@ -391,6 +392,7 @@ export function SettingsPanel() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showResetAllConfirm, setShowResetAllConfirm] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClearSession = useCallback(async () => {
     await clearCurrentSession();
@@ -436,6 +438,34 @@ export function SettingsPanel() {
       addToast('コピーに失敗しました', 'error');
     }
   }, [sessions, activeSessionId, addToast]);
+
+  const handleExportBackup = useCallback(async () => {
+    const session = sessions.find((s) => s.id === activeSessionId);
+    if (!session) return;
+    try {
+      const data = await exportSession(session);
+      downloadJson(data);
+      addToast('バックアップをダウンロードしました', 'success');
+    } catch {
+      addToast('エクスポートに失敗しました', 'error');
+    }
+  }, [sessions, activeSessionId, addToast]);
+
+  const handleImportBackup = useCallback(async (file: File) => {
+    try {
+      const newSession = await importSession(file);
+      // ストアにセッションを追加して切替
+      const { sessions: current } = useStore.getState();
+      useStore.setState({
+        sessions: [...current, newSession],
+        activeSessionId: newSession.id,
+      });
+      addToast(`「${newSession.name}」をインポートしました`, 'success');
+      setOpen(false);
+    } catch (e) {
+      addToast(e instanceof Error ? e.message : 'インポートに失敗しました', 'error');
+    }
+  }, [addToast, setOpen]);
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     updateSettings({ [key]: value });
@@ -601,6 +631,43 @@ export function SettingsPanel() {
                   {PANEL_ORDER_LABELS[p]}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* ── Backup ── */}
+          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
+            <SectionHeader>バックアップ</SectionHeader>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              現在のセッションのデータ（メモ・登場人物・画像）を JSON ファイルとしてエクスポート、またはファイルからインポートして復元します。
+            </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <button
+                onClick={handleExportBackup}
+                className="btn-ghost btn-sm"
+              >
+                エクスポート
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="btn-ghost btn-sm"
+              >
+                インポート
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImportBackup(file);
+                  // 同じファイルを再選択可能にする
+                  e.target.value = '';
+                }}
+              />
             </div>
           </div>
 
