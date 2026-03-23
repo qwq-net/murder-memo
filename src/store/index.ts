@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { temporal } from 'zundo';
 
 import { getEntriesBySession } from '@/lib/idb';
 import type { CharactersSlice } from '@/store/slices/characters';
@@ -31,18 +32,53 @@ export type StoreState = SessionsSlice &
   SettingsSlice &
   UiSlice;
 
+/** Undo/Redo で追跡するデータ部分のみ抽出 */
+type TrackedState = Pick<StoreState, 'entries' | 'characters' | 'timelineGroups' | 'memoGroups' | 'deductions' | 'relations'>;
+
 export const useStore = create<StoreState>()(
-  subscribeWithSelector((set, get) => ({
-  ...createSessionsSlice(set as Parameters<typeof createSessionsSlice>[0], get),
-  ...createEntriesSlice(set as Parameters<typeof createEntriesSlice>[0], get),
-  ...createCharactersSlice(set as Parameters<typeof createCharactersSlice>[0], get),
-  ...createTimelineGroupsSlice(set as Parameters<typeof createTimelineGroupsSlice>[0], get),
-  ...createMemoGroupsSlice(set as Parameters<typeof createMemoGroupsSlice>[0], get),
-  ...createDeductionsSlice(set as Parameters<typeof createDeductionsSlice>[0], get),
-  ...createRelationsSlice(set as Parameters<typeof createRelationsSlice>[0], get),
-  ...createSettingsSlice(set as Parameters<typeof createSettingsSlice>[0]),
-    ...createUiSlice(set as Parameters<typeof createUiSlice>[0]),
-  })),
+  temporal(
+    subscribeWithSelector((set, get) => ({
+      ...createSessionsSlice(set as Parameters<typeof createSessionsSlice>[0], get),
+      ...createEntriesSlice(set as Parameters<typeof createEntriesSlice>[0], get),
+      ...createCharactersSlice(set as Parameters<typeof createCharactersSlice>[0], get),
+      ...createTimelineGroupsSlice(set as Parameters<typeof createTimelineGroupsSlice>[0], get),
+      ...createMemoGroupsSlice(set as Parameters<typeof createMemoGroupsSlice>[0], get),
+      ...createDeductionsSlice(set as Parameters<typeof createDeductionsSlice>[0], get),
+      ...createRelationsSlice(set as Parameters<typeof createRelationsSlice>[0], get),
+      ...createSettingsSlice(set as Parameters<typeof createSettingsSlice>[0]),
+      ...createUiSlice(set as Parameters<typeof createUiSlice>[0]),
+    })),
+    {
+      partialize: (state): TrackedState => ({
+        entries: state.entries,
+        characters: state.characters,
+        timelineGroups: state.timelineGroups,
+        memoGroups: state.memoGroups,
+        deductions: state.deductions,
+        relations: state.relations,
+      }),
+      limit: 50,
+      // データ配列の参照が同じなら変更なしと判定（UI 変更で履歴が積まれるのを防止）
+      equality: (past, current) =>
+        past.entries === current.entries &&
+        past.characters === current.characters &&
+        past.timelineGroups === current.timelineGroups &&
+        past.memoGroups === current.memoGroups &&
+        past.deductions === current.deductions &&
+        past.relations === current.relations,
+      // テキスト入力を 1 操作にまとめるためのデバウンス
+      handleSet: (handleSet) => {
+        let timeout: ReturnType<typeof setTimeout> | null = null;
+        return (state, replace, currentState, delta) => {
+          if (timeout) clearTimeout(timeout);
+          timeout = setTimeout(() => {
+            handleSet(state, replace, currentState, delta);
+            timeout = null;
+          }, 500);
+        };
+      },
+    },
+  ),
 );
 
 // ─── 設定のパネル順を layout.order に反映 ─────────────────────────────────────
@@ -83,6 +119,8 @@ useStore.subscribe(
       loadRelations(sessionId),
     ]);
     loadEntries(entries.sort((a, b) => a.sortOrder - b.sortOrder));
+    // データロード完了後に Undo 履歴をクリア（ロード自体を undo できないように）
+    useStore.temporal.getState().clear();
   },
 );
 

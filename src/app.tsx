@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 
 import { AppShell } from '@/components/layout/appShell';
 import { SelectionProvider } from '@/components/entries/selectionContext';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { APP_VERSION } from '@/lib/version';
 import { useStore } from '@/store';
 
@@ -34,6 +35,9 @@ export default function App() {
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, [theme]);
+
+  // Undo / Redo キーボードショートカット
+  useUndoRedo();
 
   // バージョンが異なる（または未保存）場合にウェルカムモーダルを表示
   useEffect(() => {

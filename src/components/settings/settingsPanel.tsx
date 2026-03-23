@@ -406,6 +406,7 @@ export function SettingsPanel() {
 
   const handleClearSession = useCallback(async () => {
     await clearCurrentSession();
+    useStore.temporal.getState().clear();
     addToast('セッションを初期化しました');
     setOpen(false);
   }, [clearCurrentSession, addToast, setOpen]);
@@ -413,6 +414,7 @@ export function SettingsPanel() {
   const handleDeleteSession = useCallback(async () => {
     if (!activeSessionId) return;
     await removeSession(activeSessionId);
+    useStore.temporal.getState().clear();
     addToast('セッションを削除しました');
     setOpen(false);
   }, [activeSessionId, removeSession, addToast, setOpen]);
@@ -487,6 +489,7 @@ export function SettingsPanel() {
         sessions: [...current, newSession],
         activeSessionId: newSession.id,
       });
+      useStore.temporal.getState().clear();
       addToast(`「${newSession.name}」をインポートしました`, 'success');
       setOpen(false);
     } catch (e) {
