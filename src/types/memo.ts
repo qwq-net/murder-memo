@@ -71,6 +71,17 @@ export interface Character {
   showInEntries: boolean; // エントリのマーカーに表示するか
 }
 
+// ─── Deduction（推理メモ / 犯人投票） ────────────────────────────────────────
+
+export interface CharacterDeduction {
+  id: string;
+  sessionId: string;
+  characterId: string;
+  suspicionLevel: 0 | 1 | 2 | 3;
+  memo: string;
+  updatedAt: number;
+}
+
 // ─── Session ─────────────────────────────────────────────────────────────────
 
 export interface GameSession {
@@ -108,4 +119,5 @@ export interface MurderMemoExport {
   timelineGroups: TimelineGroup[];
   memoGroups: MemoGroup[];
   images: ExportedImage[];
+  deductions?: CharacterDeduction[];
 }

@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
 
-import type { Character, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
+import type { Character, CharacterDeduction, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
 
 // ─── スキーマ ────────────────────────────────────────────────────────────────
 
@@ -29,6 +29,11 @@ interface MurderMemoDB extends DBSchema {
     value: MemoGroup;
     indexes: { 'by-session': string };
   };
+  deductions: {
+    key: string;
+    value: CharacterDeduction;
+    indexes: { 'by-session': string };
+  };
   sessions: {
     key: string;
     value: GameSession;
@@ -43,7 +48,7 @@ interface MurderMemoDB extends DBSchema {
 }
 
 const DB_NAME = 'murder-memo';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 let dbPromise: Promise<IDBPDatabase<MurderMemoDB>> | null = null;
 
@@ -79,6 +84,12 @@ export function getDb(): Promise<IDBPDatabase<MurderMemoDB>> {
           const memoGroupsStore = db.createObjectStore('memo-groups', { keyPath: 'id' });
           memoGroupsStore.createIndex('by-session', 'sessionId');
         }
+
+        if (oldVersion < 4) {
+          // 推理メモ（犯人投票）
+          const deductionsStore = db.createObjectStore('deductions', { keyPath: 'id' });
+          deductionsStore.createIndex('by-session', 'sessionId');
+        }
       },
     });
   }
@@ -100,7 +111,7 @@ export async function putSession(session: GameSession): Promise<void> {
 export async function deleteSession(id: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
-    ['sessions', 'entries', 'characters', 'timeline-groups', 'memo-groups', 'images'],
+    ['sessions', 'entries', 'characters', 'timeline-groups', 'memo-groups', 'deductions', 'images'],
     'readwrite',
   );
 
@@ -128,6 +139,11 @@ export async function deleteSession(id: string): Promise<void> {
     await tx.objectStore('memo-groups').delete(mg.id);
   }
 
+  const deductions = await tx.objectStore('deductions').index('by-session').getAll(id);
+  for (const d of deductions) {
+    await tx.objectStore('deductions').delete(d.id);
+  }
+
   await tx.objectStore('sessions').delete(id);
   await tx.done;
 }
@@ -136,7 +152,7 @@ export async function deleteSession(id: string): Promise<void> {
 export async function clearSessionData(id: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
-    ['entries', 'characters', 'timeline-groups', 'memo-groups', 'images'],
+    ['entries', 'characters', 'timeline-groups', 'memo-groups', 'deductions', 'images'],
     'readwrite',
   );
 
@@ -161,6 +177,11 @@ export async function clearSessionData(id: string): Promise<void> {
   const memoGroups = await tx.objectStore('memo-groups').index('by-session').getAll(id);
   for (const mg of memoGroups) {
     await tx.objectStore('memo-groups').delete(mg.id);
+  }
+
+  const deductions = await tx.objectStore('deductions').index('by-session').getAll(id);
+  for (const d of deductions) {
+    await tx.objectStore('deductions').delete(d.id);
   }
 
   await tx.done;
@@ -301,6 +322,32 @@ export async function getImage(key: string): Promise<Blob | undefined> {
 export async function deleteImage(key: string): Promise<void> {
   const db = await getDb();
   await db.delete('images', key);
+}
+
+// ─── 推理メモ ─────────────────────────────────────────────────────────────
+
+export async function getDeductionsBySession(
+  sessionId: string,
+): Promise<CharacterDeduction[]> {
+  const db = await getDb();
+  return db.getAllFromIndex('deductions', 'by-session', sessionId);
+}
+
+export async function putDeduction(deduction: CharacterDeduction): Promise<void> {
+  const db = await getDb();
+  await db.put('deductions', deduction);
+}
+
+export async function deleteDeduction(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete('deductions', id);
+}
+
+export async function bulkPutDeductions(deductions: CharacterDeduction[]): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction('deductions', 'readwrite');
+  await Promise.all(deductions.map((d) => tx.store.put(d)));
+  await tx.done;
 }
 
 // ─── 完全リセット ─────────────────────────────────────────────────────────

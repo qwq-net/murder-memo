@@ -20,7 +20,7 @@ export function CharacterFilterBar({ panelId }: CharacterFilterBarProps) {
   const toggleCharacterFilter = useStore((s) => s.toggleCharacterFilter);
   const clearCharacterFilter = useStore((s) => s.clearCharacterFilter);
 
-  // showInEntries が true のキャラのみ。PL → NPC、sortOrder 順
+  // showInEntries が true のキャラのみ。プレイヤー → NPC、sortOrder 順
   const visible = useMemo(
     () => sortCharactersByRole(characters.filter((c) => c.showInEntries)),
     [characters],

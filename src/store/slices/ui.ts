@@ -33,6 +33,8 @@ export interface UiSlice {
   isWelcomeOpen: boolean;
   /** 検索オーバーレイの表示状態 */
   isSearchOpen: boolean;
+  /** 推理メモモーダルの表示状態 */
+  isDeductionOpen: boolean;
 
   setLayout: (layout: Partial<PanelLayoutConfig>) => void;
   setActivePanel: (panel: PanelId) => void;
@@ -49,6 +51,7 @@ export interface UiSlice {
   removeToast: (id: string) => void;
   setWelcomeOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
+  setDeductionOpen: (open: boolean) => void;
 }
 
 const DEFAULT_LAYOUT: PanelLayoutConfig = {
@@ -71,6 +74,7 @@ export const createUiSlice = (
   toasts: [],
   isWelcomeOpen: false,
   isSearchOpen: false,
+  isDeductionOpen: false,
 
   setLayout: (patch) =>
     set((s) => ({ layout: { ...s.layout, ...patch } })),
@@ -116,4 +120,6 @@ export const createUiSlice = (
   setWelcomeOpen: (open) => set(() => ({ isWelcomeOpen: open })),
 
   setSearchOpen: (open) => set(() => ({ isSearchOpen: open })),
+
+  setDeductionOpen: (open) => set(() => ({ isDeductionOpen: open })),
 });

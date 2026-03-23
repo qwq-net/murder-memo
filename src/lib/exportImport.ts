@@ -2,10 +2,12 @@ import { nanoid } from 'nanoid';
 
 import {
   bulkPutCharacters,
+  bulkPutDeductions,
   bulkPutEntries,
   bulkPutMemoGroups,
   bulkPutTimelineGroups,
   getCharactersBySession,
+  getDeductionsBySession,
   getEntriesBySession,
   getImage,
   getMemoGroupsBySession,
@@ -116,11 +118,12 @@ export const EXPORT_WARN_BYTES = 50 * 1024 * 1024;
 
 /** セッションの全データをエクスポート用オブジェクトに変換 */
 export async function exportSession(session: GameSession): Promise<MurderMemoExport> {
-  const [entries, characters, timelineGroups, memoGroups] = await Promise.all([
+  const [entries, characters, timelineGroups, memoGroups, deductions] = await Promise.all([
     getEntriesBySession(session.id),
     getCharactersBySession(session.id),
     getTimelineGroupsBySession(session.id),
     getMemoGroupsBySession(session.id),
+    getDeductionsBySession(session.id),
   ]);
 
   // 画像の収集
@@ -149,6 +152,7 @@ export async function exportSession(session: GameSession): Promise<MurderMemoExp
     timelineGroups,
     memoGroups,
     images,
+    deductions,
   };
 }
 
@@ -245,12 +249,21 @@ export async function importSession(file: File): Promise<GameSession> {
     imageBlobKey: e.imageBlobKey ? remap(e.imageBlobKey) : undefined,
   }));
 
+  // 推理メモ（optional — v1 エクスポートには含まれない場合がある）
+  const newDeductions = (data.deductions ?? []).map((d) => ({
+    ...d,
+    id: remap(d.id),
+    sessionId: newSession.id,
+    characterId: remap(d.characterId),
+  }));
+
   // IDB に書き込み
   await putSession(newSession);
   await bulkPutCharacters(newCharacters, newSession.id);
   await bulkPutTimelineGroups(newTimelineGroups);
   await bulkPutMemoGroups(newMemoGroups);
   await bulkPutEntries(newEntries, newSession.id);
+  if (newDeductions.length > 0) await bulkPutDeductions(newDeductions);
 
   // 画像の復元
   for (const img of data.images) {

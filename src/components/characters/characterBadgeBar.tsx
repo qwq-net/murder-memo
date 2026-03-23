@@ -68,7 +68,7 @@ export function CharacterBadgeBar({ entry, format, visibility, isEntryHovered }:
   const allCharacters = useStore((s) => s.characters);
   const toggleCharacterTag = useStore((s) => s.toggleCharacterTag);
 
-  // showInEntries が true のキャラのみ表示。PL → NPC の順、その中で行動順（sortOrder）
+  // showInEntries が true のキャラのみ表示。プレイヤー → NPC の順、その中で行動順（sortOrder）
   const characters = allCharacters
     .filter((c) => c.showInEntries)
     .sort((a, b) => {

@@ -141,14 +141,14 @@ export function CharacterSetupPanel() {
           </button>
         </div>
 
-        {/* PL / NPC タブ */}
+        {/* プレイヤー / NPC タブ */}
         <div
           role="tablist"
           aria-label="キャラクタータイプ"
           style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}
         >
           <button role="tab" aria-selected={activeTab === 'pl'} id="tab-pl" aria-controls="tabpanel-characters" onClick={() => setActiveTab('pl')} style={tabStyle('pl')}>
-            PL（{plChars.length}）
+            プレイヤー（{plChars.length}）
           </button>
           <button role="tab" aria-selected={activeTab === 'npc'} id="tab-npc" aria-controls="tabpanel-characters" onClick={() => setActiveTab('npc')} style={tabStyle('npc')}>
             NPC（{npcChars.length}）
@@ -166,7 +166,7 @@ export function CharacterSetupPanel() {
                 fontSize: 14,
               }}
             >
-              {activeTab === 'pl' ? 'PLを追加してください' : 'NPCを追加してください'}
+              {activeTab === 'pl' ? 'プレイヤーを追加してください' : 'NPCを追加してください'}
             </div>
           )}
 
@@ -212,7 +212,7 @@ export function CharacterSetupPanel() {
                 handleAdd();
               }
             }}
-            placeholder={activeTab === 'pl' ? 'PL名を入力' : 'NPC名を入力'}
+            placeholder={activeTab === 'pl' ? 'プレイヤー名を入力' : 'NPC名を入力'}
             aria-label="登場人物の名前"
             className="input-base"
             style={{ flex: 1, padding: '6px 10px' }}

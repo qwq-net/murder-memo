@@ -5,6 +5,7 @@ import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 import { CharacterFilterBar } from '@/components/characters/characterFilterBar';
 import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel';
+import { DeductionModal } from '@/components/deductions/deductionModal';
 import { ToastContainer } from '@/components/common/toast';
 import { WelcomeModal } from '@/components/common/welcomeModal';
 import { useSelection } from '@/components/entries/selectionContext';
@@ -96,6 +97,7 @@ export function AppShell() {
   const createSession = useStore((s) => s.createSession);
   const renameSession = useStore((s) => s.renameSession);
   const setSearchOpen = useStore((s) => s.setSearchOpen);
+  const setDeductionOpen = useStore((s) => s.setDeductionOpen);
   const { hasSelection, clearSelection } = useSelection();
 
   const isDemo = sessions.find((s) => s.id === activeSessionId)?.isDemo ?? false;
@@ -178,6 +180,37 @@ export function AppShell() {
           >
             <Search size={13} />
             {!isMobile && '検索'}
+          </button>
+
+          <button
+            onClick={() => setDeductionOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'none',
+              border: '1px solid var(--header-btn-border)',
+              borderRadius: 'var(--radius-sm)',
+              color: 'var(--text-secondary)',
+              fontSize: 14,
+              padding: '4px 10px',
+              cursor: 'pointer',
+              transition: 'color 0.15s, border-color 0.15s',
+              letterSpacing: '0.02em',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.borderColor = 'var(--header-btn-border-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-secondary)';
+              e.currentTarget.style.borderColor = 'var(--header-btn-border)';
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.5 4.3 12.3l.7-4.1-3-2.9 4.2-.7L8 1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+            </svg>
+            {!isMobile && '人物推理メモ'}
           </button>
 
           <button
@@ -337,10 +370,10 @@ export function AppShell() {
             )}
           </div>
 
-          {/* 行動順ステッパー — PL | NPC */}
+          {/* 行動順ステッパー — プレイヤー | NPC */}
           {(plChars.length > 0 || npcChars.length > 0) && (
             <div className="flex items-center overflow-hidden gap-2">
-              {/* PL */}
+              {/* プレイヤー */}
               {plChars.map((char, i) => (
                 <div key={char.id} className="flex items-center shrink-0">
                   {i > 0 && (
@@ -402,6 +435,7 @@ export function AppShell() {
       {/* Modals */}
       <WelcomeModal />
       <CharacterSetupPanel />
+      <DeductionModal />
       <SettingsPanel />
       <SearchOverlay />
     </div>
