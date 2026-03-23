@@ -69,6 +69,7 @@ App → SelectionProvider → AppShell
 | useMenuContext | メニューコンテキスト管理 |
 | useResponsive | レスポンシブブレイクポイント判定 |
 | useSessionRenaming | セッション名変更 UI 状態 |
+| useTimeInput | タイムライン時刻入力の状態管理（値・バリデーション・自動補完） |
 | useUndoRedo | Ctrl+Z / Ctrl+Shift+Z での Undo/Redo |
 
 ### 共通コンポーネント（`src/components/common/`）

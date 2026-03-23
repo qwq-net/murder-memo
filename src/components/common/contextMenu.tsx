@@ -108,6 +108,33 @@ const ITEM_STYLE: React.CSSProperties = {
   transition: 'background 0.1s',
 };
 
+const MENU_STYLE: React.CSSProperties = {
+  position: 'fixed',
+  zIndex: 200,
+  minWidth: 160,
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-default)',
+  borderRadius: 'var(--radius-md)',
+  padding: '3px 0',
+  boxShadow: '0 8px 32px var(--shadow-menu)',
+  maxHeight: 'calc(100vh - 8px)',
+  overflowY: 'auto',
+};
+
+const SEPARATOR_STYLE: React.CSSProperties = {
+  height: 1,
+  background: 'var(--border-subtle)',
+  margin: '2px 0',
+};
+
+const HEADER_STYLE: React.CSSProperties = {
+  padding: '4px 10px 1px 12px',
+  fontSize: 11,
+  fontWeight: 600,
+  color: 'var(--text-muted)',
+  letterSpacing: '0.04em',
+};
+
 // ─── コンテキストメニュー ────────────────────────────────────────────────────
 
 interface ContextMenuProps {
@@ -279,21 +306,15 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
         ref={menuRef}
         role="menu"
         aria-label="コンテキストメニュー"
-        style={{
-          position: 'fixed', top: y, left: x, zIndex: 200, minWidth: 160,
-          background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-md)', padding: '3px 0',
-          boxShadow: '0 8px 32px var(--shadow-menu)',
-          maxHeight: 'calc(100vh - 8px)', overflowY: 'auto',
-        }}
+        style={{ ...MENU_STYLE, top: y, left: x }}
       >
         {items.map((item, i) => {
           if (isSeparator(item)) {
-            return <div key={`sep-${i}`} style={{ height: 1, background: 'var(--border-subtle)', margin: '2px 0' }} />;
+            return <div key={`sep-${i}`} style={SEPARATOR_STYLE} />;
           }
           if (isHeader(item)) {
             return (
-              <div key={`hdr-${i}`} style={{ padding: '4px 10px 1px 12px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
+              <div key={`hdr-${i}`} style={HEADER_STYLE}>
                 {item.label}
               </div>
             );
@@ -406,18 +427,12 @@ const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
       <div
         ref={localRef}
         role="menu"
-        style={{
-          position: 'fixed', top: y, left: x, zIndex: 201, minWidth: SUBMENU_MIN_WIDTH,
-          background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-md)', padding: '3px 0',
-          boxShadow: '0 8px 32px var(--shadow-menu)',
-          maxHeight: 'calc(100vh - 8px)', overflowY: 'auto',
-        }}
+        style={{ ...MENU_STYLE, top: y, left: x, zIndex: 201, minWidth: SUBMENU_MIN_WIDTH }}
       >
         {items.map((item, i) => {
-          if (isSeparator(item)) return <div key={`sep-${i}`} style={{ height: 1, background: 'var(--border-subtle)', margin: '2px 0' }} />;
+          if (isSeparator(item)) return <div key={`sep-${i}`} style={SEPARATOR_STYLE} />;
           if (isHeader(item)) return (
-            <div key={`hdr-${i}`} style={{ padding: '4px 10px 1px 12px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
+            <div key={`hdr-${i}`} style={HEADER_STYLE}>
               {item.label}
             </div>
           );
