@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 
-import type { Character, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
+import type { Character, CharacterDeduction, CharacterRelation, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
 
 /**
  * デモセッション用のデータを一括生成する。
@@ -12,6 +12,8 @@ export function buildDemoSession(): {
   timelineGroups: TimelineGroup[];
   memoGroups: MemoGroup[];
   entries: MemoEntry[];
+  deductions: CharacterDeduction[];
+  relations: CharacterRelation[];
 } {
   const sessionId = nanoid();
   const now = Date.now();
@@ -330,5 +332,26 @@ export function buildDemoSession(): {
     ),
   ];
 
-  return { session, characters, timelineGroups, memoGroups, entries };
+  // ── 推理メモ（弁護士視点でのサンプル） ──────────────────────────────────
+  const deductions: CharacterDeduction[] = [
+    { id: nanoid(), sessionId, characterId: charIds.businessman, suspicionLevel: 3, memo: '10:00に書斎方向から戻ってきた。動機（遺産トラブル）もある。最有力', updatedAt: now },
+    { id: nanoid(), sessionId, characterId: charIds.writer, suspicionLevel: 2, memo: '前夜に被害者の部屋を訪問。「本を借りた」は本当か？', updatedAt: now },
+    { id: nanoid(), sessionId, characterId: charIds.doctor, suspicionLevel: 1, memo: '薬の処方歴あり。毒殺の可能性は低いが一応注意', updatedAt: now },
+    { id: nanoid(), sessionId, characterId: charIds.detective, suspicionLevel: 0, memo: '', updatedAt: now },
+    { id: nanoid(), sessionId, characterId: charIds.maid, suspicionLevel: 1, memo: '掃除の順番を変えた理由が気になる', updatedAt: now },
+  ];
+
+  // ── 相関図 ────────────────────────────────────────────────────────────────
+  // プリセット色: 友人=#3498db, 恋人=#e91e8c, 家族=#2ecc71, 上司部下=#8e44ad,
+  //              敵対=#e74c3c, 協力者=#27ae60, 知人=#95a5a6, 不明=#7f8c8d
+  const relations: CharacterRelation[] = [
+    { id: nanoid(), sessionId, fromCharacterId: charIds.businessman, toCharacterId: charIds.victim, label: '共同事業', color: '#8e44ad', sortOrder: 0 },
+    { id: nanoid(), sessionId, fromCharacterId: charIds.lawyer, toCharacterId: charIds.victim, label: '知人', color: '#95a5a6', sortOrder: 1 },
+    { id: nanoid(), sessionId, fromCharacterId: charIds.doctor, toCharacterId: charIds.victim, label: '知人', color: '#95a5a6', sortOrder: 2 },
+    { id: nanoid(), sessionId, fromCharacterId: charIds.writer, toCharacterId: charIds.victim, label: '知人', color: '#95a5a6', sortOrder: 3 },
+    { id: nanoid(), sessionId, fromCharacterId: charIds.businessman, toCharacterId: charIds.lawyer, label: '敵対', color: '#e74c3c', sortOrder: 4 },
+    { id: nanoid(), sessionId, fromCharacterId: charIds.maid, toCharacterId: charIds.victim, label: '上司部下', color: '#8e44ad', sortOrder: 5 },
+  ];
+
+  return { session, characters, timelineGroups, memoGroups, entries, deductions, relations };
 }

@@ -3,8 +3,10 @@ import { nanoid } from 'nanoid';
 import { buildDemoSession } from '@/lib/demoData';
 import {
   bulkPutCharacters,
+  bulkPutDeductions,
   bulkPutEntries,
   bulkPutMemoGroups,
+  bulkPutRelations,
   bulkPutTimelineGroups,
   clearSessionData,
   deleteSession,
@@ -51,6 +53,8 @@ export const createSessionsSlice = (
           await bulkPutTimelineGroups(demo.timelineGroups);
           await bulkPutMemoGroups(demo.memoGroups);
           await bulkPutEntries(demo.entries, demo.session.id);
+          await bulkPutDeductions(demo.deductions);
+          await bulkPutRelations(demo.relations);
           sessions.push(demo.session);
         }
 
