@@ -42,7 +42,7 @@ async function createPlaceholderImage(
  * デモセッション用のデータを一括生成する。
  * 呼び出しごとに nanoid で新しい ID を振るため、何度呼んでも衝突しない。
  */
-export function buildDemoSession(): {
+export async function buildDemoSession(): Promise<{
   session: GameSession;
   characters: Character[];
   timelineGroups: TimelineGroup[];
@@ -50,7 +50,7 @@ export function buildDemoSession(): {
   entries: MemoEntry[];
   deductions: CharacterDeduction[];
   relations: CharacterRelation[];
-} {
+}> {
   const sessionId = nanoid();
   const now = Date.now();
 
@@ -140,7 +140,7 @@ export function buildDemoSession(): {
   const freeEntry = (
     content: string,
     tags: string[],
-    opts?: { groupId?: string; importance?: 'low' | 'medium' | 'high'; type?: 'text' | 'clue' },
+    opts?: { groupId?: string; importance?: 'low' | 'medium' | 'high'; type?: MemoEntry['type'] },
   ): MemoEntry => ({
     id: nanoid(),
     type: opts?.type ?? 'text',
@@ -522,77 +522,35 @@ export function buildDemoSession(): {
     { id: nanoid(), sessionId, fromCharacterId: charIds.maid, toCharacterId: charIds.victim, label: '上司部下', color: '#8e44ad', sortOrder: 5 },
   ];
 
-  return {
-    session, characters, timelineGroups, memoGroups, entries, deductions, relations,
-    /** 画像エントリ生成に必要な ID */
-    _imageContext: {
-      charIds: { detective: charIds.detective, victim: charIds.victim },
-      freePointsGroupId: memoGroupIds.freePoints,
-      nextFreeSort: sortCounter.free,
-    },
-  };
-}
-
-/**
- * デモセッションの画像エントリを非同期で生成し、IndexedDB に保存する。
- * buildDemoSession() の後に呼ぶ。entries 配列に画像エントリを追加して返す。
- */
-export async function buildDemoImageEntries(
-  sessionId: string,
-  groupId: string,
-  charIds: { detective: string; victim: string },
-  baseSort: number,
-): Promise<MemoEntry[]> {
-  const now = Date.now();
-  let sort = baseSort;
-
+  // ── 画像エントリ（プレースホルダ画像を Canvas で生成） ──────────────────
   const [floorPlanKey, evidenceKey, memoFragmentKey] = await Promise.all([
     createPlaceholderImage('書斎 見取り図', '#2c3e50', '#ecf0f1', 360, 240),
     createPlaceholderImage('証拠: ペーパーナイフ', '#4a1a1a', '#e8c8c8', 320, 200),
     createPlaceholderImage('証拠: メモの断片', '#3d3520', '#e8dfc8', 280, 180),
   ]);
 
-  const imageEntries: MemoEntry[] = [
-    {
-      id: nanoid(),
-      type: 'image',
-      content: '書斎の見取り図。窓は南側、暖炉は北壁、入口は東側の1箇所のみ',
-      panel: 'free',
-      characterTags: [charIds.detective],
-      createdAt: now,
-      updatedAt: now,
-      sortOrder: sort++,
-      groupId,
-      imageBlobKey: floorPlanKey,
-      importance: 'high',
-    },
-    {
-      id: nanoid(),
-      type: 'image',
-      content: '凶器のペーパーナイフ。指紋なし。刃渡り約15cm',
-      panel: 'free',
-      characterTags: [charIds.detective],
-      createdAt: now,
-      updatedAt: now,
-      sortOrder: sort++,
-      groupId,
-      imageBlobKey: evidenceKey,
-      importance: 'medium',
-    },
-    {
-      id: nanoid(),
-      type: 'image',
-      content: '被害者のポケットから見つかったメモの断片',
-      panel: 'free',
-      characterTags: [charIds.victim],
-      createdAt: now,
-      updatedAt: now,
-      sortOrder: sort++,
-      groupId,
-      imageBlobKey: memoFragmentKey,
-      importance: 'high',
-    },
-  ];
+  entries.push(
+    freeEntry(
+      '書斎の見取り図。窓は南側、暖炉は北壁、入口は東側の1箇所のみ',
+      [charIds.detective],
+      { groupId: memoGroupIds.freePoints, importance: 'high', type: 'image' },
+    ),
+    freeEntry(
+      '凶器のペーパーナイフ。指紋なし。刃渡り約15cm',
+      [charIds.detective],
+      { groupId: memoGroupIds.freePoints, importance: 'medium', type: 'image' },
+    ),
+    freeEntry(
+      '被害者のポケットから見つかったメモの断片',
+      [charIds.victim],
+      { groupId: memoGroupIds.freePoints, importance: 'high', type: 'image' },
+    ),
+  );
+  // 画像エントリに blobKey を設定
+  const imageEntries = entries.filter((e) => e.type === 'image');
+  imageEntries[0].imageBlobKey = floorPlanKey;
+  imageEntries[1].imageBlobKey = evidenceKey;
+  imageEntries[2].imageBlobKey = memoFragmentKey;
 
-  return imageEntries;
+  return { session, characters, timelineGroups, memoGroups, entries, deductions, relations };
 }

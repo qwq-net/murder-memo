@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 
-import { buildDemoImageEntries, buildDemoSession } from '@/lib/demoData';
+import { buildDemoSession } from '@/lib/demoData';
 import {
   bulkPutCharacters,
   bulkPutDeductions,
@@ -47,21 +47,12 @@ export const createSessionsSlice = (
         // デモセッションが存在しなければ自動作成
         const hasDemo = sessions.some((s) => s.isDemo);
         if (!hasDemo) {
-          const demo = buildDemoSession();
-          // 画像エントリを非同期で生成してエントリに追加
-          const imageEntries = await buildDemoImageEntries(
-            demo.session.id,
-            demo._imageContext.freePointsGroupId,
-            demo._imageContext.charIds,
-            demo._imageContext.nextFreeSort,
-          );
-          const allEntries = [...demo.entries, ...imageEntries];
-
+          const demo = await buildDemoSession();
           await putSession(demo.session);
           await bulkPutCharacters(demo.characters, demo.session.id);
           await bulkPutTimelineGroups(demo.timelineGroups);
           await bulkPutMemoGroups(demo.memoGroups);
-          await bulkPutEntries(allEntries, demo.session.id);
+          await bulkPutEntries(demo.entries, demo.session.id);
           await bulkPutDeductions(demo.deductions);
           await bulkPutRelations(demo.relations);
           sessions.push(demo.session);
