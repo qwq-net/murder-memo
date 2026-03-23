@@ -1,14 +1,131 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import { navigateToEntry } from '@/lib/entryNavigation';
 import { useStore } from '@/store';
-import type { MemoEntry } from '@/types/memo';
+import type { MemoEntry, PanelId } from '@/types/memo';
 import { IconImportance } from '@/components/icons';
 import { BulkContextMenu } from '@/components/entries/actions/bulkContextMenu';
 import { EntryContextMenu } from '@/components/entries/actions/entryContextMenu';
 import { ImageEntry } from '@/components/entries/imageEntry';
+import { LinkEntryModal } from '@/components/entries/linkEntryModal';
 import { useSelection } from '@/components/entries/selectionContext';
 import { TextEntry } from '@/components/entries/textEntry';
 import { TimelineEntry } from '@/components/entries/timelineEntry';
+
+/** エントリのプレビュー文字列（最大40文字） */
+function entryPreview(e: MemoEntry): string {
+  if (e.type === 'image') return e.content ? `[画像] ${e.content}` : '[画像]';
+  const text = e.content || '（空）';
+  return text.length > 40 ? text.slice(0, 40) + '…' : text;
+}
+
+/** リンクポップオーバー — 双方向リンクを表示しジャンプ可能にする */
+function LinkPopover({
+  entry,
+  entries,
+  hovered,
+  setActivePanel,
+  linkPopoverOpen,
+  setLinkPopoverOpen,
+}: {
+  entry: MemoEntry;
+  entries: MemoEntry[];
+  hovered: boolean;
+  setActivePanel: (panel: PanelId) => void;
+  linkPopoverOpen: boolean;
+  setLinkPopoverOpen: (open: boolean | ((v: boolean) => boolean)) => void;
+}) {
+  // 双方向リンクの統合: 自分→他 (forward) + 他→自分 (reverse)
+  const allLinkedIds = useMemo(() => {
+    const forward = new Set(entry.linkedEntryIds ?? []);
+    for (const e of entries) {
+      if (e.id !== entry.id && e.linkedEntryIds?.includes(entry.id)) {
+        forward.add(e.id);
+      }
+    }
+    return forward;
+  }, [entry.id, entry.linkedEntryIds, entries]);
+
+  if (allLinkedIds.size === 0) return null;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setLinkPopoverOpen((v: boolean) => !v)}
+        title={`${allLinkedIds.size}件のリンク`}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: 'var(--accent)',
+          cursor: 'pointer',
+          padding: 0,
+          opacity: hovered || linkPopoverOpen ? 0.9 : 0.5,
+          transition: 'opacity 0.12s',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          fontSize: 11,
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <path d="M6.5 9.5l3-3M9 4l1.5-1.5a2.12 2.12 0 0 1 3 3L12 7M7 9l-1.5 1.5a2.12 2.12 0 0 1-3-3L4 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      {linkPopoverOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            right: 0,
+            bottom: '100%',
+            marginBottom: 4,
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: '0 4px 16px var(--shadow-menu)',
+            padding: '4px 0',
+            minWidth: 200,
+            maxWidth: 300,
+            zIndex: 50,
+          }}
+        >
+          {[...allLinkedIds].map((linkedId) => {
+            const linked = entries.find((e) => e.id === linkedId);
+            if (!linked) return null;
+            return (
+              <button
+                key={linkedId}
+                onClick={() => {
+                  setLinkPopoverOpen(false);
+                  navigateToEntry(linkedId, linked.panel, setActivePanel);
+                }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px 10px',
+                  fontSize: 14,
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  transition: 'background 0.1s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+              >
+                {entryPreview(linked)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface EntryCardProps {
   entry: MemoEntry;
@@ -31,6 +148,10 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const [bulkCtxMenu, setBulkCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const [hovered, setHovered] = useState(false);
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
+  const entries = useStore((s) => s.entries);
+  const setActivePanel = useStore((s) => s.setActivePanel);
   const accent = PANEL_ACCENT[entry.panel] ?? 'var(--border-default)';
 
   const { isSelected, selectedIds, clearSelection } = useSelection();
@@ -65,7 +186,6 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
   };
 
   const importanceColor = entry.importance ? IMPORTANCE_COLOR[entry.importance] : null;
-
   return (
     <div
       data-entry-id={entry.id}
@@ -138,24 +258,51 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         </svg>
       )}
 
-      {/* 重要度マーカー — エントリ全体の右端・上下中央 */}
-      {importanceColor && (
-        <IconImportance
-          color={importanceColor}
-          className="absolute pointer-events-none"
-          style={{
-            right: 4,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            opacity: hovered ? 0.9 : 0.6,
-            transition: 'opacity 0.12s',
-          }}
-        />
-      )}
+      {/* コンテンツ + 右端インジケータ群 を横並びで配置 */}
+      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+        {/* コンテンツ */}
+        <div className="min-w-0" style={{ flex: 1 }}>
+          {renderContent()}
+        </div>
 
-      {/* コンテンツ（テキスト+バッジは各エントリ内で管理） */}
-      <div className="min-w-0" style={{ paddingRight: importanceColor ? 20 : 0 }}>
-        {renderContent()}
+        {/* 右端インジケータ列 — 重要度は上下中央、リンクは右下 */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 18,
+            flexShrink: 0,
+            paddingTop: 2,
+            paddingBottom: 2,
+          }}
+        >
+          {/* 重要度 — 上下中央 (flex:1 で上下均等スペース) */}
+          {importanceColor && (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              <IconImportance
+                size={12}
+                color={importanceColor}
+                className="pointer-events-none"
+                style={{
+                  opacity: hovered ? 0.9 : 0.6,
+                  transition: 'opacity 0.12s',
+                }}
+              />
+            </div>
+          )}
+
+          {/* リンク — 下端に寄る */}
+          <LinkPopover
+            entry={entry}
+            entries={entries}
+            hovered={hovered}
+            setActivePanel={setActivePanel}
+            linkPopoverOpen={linkPopoverOpen}
+            setLinkPopoverOpen={setLinkPopoverOpen}
+          />
+        </div>
       </div>
 
       {/* 単体コンテキストメニュー */}
@@ -165,6 +312,7 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
           x={ctxMenu.x}
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
+          onLinkRequest={() => { setCtxMenu(null); setLinkModalOpen(true); }}
         />
       )}
 
@@ -179,6 +327,15 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
             setBulkCtxMenu(null);
             clearSelection();
           }}
+        />
+      )}
+
+      {/* リンク設定モーダル */}
+      {linkModalOpen && (
+        <LinkEntryModal
+          entry={entry}
+          open={linkModalOpen}
+          onClose={() => setLinkModalOpen(false)}
         />
       )}
     </div>

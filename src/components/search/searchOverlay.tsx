@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { navigateToEntry } from '@/lib/entryNavigation';
 import { useStore } from '@/store';
 import type { MemoEntry, PanelId } from '@/types/memo';
 import { Search, X } from '@/components/icons';
@@ -94,18 +95,7 @@ export function SearchOverlay() {
   const handleSelect = useCallback(
     (entry: MemoEntry) => {
       close();
-      setActivePanel(entry.panel);
-      // DOM 更新後にスクロール＆フラッシュアニメーション
-      requestAnimationFrame(() => {
-        const el = document.querySelector(`[data-entry-id="${entry.id}"]`);
-        if (!el) return;
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.remove('entry-flash');
-        // reflow を挟んでアニメーションを再トリガー可能にする
-        void (el as HTMLElement).offsetWidth;
-        el.classList.add('entry-flash');
-        el.addEventListener('animationend', () => el.classList.remove('entry-flash'), { once: true });
-      });
+      navigateToEntry(entry.id, entry.panel, setActivePanel);
     },
     [close, setActivePanel],
   );
