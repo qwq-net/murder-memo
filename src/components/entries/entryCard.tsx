@@ -68,6 +68,7 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
 
   return (
     <div
+      data-entry-id={entry.id}
       className="flex flex-col relative p-0 my-[4px] rounded-sm"
       onContextMenu={handleContextMenu}
       onMouseEnter={() => setHovered(true)}

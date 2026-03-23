@@ -146,7 +146,7 @@ input, textarea, [contenteditable="true"] {
 /* ─── Focus ─────────────────────────────────────────────────────────────────── */
 /* 入力要素とボタンのみ focus-visible を適用。DnDソータブル要素には適用しない */
 /* .outline-none を持つ要素（エントリ編集 textarea 等）は除外 */
-input:focus-visible,
+input:focus-visible:not(.outline-none),
 textarea:focus-visible:not(.outline-none),
 select:focus-visible,
 button:focus-visible {
@@ -300,6 +300,32 @@ button:focus-visible {
 @keyframes toast-out {
   from { opacity: 1; transform: translateY(0); }
   to   { opacity: 0; transform: translateY(-8px); }
+}
+
+/* ─── 検索オーバーレイ ──────────────────────────────────────────────────────── */
+@keyframes search-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* 検索ハイライト */
+mark {
+  background: var(--accent-glow);
+  color: var(--text-primary);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* 検索結果クリック時のエントリハイライト */
+/* 1s フェードイン → 2.5s 維持 → 0.5s フェードアウト = 計4s */
+@keyframes entry-flash {
+  0%    { background-color: transparent; }
+  25%   { background-color: rgba(200, 137, 26, 0.15); }
+  87.5% { background-color: rgba(200, 137, 26, 0.15); }
+  100%  { background-color: transparent; }
+}
+.entry-flash {
+  animation: entry-flash 1.5s ease-in-out;
 }
 
 /* スクリーンリーダー専用（視覚的に非表示、ARIAには有効） */

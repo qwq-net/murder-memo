@@ -8,8 +8,9 @@ import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel
 import { ToastContainer } from '@/components/common/toast';
 import { WelcomeModal } from '@/components/common/welcomeModal';
 import { useSelection } from '@/components/entries/selectionContext';
-import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Settings, User } from '@/components/icons';
+import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, Settings, User } from '@/components/icons';
 import { FreeMemoPanel } from '@/components/panels/freeMemoPanel';
+import { SearchOverlay } from '@/components/search/searchOverlay';
 import { SettingsPanel } from '@/components/settings/settingsPanel';
 import { PersonalMemoPanel } from '@/components/panels/personalMemoPanel';
 import { TimelinePanel } from '@/components/panels/timelinePanel';
@@ -94,6 +95,7 @@ export function AppShell() {
   const switchSession = useStore((s) => s.switchSession);
   const createSession = useStore((s) => s.createSession);
   const renameSession = useStore((s) => s.renameSession);
+  const setSearchOpen = useStore((s) => s.setSearchOpen);
   const { hasSelection, clearSelection } = useSelection();
 
   const isDemo = sessions.find((s) => s.id === activeSessionId)?.isDemo ?? false;
@@ -148,6 +150,36 @@ export function AppShell() {
 
           {/* 右側ボタン群 */}
           <div className="flex items-center gap-2">
+          {/* 検索ボタン */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'none',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: 'var(--radius-sm)',
+              color: 'var(--text-secondary)',
+              fontSize: 13,
+              padding: '4px 10px',
+              cursor: 'pointer',
+              transition: 'color 0.15s, border-color 0.15s',
+              letterSpacing: '0.02em',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-secondary)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+            }}
+          >
+            <Search size={13} />
+            {!isMobile && '検索'}
+          </button>
+
           <button
             onClick={() => setCharacterSetupOpen(true)}
             style={{
@@ -371,6 +403,7 @@ export function AppShell() {
       <WelcomeModal />
       <CharacterSetupPanel />
       <SettingsPanel />
+      <SearchOverlay />
     </div>
   );
 }

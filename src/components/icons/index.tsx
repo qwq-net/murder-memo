@@ -16,6 +16,7 @@ export {
   ChevronsDownUp,
   ChevronsUpDown,
   Plus,
+  Search,
   Settings,
   SquarePen,
   User,

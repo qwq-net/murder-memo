@@ -31,6 +31,8 @@ export interface UiSlice {
   toasts: ToastItem[];
   /** ウェルカムモーダルの表示状態 */
   isWelcomeOpen: boolean;
+  /** 検索オーバーレイの表示状態 */
+  isSearchOpen: boolean;
 
   setLayout: (layout: Partial<PanelLayoutConfig>) => void;
   setActivePanel: (panel: PanelId) => void;
@@ -46,6 +48,7 @@ export interface UiSlice {
   addToast: (message: string, type?: ToastType) => void;
   removeToast: (id: string) => void;
   setWelcomeOpen: (open: boolean) => void;
+  setSearchOpen: (open: boolean) => void;
 }
 
 const DEFAULT_LAYOUT: PanelLayoutConfig = {
@@ -67,6 +70,7 @@ export const createUiSlice = (
   characterFilter: { ...EMPTY_FILTER },
   toasts: [],
   isWelcomeOpen: false,
+  isSearchOpen: false,
 
   setLayout: (patch) =>
     set((s) => ({ layout: { ...s.layout, ...patch } })),
@@ -110,4 +114,6 @@ export const createUiSlice = (
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
   setWelcomeOpen: (open) => set(() => ({ isWelcomeOpen: open })),
+
+  setSearchOpen: (open) => set(() => ({ isSearchOpen: open })),
 });
