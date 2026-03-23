@@ -142,31 +142,31 @@ function TimelineGroupSection({
       {!group.collapsed && (
         // --tl-spine-x: 縦線・ドットの中心X座標の単一の真実の情報源
         // 縦線・HourDividerドットはともにこの値から位置を計算するため、値を変えれば両方追従する
-        <div className="relative py-2.5" style={{ '--tl-spine-x': '15px' } as React.CSSProperties}>
-          {/* 縦線 — 上下余白部分は破線、中央は実線 */}
+        <div className="relative py-2.5" style={{ '--tl-spine-x': '14px' } as React.CSSProperties}>
+          {/* 縦線 — width:1px + translateX(-50%) で中心を --tl-spine-x に合わせる */}
           <div
-            className="absolute top-0 bottom-0 w-0"
-            style={{ left: 'var(--tl-spine-x)' }}
+            className="absolute top-0 bottom-0"
+            style={{ left: 'var(--tl-spine-x)', width: 1, transform: 'translateX(-50%)' }}
           >
             {/* 上部破線 */}
             <div
-              className="absolute top-0 h-2.5"
+              className="absolute top-0 h-2.5 w-full"
               style={{
-                borderLeft: '1px dashed color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
+                backgroundImage: 'repeating-linear-gradient(to bottom, color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent) 0 2px, transparent 2px 4px)',
               }}
             />
             {/* 中央実線 */}
             <div
-              className="absolute top-2.5 bottom-2.5"
+              className="absolute top-2.5 bottom-2.5 w-full"
               style={{
-                borderLeft: '1px solid color-mix(in srgb, var(--panel-timeline-accent) 15%, transparent)',
+                background: 'color-mix(in srgb, var(--panel-timeline-accent) 15%, transparent)',
               }}
             />
             {/* 下部破線 */}
             <div
-              className="absolute bottom-0 h-2.5"
+              className="absolute bottom-0 h-2.5 w-full"
               style={{
-                borderLeft: '1px dashed color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent)',
+                backgroundImage: 'repeating-linear-gradient(to bottom, color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent) 0 2px, transparent 2px 4px)',
               }}
             />
           </div>

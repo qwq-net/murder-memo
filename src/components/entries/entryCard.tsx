@@ -106,40 +106,36 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         }}
       />
 
-      {/* タイムラインマーカー — ドット + 水平ティック */}
+      {/* タイムラインマーカー — ドット + 水平ティック (SVG) */}
       {entry.type === 'timeline' && !!entry.eventTime && !hideTime && (
-        <>
-          <div
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              left: 'calc(var(--tl-spine-x) - 6px)',
-              top: 12,
-              transform: 'translateX(-50%)',
-              width: 5,
-              height: 5,
-              background: selected
-                ? 'var(--accent)'
-                : 'var(--panel-timeline-accent)',
-              opacity: selected ? 1 : (hovered ? 0.8 : 0.45),
-              transition: 'opacity 0.12s',
-            }}
+        <svg
+          className="absolute pointer-events-none"
+          width="14"
+          height="5"
+          viewBox="0 0 14 5"
+          style={{
+            left: 'calc(var(--tl-spine-x) - 8.6px)',
+            top: 10,
+            transition: 'opacity 0.12s',
+          }}
+        >
+          <circle
+            cx="2.5"
+            cy="2.5"
+            r="2.5"
+            fill={selected ? 'var(--accent)' : 'var(--panel-timeline-accent)'}
+            opacity={selected ? 1 : (hovered ? 0.8 : 0.45)}
           />
-          {/* 水平ティック — ドットから右へ伸びる接続線 */}
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              left: 'calc(var(--tl-spine-x) - 6px + 3px)',
-              top: 14,
-              width: 8,
-              height: 1,
-              background: selected
-                ? 'var(--accent)'
-                : 'var(--panel-timeline-accent)',
-              opacity: selected ? 0.8 : (hovered ? 0.5 : 0.2),
-              transition: 'opacity 0.12s',
-            }}
+          <line
+            x1="5"
+            y1="2.5"
+            x2="14"
+            y2="2.5"
+            stroke={selected ? 'var(--accent)' : 'var(--panel-timeline-accent)'}
+            strokeWidth="1"
+            opacity={selected ? 0.8 : (hovered ? 0.5 : 0.2)}
           />
-        </>
+        </svg>
       )}
 
       {/* 重要度マーカー — エントリ全体の右端・上下中央 */}
