@@ -254,8 +254,6 @@ export function buildImportanceSubmenu(
   ctx: MenuContext,
 ): ContextMenuEntry[] {
   const isBulk = entries.length > 1;
-  const hasNonImage = entries.some((e) => e.type !== 'image');
-  if (!hasNonImage) return [];
 
   const sub: ContextMenuEntry[] = [];
 
@@ -265,7 +263,7 @@ export function buildImportanceSubmenu(
       label,
       onClick: async () => {
         await forEntries(entries, async (entry) => {
-          if (entry.type !== 'image') await ctx.updateEntry(entry.id, { importance: key as MemoEntry['importance'] });
+          await ctx.updateEntry(entry.id, { importance: key as MemoEntry['importance'] });
         }, ctx, {
           singular: `重要度を「${label}」に設定しました`,
           plural: (n) => `${n}件の重要度を「${label}」に設定しました`,

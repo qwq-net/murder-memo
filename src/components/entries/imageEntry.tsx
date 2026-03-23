@@ -1,7 +1,15 @@
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+
+import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
+import { useEntryDraft } from '@/hooks/useEntryDraft';
 import { useImageBlob } from '@/hooks/useImageBlob';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
 import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
+import { ImageLightbox } from '@/components/common/imageLightbox';
+
+/** サムネイルの高さ — テキスト2行分相当 (13px * 1.2 * 2 + padding ≒ 40px) */
+const THUMB_HEIGHT = 40;
 
 interface ImageEntryProps {
   entry: MemoEntry;
@@ -10,49 +18,140 @@ interface ImageEntryProps {
 
 export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   const src = useImageBlob(entry.imageBlobKey);
-  const deleteEntry = useStore((s) => s.deleteEntry);
-  const addToast = useStore((s) => s.addToast);
+  const updateEntry = useStore((s) => s.updateEntry);
+  const focusedEntryId = useStore((s) => s.focusedEntryId);
+  const setFocusedEntry = useStore((s) => s.setFocusedEntry);
   const settings = useStore((s) => s.settings);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const isEditing = focusedEntryId === entry.id;
 
   const panelDefault = settings.defaultCharacterDisplay[entry.panel];
   const effectiveFormat = entry.characterDisplayFormat ?? panelDefault.format;
   const effectiveVisibility = entry.characterDisplayVisibility ?? panelDefault.visibility;
 
+  // ── キャプション編集（EntryContent と同パターン） ──
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { resize } = useAutoResizeTextarea();
+
+  const { draft, setDraft, handleBlur: draftBlur, handleEscape: draftEscape, resetGuards } =
+    useEntryDraft({
+      entryId: entry.id,
+      currentValues: { content: entry.content },
+      isEditing,
+      onSave: (values) => {
+        updateEntry(entry.id, { content: values.content.trim() });
+      },
+    });
+
+  // 編集モードに入った瞬間だけ focus（useLayoutEffect で DOM マウント後に実行）
+  const editInitRef = useRef(false);
+  useLayoutEffect(() => {
+    if (!isEditing) {
+      editInitRef.current = false;
+      return;
+    }
+    if (editInitRef.current || !inputRef.current) return;
+    editInitRef.current = true;
+    resetGuards();
+    const el = inputRef.current;
+    resize(el);
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [isEditing, resize, resetGuards]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      // dnd-kit の KeyboardSensor に到達するのを防止
+      e.stopPropagation();
+      if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+        e.preventDefault();
+        inputRef.current?.blur();
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        draftEscape();
+        inputRef.current?.blur();
+      }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+      }
+    },
+    [draftEscape],
+  );
+
   return (
-    <div className="relative px-2 py-1.5">
-      {src ? (
-        <img
-          src={src}
-          alt=""
-          className="block max-w-full rounded-sm border border-border-subtle"
-          style={{ maxHeight: 300 }}
-        />
-      ) : (
-        <div className="p-3 text-text-muted text-sm text-center">
-          画像を読み込み中…
-        </div>
-      )}
-      {entry.content && (
-        <div className="mt-1 text-sm text-text-secondary whitespace-pre-wrap break-words">
-          {entry.content}
-        </div>
-      )}
-      <button
-        onClick={async () => { await deleteEntry(entry.id); addToast('画像を削除しました'); }}
-        title="画像を削除"
-        className="absolute top-2 right-2.5 w-5 h-5 flex items-center justify-center border-none rounded-sm text-text-secondary text-sm cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-150"
-        style={{ background: 'rgba(0,0,0,0.6)' }}
-      >
-        ×
-      </button>
+    <div style={{ flex: 1, minWidth: 0 }}>
+      {/* サムネイル + キャプション */}
+      <div className="pl-3.5 pr-2.5 pt-px pb-0 flex items-start gap-2">
+        {/* サムネイル画像 */}
+        {src ? (
+          <img
+            src={src}
+            alt=""
+            onClick={() => setLightboxOpen(true)}
+            className="block rounded-sm border border-border-subtle cursor-pointer shrink-0 object-cover"
+            style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
+          />
+        ) : (
+          <div
+            className="shrink-0 rounded-sm border border-border-subtle flex items-center justify-center text-text-faint text-[10px]"
+            style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
+          >
+            …
+          </div>
+        )}
+
+        {/* キャプション */}
+        {isEditing ? (
+          <textarea
+            ref={inputRef}
+            value={draft.content}
+            placeholder="キャプションを入力"
+            onChange={(e) => {
+              setDraft({ content: e.target.value });
+              resize(e.target);
+            }}
+            onBlur={draftBlur}
+            onKeyDown={handleKeyDown}
+            rows={2}
+            className="w-full bg-transparent border-none outline-none text-text-primary font-sans text-[13px] leading-[1.2] p-0 m-0 resize-none overflow-hidden block"
+            style={{ minHeight: THUMB_HEIGHT }}
+          />
+        ) : (
+          <div
+            onMouseUp={(e) => {
+              if (e.shiftKey) return;
+              setFocusedEntry(entry.id);
+            }}
+            className="cursor-text pt-px whitespace-pre-wrap break-words text-[13px] leading-[1.2] min-w-0 flex-1"
+            style={{ minHeight: THUMB_HEIGHT }}
+          >
+            {entry.content || (
+              <span className="text-text-faint">キャプションを入力</span>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* 役職マーカー */}
-      <CharacterBadgeBar
-        entry={entry}
-        format={effectiveFormat}
-        visibility={effectiveVisibility}
-        isEntryHovered={isHovered}
-      />
+      <div className="pl-3.5 pr-2.5 pb-0.5">
+        <CharacterBadgeBar
+          entry={entry}
+          format={effectiveFormat}
+          visibility={effectiveVisibility}
+          isEntryHovered={isHovered || isEditing}
+        />
+      </div>
+
+      {/* ライトボックス */}
+      {src && (
+        <ImageLightbox
+          src={src}
+          open={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 }
