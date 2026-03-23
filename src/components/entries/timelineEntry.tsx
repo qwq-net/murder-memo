@@ -1,13 +1,15 @@
 /**
- * タイムラインエントリ。時刻列 + EntryContent（テキスト+バッジ）で構成。
- * 時刻の編集・表示ロジックのみ保持し、テキスト編集は EntryContent に委譲する。
+ * タイムラインエントリ。時刻列 + コンテンツ（テキスト or 画像）で構成。
+ * 時刻は常に input で表示し、フォーカス時にスタイルが変わる。
+ * テキスト編集は EntryContent に、画像は ImageEntry にそれぞれ委譲する。
  */
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
 import { EntryContent } from '@/components/entries/entryContent';
+import { ImageEntry } from '@/components/entries/imageEntry';
 
 interface TimelineEntryProps {
   entry: MemoEntry;
@@ -21,10 +23,11 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
   const setFocusedEntry = useStore((s) => s.setFocusedEntry);
 
   const isEditing = focusedEntryId === entry.id;
+  const isImage = !!entry.imageBlobKey;
   const [draftTime, setDraftTime] = useState(entry.eventTime ?? '');
-  const timeRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const focusTargetRef = useRef<'time' | 'content'>('content');
+  /** 時刻 span クリックで編集に入った場合 true（textarea ではなく time input にフォーカスする） */
+  const focusTimeRef = useRef(false);
 
   // 時刻の props → draft 同期（非編集時のみ）
   const [prevTimeSync, setPrevTimeSync] = useState({ eventTime: entry.eventTime, isEditing });
@@ -33,22 +36,19 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
     if (!isEditing) setDraftTime(entry.eventTime ?? '');
   }
 
-  // 時刻フォーカス: 編集開始時に focusTargetRef が 'time' なら時刻 input にフォーカス
-  const timeInitRef = useRef(false);
-  useLayoutEffect(() => {
-    if (!isEditing) {
-      timeInitRef.current = false;
-      return;
-    }
-    if (timeInitRef.current) return;
-    timeInitRef.current = true;
-    if (focusTargetRef.current === 'time') {
-      timeRef.current?.focus();
-    }
-  }, [isEditing]);
+  // 時刻保存
+  const saveTime = useCallback(() => {
+    const completed = autoCompleteTime(draftTime);
+    setDraftTime(completed);
+    const sortKey = completed ? parseEventTime(completed) : undefined;
+    updateEntry(entry.id, {
+      eventTime: completed || undefined,
+      eventTimeSortKey: sortKey,
+    });
+  }, [draftTime, entry.id, updateEntry]);
 
-  // EntryContent に渡す保存コールバック（content + 時刻をまとめて保存）
-  const handleSave = useCallback(
+  // テキストエントリ用：content + 時刻をまとめて保存
+  const handleContentSave = useCallback(
     (content: string) => {
       const timeTrimmed = autoCompleteTime(draftTime);
       const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
@@ -61,106 +61,74 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
     [draftTime, entry.id, updateEntry],
   );
 
-  // 時刻 input の blur（コンテナ内フォーカス移動なら保存スキップ）
+  // 時刻 input の blur
   const handleTimeBlur = useCallback(
-    (e: React.FocusEvent) => {
-      (e.currentTarget as HTMLInputElement).style.borderColor = 'var(--border-subtle)';
-      setDraftTime((v) => autoCompleteTime(v));
-      // コンテナ内の別要素（content textarea）への移動なら保存しない
-      if (containerRef.current?.contains(e.relatedTarget as Node)) return;
-      // コンテナ外への移動 → 保存して編集終了
-      const timeTrimmed = autoCompleteTime(draftTime);
-      const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
-      updateEntry(entry.id, {
-        content: entry.content,
-        eventTime: timeTrimmed || undefined,
-        eventTimeSortKey: sortKey,
-      });
-      setFocusedEntry(null);
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      e.currentTarget.style.borderColor = 'transparent';
+      e.currentTarget.style.background = 'transparent';
+      // テキストエントリ: コンテナ内（textarea）への移動なら時刻だけ保存しない
+      if (!isImage && containerRef.current?.contains(e.relatedTarget as Node)) return;
+      // コンテナ外 or 画像エントリ → 時刻を保存
+      saveTime();
+      // テキストエントリの場合は編集終了
+      if (!isImage) setFocusedEntry(null);
     },
-    [draftTime, entry.id, entry.content, updateEntry, setFocusedEntry],
+    [isImage, saveTime, setFocusedEntry],
   );
 
-  // ── 時刻列の共通スタイル ──
-  const timeStyle = {
+  // 時刻 input の keyDown
+  const handleTimeKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+        e.preventDefault();
+        if (isImage) {
+          (e.target as HTMLInputElement).blur();
+        } else {
+          // テキストエントリ: textarea にフォーカス移動
+          containerRef.current?.querySelector('textarea')?.focus();
+        }
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setDraftTime(entry.eventTime ?? '');
+        (e.target as HTMLInputElement).blur();
+      }
+      if (e.key === 'Tab' && !isImage) {
+        e.preventDefault();
+        containerRef.current?.querySelector('textarea')?.focus();
+      }
+    },
+    [isImage, entry.eventTime],
+  );
+
+  // 時刻列の共通スタイル
+  const timeStyle: React.CSSProperties = {
     width: 'var(--tl-time-width)',
     flexShrink: 0,
-    boxSizing: 'border-box' as const,
+    boxSizing: 'border-box',
     fontFamily: 'var(--font-mono)',
     fontSize: 14,
     lineHeight: 1.2,
     letterSpacing: '0.04em',
-    textAlign: 'center' as const,
+    textAlign: 'center',
     padding: '2px 4px',
+    background: 'transparent',
+    border: '1px solid transparent',
+    borderRadius: 'var(--radius-sm)',
+    outline: 'none',
+    color: draftTime ? 'var(--panel-timeline-accent)' : 'var(--text-faint)',
+    transition: 'border-color 0.15s, background 0.15s',
   };
 
-  if (isEditing) {
-    return (
-      <div
-        ref={containerRef}
-        style={{
-          padding: '1px 4px 2px var(--tl-entry-pad-left)',
-          display: 'flex',
-          gap: 'var(--tl-time-gap)',
-          alignItems: 'flex-start',
-        }}
-      >
-        {/* 時刻 input */}
-        <input
-          ref={timeRef}
-          value={draftTime}
-          onChange={(e) => setDraftTime(normalizeTimeInput(e.target.value))}
-          onKeyDown={(e) => {
-            e.stopPropagation();
-            if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              // 時刻確定 → コンテナ内の textarea にフォーカス移動（blur で保存しない）
-              containerRef.current?.querySelector('textarea')?.focus();
-            }
-            if (e.key === 'Escape') {
-              e.preventDefault();
-              setDraftTime(entry.eventTime ?? '');
-              timeRef.current?.blur();
-            }
-            if (e.key === 'Tab') {
-              e.preventDefault();
-              containerRef.current?.querySelector('textarea')?.focus();
-            }
-          }}
-          onBlur={handleTimeBlur}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--panel-timeline-accent)';
-          }}
-          placeholder="--:--"
-          aria-label="時刻"
-          style={{
-            ...timeStyle,
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-sm)',
-            outline: 'none',
-            color: draftTime ? 'var(--panel-timeline-accent)' : 'var(--text-faint)',
-            transition: 'border-color 0.15s',
-          }}
-        />
-        {/* テキスト + バッジ */}
-        <EntryContent
-          entry={entry}
-          onSave={handleSave}
-          isHovered={isHovered}
-          onEscape={() => setDraftTime(entry.eventTime ?? '')}
-          autoFocus={focusTargetRef.current !== 'time'}
-          containerRef={containerRef}
-        />
-      </div>
-    );
-  }
+  // テキストエントリの表示モード: span で時刻を表示（クリックで編集モード突入）
+  const showTimeSpan = !isImage && !isEditing;
 
   return (
     <div
       ref={containerRef}
       style={{
-        cursor: 'text',
+        cursor: showTimeSpan ? 'text' : undefined,
         padding: '1px 4px 0 var(--tl-entry-pad-left)',
         display: 'flex',
         alignItems: 'flex-start',
@@ -168,30 +136,56 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
         minHeight: 22,
       }}
     >
-      {/* 時刻表示 — クリックで時刻にフォーカス */}
-      <span
-        onClick={(e) => {
-          if (e.shiftKey) return;
-          focusTargetRef.current = 'time';
-          setFocusedEntry(entry.id);
-        }}
-        style={{
-          ...timeStyle,
-          border: '1px solid transparent',
-          color: entry.eventTime ? 'var(--panel-timeline-accent)' : 'var(--text-faint)',
-          cursor: 'text',
-        }}
-      >
-        {hideTime ? '' : (entry.eventTime ?? '')}
-      </span>
+      {/* 時刻列 */}
+      {showTimeSpan ? (
+        <span
+          onClick={(e) => {
+            if (e.shiftKey) return;
+            focusTimeRef.current = true;
+            setFocusedEntry(entry.id);
+          }}
+          style={{ ...timeStyle, cursor: 'text' }}
+        >
+          {hideTime ? '' : (entry.eventTime ?? '')}
+        </span>
+      ) : (
+        <input
+          autoFocus={focusTimeRef.current}
+          ref={(el) => {
+            // autoFocus 後にフラグをリセット
+            if (el && focusTimeRef.current) {
+              el.focus();
+              focusTimeRef.current = false;
+            }
+          }}
+          value={draftTime}
+          onChange={(e) => setDraftTime(normalizeTimeInput(e.target.value))}
+          onBlur={handleTimeBlur}
+          onKeyDown={handleTimeKeyDown}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = 'var(--panel-timeline-accent)';
+            e.currentTarget.style.background = 'var(--bg-elevated)';
+          }}
+          placeholder="--:--"
+          aria-label="時刻"
+          className="outline-none"
+          style={timeStyle}
+        />
+      )}
 
-      {/* テキスト + バッジ */}
-      <EntryContent
-        entry={entry}
-        onSave={handleSave}
-        isHovered={isHovered}
-        containerRef={containerRef}
-      />
+      {/* コンテンツ */}
+      {isImage ? (
+        <ImageEntry entry={entry} isHovered={isHovered} />
+      ) : (
+        <EntryContent
+          entry={entry}
+          onSave={handleContentSave}
+          isHovered={isHovered}
+          onEscape={() => setDraftTime(entry.eventTime ?? '')}
+          autoFocus={!focusTimeRef.current}
+          containerRef={containerRef}
+        />
+      )}
     </div>
   );
 }

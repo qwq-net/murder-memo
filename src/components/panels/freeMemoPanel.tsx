@@ -16,7 +16,7 @@ export function FreeMemoPanel() {
     [addEntry, addToast],
   );
 
-  // 自由メモパネルのみ画像ペーストを有効化
+  // 自由メモパネルのみクリップボード画像ペーストを有効化
   useClipboardPaste(handleImagePaste);
 
   return (

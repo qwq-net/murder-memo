@@ -6,6 +6,7 @@ import { parseEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 import { GroupSelector, useSelectedGroupId } from '@/components/entries/groupSelector';
+import { useImagePicker } from '@/components/layout/panel';
 
 interface EntryInputProps {
   panel: PanelId;
@@ -25,6 +26,7 @@ export function EntryInput({ panel }: EntryInputProps) {
 
   const isTimeline = panel === 'timeline';
   const isMemoPanel = panel === 'free' || panel === 'personal';
+  const openImagePicker = useImagePicker();
 
   const timeInput = useTimeInput();
   const effectiveGroupId = useSelectedGroupId(panel);
@@ -149,6 +151,33 @@ export function EntryInput({ panel }: EntryInputProps) {
             opacity: disabled ? 0.4 : undefined,
           }}
         />
+
+        {/* 画像追加ボタン */}
+        {openImagePicker && (
+          <button
+            onClick={openImagePicker}
+            title="画像を追加"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: 2,
+              display: 'flex',
+              alignItems: 'center',
+              flexShrink: 0,
+              transition: 'color 0.12s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.2" />
+              <circle cx="5.5" cy="5.5" r="1.5" stroke="currentColor" strokeWidth="1" />
+              <path d="M1.5 11l3.5-3.5 2.5 2.5 2-2 5 5" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* スクリーンリーダー用エラーメッセージ */}

@@ -60,14 +60,14 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
     : [];
 
   const renderContent = () => {
-    switch (entry.type) {
-      case 'image':
-        return <ImageEntry entry={entry} isHovered={isEntryHovered} />;
-      case 'timeline':
-        return <TimelineEntry entry={entry} hideTime={hideTime} isHovered={isEntryHovered} />;
-      default:
-        return <TextEntry entry={entry} isHovered={isEntryHovered} />;
+    // タイムラインは panel で判定（画像エントリも TimelineEntry で時刻を表示するため）
+    if (entry.panel === 'timeline') {
+      return <TimelineEntry entry={entry} hideTime={hideTime} isHovered={isEntryHovered} />;
     }
+    if (entry.type === 'image' || entry.imageBlobKey) {
+      return <ImageEntry entry={entry} isHovered={isEntryHovered} />;
+    }
+    return <TextEntry entry={entry} isHovered={isEntryHovered} />;
   };
 
   const importanceColor = entry.importance ? IMPORTANCE_COLOR[entry.importance] : null;
