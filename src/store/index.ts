@@ -69,10 +69,10 @@ export const useStore = create<StoreState>()(
       // テキスト入力を 1 操作にまとめるためのデバウンス
       handleSet: (handleSet) => {
         let timeout: ReturnType<typeof setTimeout> | null = null;
-        return (state, replace, currentState, delta) => {
+        return (...args: Parameters<typeof handleSet>) => {
           if (timeout) clearTimeout(timeout);
           timeout = setTimeout(() => {
-            handleSet(state, replace, currentState, delta);
+            handleSet(...args);
             timeout = null;
           }, 500);
         };

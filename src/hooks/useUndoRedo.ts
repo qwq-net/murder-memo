@@ -51,13 +51,13 @@ export function useUndoRedo() {
         const before = useStore.getState();
         temporal.undo();
         const after = useStore.getState();
-        syncStateToIdb(after).catch(() => {});
+        syncStateToIdb(after).catch((err) => console.error('Undo IDB sync failed:', err));
         useStore.getState().addToast(`元に戻しました: ${describeChange(before, after)}`);
       } else if (isRedo && temporal.futureStates.length > 0) {
         const before = useStore.getState();
         temporal.redo();
         const after = useStore.getState();
-        syncStateToIdb(after).catch(() => {});
+        syncStateToIdb(after).catch((err) => console.error('Redo IDB sync failed:', err));
         useStore.getState().addToast(`やり直しました: ${describeChange(before, after)}`);
       }
     };

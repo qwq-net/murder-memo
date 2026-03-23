@@ -1,509 +1,32 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 
 import { useStore } from '@/store';
-import { EXPORT_WARN_BYTES, downloadJson, estimateExportSize, exportSession, formatBytes, importSession } from '@/lib/exportImport';
-import { destroyDatabase } from '@/lib/idb';
-import { copyToClipboard, formatSessionAsText } from '@/lib/textExport';
 import type { AppSettings } from '@/store/slices/settings';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
-import { CharacterBadge } from '@/components/characters/characterBadge';
-import { MinimalSlot } from '@/components/characters/characterBadgeBar';
-import { ConfirmModal } from '@/components/common/confirmModal';
 import { ModalFrame } from '@/components/common/modalFrame';
-import { RadioGroup } from '@/components/common/radioGroup';
-import type { RadioOption } from '@/components/common/radioGroup';
 import { X } from '@/components/icons';
-
-/* ── Setting Row (一般設定用) ─────────────────────────────────────────────── */
-
-function SettingRow<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: RadioOption<T>[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '8px 0',
-      }}
-    >
-      <span style={{ fontSize: 14, color: 'var(--text-primary)', flexShrink: 0 }}>{label}</span>
-      <RadioGroup options={options} value={value} onChange={onChange} />
-    </div>
-  );
-}
-
-/* ── Marker Preview ───────────────────────────────────────────────────────── */
-
-const MOCK_CHARACTERS = [
-  { name: '医者', color: '#e74c3c', active: true },
-  { name: '執事', color: '#3498db', active: true },
-  { name: '令嬢', color: '#2ecc71', active: false },
-  { name: '探偵', color: '#f39c12', active: true },
-  { name: '庭師', color: '#9b59b6', active: false },
-];
-
-const PREVIEW_HEIGHT = 30;
-
-function MarkerPreview({
-  format,
-  visibility,
-}: {
-  format: CharacterDisplayFormat;
-  visibility: CharacterDisplayVisibility;
-}) {
-  const [hovered, setHovered] = useState(false);
-
-  const containerStyle: React.CSSProperties = {
-    background: 'var(--bg-base)',
-    borderRadius: 'var(--radius-sm)',
-    padding: '6px 10px',
-    height: PREVIEW_HEIGHT,
-    display: 'flex',
-    alignItems: 'center',
-    overflow: 'hidden',
-  };
-
-  if (visibility === 'off') {
-    return (
-      <div style={{ ...containerStyle, justifyContent: 'center' }}>
-        <span style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic' }}>非表示</span>
-      </div>
-    );
-  }
-
-  const isMinimal = visibility === 'minimal';
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={containerStyle}
-    >
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-        {MOCK_CHARACTERS.map((c) => {
-          const badge = (
-            <CharacterBadge
-              key={c.name}
-              color={c.color}
-              name={c.name}
-              isActive={c.active}
-              onClick={() => { /* プレビュー用: 操作なし */ }}
-              format={format}
-            />
-          );
-
-          if (isMinimal) {
-            return (
-              <MinimalSlot key={c.name} revealed={hovered || c.active} isActive={c.active}>
-                {badge}
-              </MinimalSlot>
-            );
-          }
-
-          return badge;
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ── Section Header ───────────────────────────────────────────────────────── */
-
-function SectionHeader({
-  children,
-  hint,
-  onReset,
-  resetDisabled,
-}: {
-  children: React.ReactNode;
-  hint?: string;
-  onReset?: () => void;
-  resetDisabled?: boolean;
-}) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'baseline',
-        gap: 8,
-        padding: '12px 0 6px',
-      }}
-    >
-      <span
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-          letterSpacing: '0.06em',
-        }}
-      >
-        {children}
-      </span>
-      {hint && (
-        <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 400 }}>
-          {hint}
-        </span>
-      )}
-      {onReset && (
-        <button
-          disabled={resetDisabled}
-          onClick={onReset}
-          style={{
-            marginLeft: 'auto',
-            background: 'none',
-            border: 'none',
-            fontSize: 14,
-            color: resetDisabled ? 'var(--text-muted)' : 'var(--text-secondary)',
-            cursor: resetDisabled ? 'default' : 'pointer',
-            padding: '0 2px',
-            transition: 'color 0.12s',
-          }}
-        >
-          リセット
-        </button>
-      )}
-    </div>
-  );
-}
-
-/* ── Panel Order Editor ───────────────────────────────────────────────────── */
-
-const PANEL_ORDER_LABELS: Record<PanelId, string> = {
-  free: 'フリーメモ',
-  timeline: 'タイムライン',
-  personal: '自分用メモ',
-};
-
-function PanelOrderEditor({
-  order,
-  onChange,
-}: {
-  order: [PanelId, PanelId, PanelId];
-  onChange: (order: [PanelId, PanelId, PanelId]) => void;
-}) {
-  const swap = (index: number, direction: -1 | 1) => {
-    const newOrder = [...order] as [PanelId, PanelId, PanelId];
-    const target = index + direction;
-    if (target < 0 || target >= newOrder.length) return;
-    [newOrder[index], newOrder[target]] = [newOrder[target], newOrder[index]];
-    onChange(newOrder);
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {order.map((panelId, i) => (
-        <div
-          key={panelId}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '5px 8px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--bg-elevated)',
-          }}
-        >
-          {/* accent dot */}
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: PANEL_CARD_ACCENT[panelId],
-              flexShrink: 0,
-            }}
-          />
-
-          {/* label */}
-          <span style={{ flex: 1, fontSize: 14, color: 'var(--text-primary)' }}>
-            {PANEL_ORDER_LABELS[panelId]}
-          </span>
-
-          {/* up / down buttons */}
-          <button
-            disabled={i === 0}
-            onClick={() => swap(i, -1)}
-            aria-label="上に移動"
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: '2px 4px',
-              cursor: i === 0 ? 'default' : 'pointer',
-              color: i === 0 ? 'var(--text-muted)' : 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M3 7.5L6 4.5L9 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <button
-            disabled={i === order.length - 1}
-            onClick={() => swap(i, 1)}
-            aria-label="下に移動"
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: '2px 4px',
-              cursor: i === order.length - 1 ? 'default' : 'pointer',
-              color: i === order.length - 1 ? 'var(--text-muted)' : 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ── Marker Card ──────────────────────────────────────────────────────────── */
-
-const PANEL_CARD_ACCENT: Record<PanelId, string> = {
-  free: 'var(--panel-free-accent)',
-  timeline: 'var(--panel-timeline-accent)',
-  personal: 'var(--panel-personal-accent)',
-};
-
-const VISIBILITY_HINTS: Record<CharacterDisplayVisibility, string | null> = {
-  always: null,
-  minimal: 'ホバー / 編集中に全表示',
-  off: null,
-};
-
-function MarkerCard({
-  panel,
-  label,
-  settings,
-  onChangeFormat,
-  onChangeVisibility,
-}: {
-  panel: PanelId;
-  label: string;
-  settings: { format: CharacterDisplayFormat; visibility: CharacterDisplayVisibility };
-  onChangeFormat: (v: CharacterDisplayFormat) => void;
-  onChangeVisibility: (v: CharacterDisplayVisibility) => void;
-}) {
-  const accent = PANEL_CARD_ACCENT[panel];
-  const hint = VISIBILITY_HINTS[settings.visibility];
-
-  return (
-    <div
-      style={{
-        background: 'var(--bg-elevated)',
-        borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--border-subtle)',
-        padding: '10px 14px 8px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-      }}
-    >
-      {/* card title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: accent,
-            flexShrink: 0,
-          }}
-        />
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</span>
-        {hint && (
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginLeft: 'auto' }}>{hint}</span>
-        )}
-      </div>
-
-      {/* format + mode in 2 columns */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 12,
-        }}
-      >
-        {/* format column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>形式</span>
-          <RadioGroup<CharacterDisplayFormat>
-            stretch
-            options={[
-              { value: 'full', label: 'フル' },
-              { value: 'badge', label: 'バッジ' },
-              { value: 'text', label: 'テキスト' },
-            ]}
-            value={settings.format}
-            onChange={onChangeFormat}
-          />
-        </div>
-
-        {/* mode column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>モード</span>
-          <RadioGroup<CharacterDisplayVisibility>
-            stretch
-            options={[
-              { value: 'always', label: '常時' },
-              { value: 'minimal', label: 'ミニマル' },
-              { value: 'off', label: 'オフ' },
-            ]}
-            value={settings.visibility}
-            onChange={onChangeVisibility}
-          />
-        </div>
-      </div>
-
-      {/* preview */}
-      <MarkerPreview format={settings.format} visibility={settings.visibility} />
-    </div>
-  );
-}
-
-/* ── Settings Panel ───────────────────────────────────────────────────────── */
+import { BackupSection } from '@/components/settings/backupSection';
+import { MarkerCard } from '@/components/settings/markerCard';
+import { PanelOrderEditor } from '@/components/settings/panelOrderEditor';
+import { SectionHeader } from '@/components/settings/sectionHeader';
+import { SessionManagementSection } from '@/components/settings/sessionManagementSection';
+import { SettingRow } from '@/components/settings/settingRow';
 
 export function SettingsPanel() {
   const isOpen = useStore((s) => s.isSettingsOpen);
   const setOpen = useStore((s) => s.setSettingsOpen);
   const settings = useStore((s) => s.settings);
   const updateSettings = useStore((s) => s.updateSettings);
-  const clearCurrentSession = useStore((s) => s.clearCurrentSession);
-  const removeSession = useStore((s) => s.removeSession);
   const addToast = useStore((s) => s.addToast);
   const sessions = useStore((s) => s.sessions);
   const activeSessionId = useStore((s) => s.activeSessionId);
   const isDemo = sessions.find((s) => s.id === activeSessionId)?.isDemo ?? false;
 
-  // バックアップセクション用の統計（エントリ型ごとのカウント）
-  const entries = useStore((s) => s.entries);
-  const characters = useStore((s) => s.characters);
-  const stats = useMemo(() => {
-    const imageCount = entries.filter((e) => e.type === 'image').length;
-    return { total: entries.length, imageCount, characterCount: characters.length };
-  }, [entries, characters]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showResetAllConfirm, setShowResetAllConfirm] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
   const [exportSizeInfo, setExportSizeInfo] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleClearSession = useCallback(async () => {
-    const { pause, resume, clear } = useStore.temporal.getState();
-    pause();
-    await clearCurrentSession();
-    clear();
-    resume();
-    addToast('セッションを初期化しました');
-    setOpen(false);
-  }, [clearCurrentSession, addToast, setOpen]);
-
-  const handleDeleteSession = useCallback(async () => {
-    if (!activeSessionId) return;
-    const { pause, resume, clear } = useStore.temporal.getState();
-    pause();
-    await removeSession(activeSessionId);
-    clear();
-    resume();
-    addToast('セッションを削除しました');
-    setOpen(false);
-  }, [activeSessionId, removeSession, addToast, setOpen]);
-
-  const handleResetAll = useCallback(async () => {
-    localStorage.clear();
-    await destroyDatabase();
-    location.reload();
-  }, []);
-
-  const handleTextExport = useCallback(async (panelFilter?: PanelId) => {
-    // レンダリングに不要なデータはコールバック内で取得（再レンダリング抑制）
-    const { entries, characters, timelineGroups, memoGroups, settings: s } = useStore.getState();
-    const session = sessions.find((ss) => ss.id === activeSessionId);
-    if (!session) return;
-    const text = formatSessionAsText(
-      session.name,
-      entries,
-      characters,
-      timelineGroups,
-      memoGroups,
-      s.panelOrder,
-      panelFilter,
-    );
-    if (!text) {
-      addToast('エクスポートするメモがありません');
-      return;
-    }
-    const ok = await copyToClipboard(text);
-    if (ok) {
-      addToast('クリップボードにコピーしました', 'success');
-    } else {
-      addToast('コピーに失敗しました', 'error');
-    }
-  }, [sessions, activeSessionId, addToast]);
-
-  const doExport = useCallback(async () => {
-    const session = sessions.find((s) => s.id === activeSessionId);
-    if (!session) return;
-    try {
-      const data = await exportSession(session);
-      downloadJson(data);
-      addToast('バックアップをダウンロードしました', 'success');
-    } catch {
-      addToast('エクスポートに失敗しました', 'error');
-    }
-  }, [sessions, activeSessionId, addToast]);
-
-  const handleExportBackup = useCallback(async () => {
-    if (!activeSessionId) return;
-    try {
-      const { imageCount, totalBytes } = await estimateExportSize(activeSessionId);
-      if (totalBytes > EXPORT_WARN_BYTES) {
-        setExportSizeInfo(
-          `画像 ${imageCount} 枚（推定 ${formatBytes(totalBytes)}）を含みます。\nファイルが大きいため、エクスポートに時間がかかる場合があります。`,
-        );
-        setShowExportConfirm(true);
-      } else {
-        await doExport();
-      }
-    } catch {
-      addToast('エクスポートに失敗しました', 'error');
-    }
-  }, [activeSessionId, doExport, addToast]);
-
-  const handleImportBackup = useCallback(async (file: File) => {
-    try {
-      const { pause, resume, clear } = useStore.temporal.getState();
-      pause();
-      const newSession = await importSession(file);
-      const { sessions: current } = useStore.getState();
-      useStore.setState({
-        sessions: [...current, newSession],
-        activeSessionId: newSession.id,
-      });
-      clear();
-      resume();
-      addToast(`「${newSession.name}」をインポートしました`, 'success');
-      setOpen(false);
-    } catch (e) {
-      addToast(e instanceof Error ? e.message : 'インポートに失敗しました', 'error');
-    }
-  }, [addToast, setOpen]);
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     updateSettings({ [key]: value });
@@ -518,11 +41,14 @@ export function SettingsPanel() {
     });
   };
 
+  // ConfirmModal が開いているときはモーダル背景クリックで閉じない
+  const hasSubModal = showClearConfirm || showDeleteConfirm || showResetAllConfirm || showExportConfirm;
+
   return (
     <>
     <ModalFrame
       open={isOpen}
-      onClose={() => { if (!showClearConfirm && !showDeleteConfirm && !showResetAllConfirm && !showExportConfirm) setOpen(false); }}
+      onClose={() => { if (!hasSubModal) setOpen(false); }}
       width={480}
       ariaLabel="アプリ設定"
     >
@@ -554,7 +80,7 @@ export function SettingsPanel() {
         {/* body */}
         <div style={{ padding: '2px 18px 18px' }}>
 
-          {/* ── General ── */}
+          {/* ── 一般 ── */}
           <SectionHeader>一般</SectionHeader>
 
           <SettingRow
@@ -586,7 +112,7 @@ export function SettingsPanel() {
             ]}
           />
 
-          {/* ── Panel order ── */}
+          {/* ── パネル表示順 ── */}
           <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
             <SectionHeader
               hint="左から順に並びます"
@@ -606,7 +132,7 @@ export function SettingsPanel() {
             onChange={(newOrder) => update('panelOrder', newOrder)}
           />
 
-          {/* ── Marker defaults ── */}
+          {/* ── 関連人物マーカー ── */}
           <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
             <SectionHeader
               onReset={() => update('defaultCharacterDisplay', {
@@ -644,226 +170,33 @@ export function SettingsPanel() {
             ))}
           </div>
 
-          {/* ── Text export ── */}
-          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
-            <SectionHeader>テキストエクスポート</SectionHeader>
-          </div>
+          <BackupSection
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            panelOrder={settings.panelOrder}
+            addToast={addToast}
+            setOpen={setOpen}
+            showExportConfirm={showExportConfirm}
+            setShowExportConfirm={setShowExportConfirm}
+            exportSizeInfo={exportSizeInfo}
+            setExportSizeInfo={setExportSizeInfo}
+          />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              メモ内容を Markdown テキストとしてクリップボードにコピーします。
-            </span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              <button
-                onClick={() => handleTextExport()}
-                className="btn-ghost btn-sm"
-              >
-                全パネル
-              </button>
-              {settings.panelOrder.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => handleTextExport(p)}
-                  className="btn-ghost btn-sm"
-                  style={{ color: PANEL_CARD_ACCENT[p], borderColor: PANEL_CARD_ACCENT[p] }}
-                >
-                  {PANEL_ORDER_LABELS[p]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Backup ── */}
-          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
-            <SectionHeader>バックアップ</SectionHeader>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              現在のセッションのデータを JSON ファイルとしてエクスポート、またはファイルからインポートして復元します。
-            </span>
-
-            {/* 統計 */}
-            <div style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', gap: 12 }}>
-              <span>メモ {stats.total} 件</span>
-              <span>画像 {stats.imageCount} 件</span>
-              <span>登場人物 {stats.characterCount} 人</span>
-            </div>
-
-            {stats.imageCount > 100 && (
-              <div style={{
-                fontSize: 14,
-                color: 'var(--importance-medium)',
-                lineHeight: 1.6,
-                padding: '6px 10px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'color-mix(in srgb, var(--importance-medium) 10%, transparent)',
-                display: 'flex',
-                gap: 8,
-                alignItems: 'flex-start',
-              }}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
-                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.3" />
-                  <path d="M8 7v4M8 5.5v-.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                <span>
-                  画像が {stats.imageCount} 件あります。エクスポート時にファイルが大きくなったり、インポート時にデータが破損するおそれがあります。
-                </span>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              <button
-                onClick={handleExportBackup}
-                className="btn-ghost btn-sm"
-              >
-                エクスポート
-              </button>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="btn-ghost btn-sm"
-              >
-                インポート
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleImportBackup(file);
-                  // 同じファイルを再選択可能にする
-                  e.target.value = '';
-                }}
-              />
-            </div>
-          </div>
-
-          {/* ── Session management ── */}
-          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
-            <SectionHeader>現在のセッション</SectionHeader>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {/* 初期化 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                すべてのメモ・登場人物・メモグループ・画像データを削除します。セッション自体は残ります。
-              </span>
-              <div>
-                <button
-                  onClick={() => setShowClearConfirm(true)}
-                  disabled={isDemo}
-                  className="btn-danger btn-lg"
-                >
-                  初期化する
-                </button>
-                {isDemo && (
-                  <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
-                    サンプルシナリオは初期化できません
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* 削除 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                セッションとそのデータをすべて削除します。
-              </span>
-              <div>
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={isDemo || sessions.length <= 1}
-                  className="btn-danger btn-lg"
-                >
-                  セッションを削除
-                </button>
-                {isDemo ? (
-                  <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
-                    サンプルシナリオは削除できません
-                  </span>
-                ) : sessions.length <= 1 && (
-                  <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
-                    最後のセッションは削除できません
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ── 完全リセット ── */}
-          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
-            <SectionHeader>完全リセット</SectionHeader>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              すべてのセッション・設定・保存データを完全に削除し、アプリを初期状態に戻します。
-            </span>
-            <div>
-              <button
-                onClick={() => setShowResetAllConfirm(true)}
-                className="btn-danger btn-lg"
-              >
-                完全リセット
-              </button>
-            </div>
-          </div>
+          <SessionManagementSection
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            isDemo={isDemo}
+            addToast={addToast}
+            setOpen={setOpen}
+            showClearConfirm={showClearConfirm}
+            setShowClearConfirm={setShowClearConfirm}
+            showDeleteConfirm={showDeleteConfirm}
+            setShowDeleteConfirm={setShowDeleteConfirm}
+            showResetAllConfirm={showResetAllConfirm}
+            setShowResetAllConfirm={setShowResetAllConfirm}
+          />
         </div>
     </ModalFrame>
-
-    <ConfirmModal
-      open={showClearConfirm}
-      onClose={() => setShowClearConfirm(false)}
-      title="現在のセッションを初期化しますか？"
-      confirmationLabel="すべてのメモ・登場人物・画像データが削除されることを理解しました"
-      actions={[{
-        label: '初期化する',
-        color: 'var(--danger)',
-        requiresConfirmation: true,
-        onClick: handleClearSession,
-      }]}
-    />
-
-    <ConfirmModal
-      open={showDeleteConfirm}
-      onClose={() => setShowDeleteConfirm(false)}
-      title="現在のセッションを削除しますか？"
-      confirmationLabel="セッションとそのすべてのデータが完全に削除されることを理解しました"
-      actions={[{
-        label: '削除する',
-        color: 'var(--danger)',
-        requiresConfirmation: true,
-        onClick: handleDeleteSession,
-      }]}
-    />
-
-    <ConfirmModal
-      open={showResetAllConfirm}
-      onClose={() => setShowResetAllConfirm(false)}
-      title="アプリを完全にリセットしますか？"
-      confirmationLabel="すべてのセッション・メモ・登場人物・設定・画像データが完全に削除されることを理解しました"
-      actions={[{
-        label: '完全リセット',
-        color: 'var(--danger)',
-        requiresConfirmation: true,
-        onClick: handleResetAll,
-      }]}
-    />
-
-    <ConfirmModal
-      open={showExportConfirm}
-      onClose={() => setShowExportConfirm(false)}
-      title="エクスポートファイルが大きくなります"
-      confirmationLabel={exportSizeInfo}
-      actions={[{
-        label: 'エクスポートする',
-        requiresConfirmation: true,
-        onClick: doExport,
-      }]}
-    />
     </>
   );
 }

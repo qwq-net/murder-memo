@@ -25,6 +25,7 @@ export function RadioGroup<T extends string>({
 }: RadioGroupProps<T>) {
   return (
     <div
+      role="radiogroup"
       style={{
         display: stretch ? 'flex' : 'inline-flex',
         borderRadius: 'var(--radius-sm)',
@@ -37,17 +38,19 @@ export function RadioGroup<T extends string>({
         return (
           <button
             key={opt.value}
+            role="radio"
+            aria-checked={active}
             disabled={opt.disabled}
             onClick={() => onChange(opt.value)}
             style={{
               flex: stretch ? 1 : undefined,
-              background: active ? 'rgba(196, 90, 42, 0.15)' : 'transparent',
+              background: active ? 'color-mix(in srgb, var(--color-settings-accent) 15%, transparent)' : 'transparent',
               border: 'none',
               borderLeft: i > 0 ? '1px solid var(--border-default)' : 'none',
               color: opt.disabled
                 ? 'var(--text-muted)'
                 : active
-                  ? '#c45a2a'
+                  ? 'var(--color-settings-accent)'
                   : 'var(--text-secondary)',
               fontSize: 14,
               fontWeight: active ? 600 : 400,

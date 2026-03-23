@@ -212,10 +212,7 @@ export async function clearSessionData(id: string): Promise<void> {
 
 export async function getEntriesBySession(sessionId: string): Promise<MemoEntry[]> {
   const db = await getDb();
-  // by-session インデックスはsessionIdフィールドを参照するが、
-  // MemoEntry自体にsessionIdを持たせる形に変更（後述）
-  const all = await db.getAll('entries');
-  return all.filter((e) => (e as MemoEntry & { sessionId: string }).sessionId === sessionId);
+  return db.getAllFromIndex('entries', 'by-session', sessionId);
 }
 
 export async function putEntry(entry: MemoEntry, sessionId: string): Promise<void> {

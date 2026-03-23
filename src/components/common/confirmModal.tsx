@@ -85,9 +85,11 @@ export function ConfirmModal({
                 type="checkbox"
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
+                aria-label={confirmationLabel}
                 className="absolute opacity-0 w-full h-full cursor-pointer m-0"
               />
               <span
+                aria-hidden="true"
                 className="absolute rounded-full pointer-events-none transition-[left] duration-200"
                 style={{
                   top: 2,

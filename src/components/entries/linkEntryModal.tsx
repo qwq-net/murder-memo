@@ -20,7 +20,6 @@ interface LinkEntryModalProps {
 export function LinkEntryModal({ entry, open, onClose }: LinkEntryModalProps) {
   const entries = useStore((s) => s.entries);
   const updateEntry = useStore((s) => s.updateEntry);
-  const addToast = useStore((s) => s.addToast);
   const [query, setQuery] = useState('');
 
   const linkedIds = useMemo(() => new Set(entry.linkedEntryIds ?? []), [entry.linkedEntryIds]);

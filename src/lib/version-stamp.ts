@@ -1,3 +1,4 @@
+// @ts-nocheck — Node.js スクリプト。ブラウザ向け tsconfig ではチェックしない
 // version.ts に現在時刻を YYYYMMDDHHmm 形式で刻印するスクリプト
 import { readFileSync, writeFileSync } from 'node:fs';
 

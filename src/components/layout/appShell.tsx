@@ -11,6 +11,7 @@ import { ToastContainer } from '@/components/common/toast';
 import { WelcomeModal } from '@/components/common/welcomeModal';
 import { useSelection } from '@/components/entries/selectionContext';
 import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, Settings, User } from '@/components/icons';
+import { HeaderButton } from '@/components/layout/headerButton';
 import { FreeMemoPanel } from '@/components/panels/freeMemoPanel';
 import { SearchOverlay } from '@/components/search/searchOverlay';
 import { SettingsPanel } from '@/components/settings/settingsPanel';
@@ -155,91 +156,19 @@ export function AppShell() {
           {/* 右側ボタン群 */}
           <div className="flex items-center gap-2">
           {/* 検索ボタン */}
-          <button
-            onClick={() => setSearchOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'none',
-              border: '1px solid var(--header-btn-border)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-secondary)',
-              fontSize: 14,
-              padding: '4px 10px',
-              cursor: 'pointer',
-              transition: 'color 0.15s, border-color 0.15s',
-              letterSpacing: '0.02em',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.borderColor = 'var(--header-btn-border-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.borderColor = 'var(--header-btn-border)';
-            }}
-          >
+          <HeaderButton onClick={() => setSearchOpen(true)}>
             <Search size={13} />
             {!isMobile && '検索'}
-          </button>
+          </HeaderButton>
 
-          <button
-            onClick={() => setDeductionOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'none',
-              border: '1px solid var(--header-btn-border)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-secondary)',
-              fontSize: 14,
-              padding: '4px 10px',
-              cursor: 'pointer',
-              transition: 'color 0.15s, border-color 0.15s',
-              letterSpacing: '0.02em',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.borderColor = 'var(--header-btn-border-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.borderColor = 'var(--header-btn-border)';
-            }}
-          >
+          <HeaderButton onClick={() => setDeductionOpen(true)}>
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
               <path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.5 4.3 12.3l.7-4.1-3-2.9 4.2-.7L8 1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
             </svg>
             {!isMobile && '人物推理メモ'}
-          </button>
+          </HeaderButton>
 
-          <button
-            onClick={() => setRelationDiagramOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'none',
-              border: '1px solid var(--header-btn-border)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-secondary)',
-              fontSize: 14,
-              padding: '4px 10px',
-              cursor: 'pointer',
-              transition: 'color 0.15s, border-color 0.15s',
-              letterSpacing: '0.02em',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.borderColor = 'var(--header-btn-border-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.borderColor = 'var(--header-btn-border)';
-            }}
-          >
+          <HeaderButton onClick={() => setRelationDiagramOpen(true)}>
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
               <circle cx="4" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.2" />
               <circle cx="12" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.2" />
@@ -249,66 +178,18 @@ export function AppShell() {
               <line x1="11" y1="6" x2="9" y2="11" stroke="currentColor" strokeWidth="1" opacity="0.5" />
             </svg>
             {!isMobile && '相関図'}
-          </button>
+          </HeaderButton>
 
-          <button
-            onClick={() => setCharacterSetupOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'none',
-              border: '1px solid var(--header-btn-border)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-secondary)',
-              fontSize: 14,
-              padding: '4px 10px',
-              cursor: 'pointer',
-              transition: 'color 0.15s, border-color 0.15s',
-              letterSpacing: '0.02em',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.borderColor = 'var(--header-btn-border-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.borderColor = 'var(--header-btn-border)';
-            }}
-          >
+          <HeaderButton onClick={() => setCharacterSetupOpen(true)}>
             <User size={13} />
             登場人物設定
-          </button>
+          </HeaderButton>
 
           {/* アプリ設定ボタン */}
-          <button
-            onClick={() => setSettingsOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: 'none',
-              border: '1px solid color-mix(in srgb, var(--color-settings-accent) 40%, transparent)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--color-settings-accent)',
-              fontSize: 14,
-              padding: '4px 10px', // btn-sm と同サイズ
-              cursor: 'pointer',
-              transition: 'color 0.15s, border-color 0.15s',
-              letterSpacing: '0.02em',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#d9683a';
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-settings-accent) 70%, transparent)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--color-settings-accent)';
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-settings-accent) 40%, transparent)';
-            }}
-          >
+          <HeaderButton onClick={() => setSettingsOpen(true)} variant="settings">
             <Settings size={13} />
             アプリ設定
-          </button>
+          </HeaderButton>
           </div>
         </div>
 

@@ -28,10 +28,11 @@ export const createRelationsSlice = (
     const { activeSessionId, relations } = get();
     if (!activeSessionId) throw new Error('No active session');
 
+    const maxOrder = relations.reduce((m, r) => Math.max(m, r.sortOrder), -1);
     const relation: CharacterRelation = {
       id: nanoid(),
       sessionId: activeSessionId,
-      sortOrder: relations.length,
+      sortOrder: maxOrder + 1,
       ...partial,
     };
     await putRelation(relation);
