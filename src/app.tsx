@@ -9,10 +9,31 @@ export default function App() {
   const initSessions = useStore((s) => s.initSessions);
   const lastSeenVersion = useStore((s) => s.lastSeenVersion);
   const setWelcomeOpen = useStore((s) => s.setWelcomeOpen);
+  const theme = useStore((s) => s.settings.theme);
 
   useEffect(() => {
     initSessions();
   }, [initSessions]);
+
+  // テーマを document に反映（auto の場合は OS 設定に追従）
+  useEffect(() => {
+    const apply = (resolved: 'dark' | 'light') => {
+      document.documentElement.dataset.theme = resolved;
+    };
+
+    if (theme !== 'auto') {
+      apply(theme);
+      return;
+    }
+
+    // OS 設定を検出して追従
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    apply(mq.matches ? 'dark' : 'light');
+
+    const handler = (e: MediaQueryListEvent) => apply(e.matches ? 'dark' : 'light');
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [theme]);
 
   // バージョンが異なる（または未保存）場合にウェルカムモーダルを表示
   useEffect(() => {

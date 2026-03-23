@@ -117,7 +117,7 @@ export function SearchOverlay() {
       {/* 背景オーバーレイ */}
       <div
         className="fixed inset-0 z-[59]"
-        style={{ background: 'rgba(0, 0, 0, 0.3)' }}
+        style={{ background: 'var(--shadow-overlay)' }}
         onClick={close}
       />
 
@@ -133,7 +133,7 @@ export function SearchOverlay() {
           background: 'var(--bg-elevated)',
           border: '1px solid var(--border-default)',
           borderRadius: 'var(--radius-md)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 8px 32px var(--shadow-menu)',
           animation: 'search-in 0.15s ease-out',
         }}
       >

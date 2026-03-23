@@ -560,8 +560,9 @@ export function SettingsPanel() {
             value={settings.theme}
             onChange={(v) => update('theme', v)}
             options={[
+              { value: 'auto', label: '自動' },
               { value: 'dark', label: 'ダーク' },
-              { value: 'light', label: 'ライト', disabled: true },
+              { value: 'light', label: 'ライト' },
             ]}
           />
           <SettingRow

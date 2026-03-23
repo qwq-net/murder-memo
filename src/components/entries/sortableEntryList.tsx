@@ -85,7 +85,7 @@ export function SortableEntryList({ entries, onReorder, hideTimeDuplicates }: So
       {createPortal(
         <DragOverlay dropAnimation={dropAnimation}>
           {activeEntry && (
-            <div className="bg-bg-elevated rounded-sm shadow-[0_4px_16px_rgba(0,0,0,0.4)] opacity-95">
+            <div className="bg-bg-elevated rounded-sm opacity-95" style={{ boxShadow: '0 4px 16px var(--shadow-drag)' }}>
               <EntryCard entry={activeEntry} />
             </div>
           )}

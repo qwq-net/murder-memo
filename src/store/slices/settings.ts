@@ -6,8 +6,8 @@ export interface AppSettings {
   inputPosition: 'top' | 'bottom';
   /** 言語（将来用） */
   language: 'ja' | 'en';
-  /** テーマ（将来用） */
-  theme: 'dark' | 'light';
+  /** テーマ: auto は OS 設定に追従 */
+  theme: 'dark' | 'light' | 'auto';
   /** パネルごとのデフォルト関連人物マーカー表示設定 */
   defaultCharacterDisplay: Record<PanelId, {
     format: CharacterDisplayFormat;
@@ -33,7 +33,7 @@ const VERSION_KEY = 'murder-memo-last-seen-version';
 const DEFAULT_SETTINGS: AppSettings = {
   inputPosition: 'bottom',
   language: 'ja',
-  theme: 'dark',
+  theme: 'auto',
   defaultCharacterDisplay: {
     free:     { format: 'full', visibility: 'minimal' },
     timeline: { format: 'full', visibility: 'minimal' },

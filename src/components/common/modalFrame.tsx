@@ -117,7 +117,7 @@ export function ModalFrame({
           width,
           maxHeight,
           overflowY: 'auto',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          boxShadow: '0 8px 32px var(--shadow-menu)',
         }}
       >
         {children}

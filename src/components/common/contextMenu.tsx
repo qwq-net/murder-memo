@@ -283,7 +283,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
           position: 'fixed', top: y, left: x, zIndex: 200, minWidth: 160,
           background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
           borderRadius: 'var(--radius-md)', padding: '3px 0',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          boxShadow: '0 8px 32px var(--shadow-menu)',
           maxHeight: 'calc(100vh - 8px)', overflowY: 'auto',
         }}
       >
@@ -410,7 +410,7 @@ const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
           position: 'fixed', top: y, left: x, zIndex: 201, minWidth: SUBMENU_MIN_WIDTH,
           background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
           borderRadius: 'var(--radius-md)', padding: '3px 0',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          boxShadow: '0 8px 32px var(--shadow-menu)',
           maxHeight: 'calc(100vh - 8px)', overflowY: 'auto',
         }}
       >

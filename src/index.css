@@ -107,6 +107,90 @@
   /* テキスト開始位置 = pad-left + time-width + time-gap = 72px */
   /* 左ボーダーは +4px 右にオフセット → 76px にテキスト・バッジが揃う */
   --tl-content-left: calc(var(--tl-entry-pad-left) + var(--tl-time-width) + var(--tl-time-gap));
+
+  /* テーマ依存の共通変数（ダークモード既定値） */
+  --header-btn-border: rgba(255, 255, 255, 0.15);
+  --header-btn-border-hover: rgba(255, 255, 255, 0.3);
+  --shadow-overlay: rgba(0, 0, 0, 0.55);
+  --shadow-menu: rgba(0, 0, 0, 0.4);
+  --shadow-drag: rgba(0, 0, 0, 0.35);
+}
+
+/* ─── ライトテーマ ───────────────────────────────────────────────────────────── */
+/* @theme の --color-* と :root のエイリアス両方を上書きする。
+   Tailwind ユーティリティ（bg-bg-base 等）は --color-* を参照するため両方必要。 */
+:root[data-theme="light"] {
+  /* Surface */
+  --color-bg-base:       #f5f2ec;
+  --color-bg-surface:    #ece8e0;
+  --color-bg-panel:      #f0ece5;
+  --color-bg-elevated:   #ffffff;
+  --color-bg-hover:      #e2ddd4;
+  --color-bg-active:     #d8d2c8;
+  --bg-base:       #f5f2ec;
+  --bg-surface:    #ece8e0;
+  --bg-panel:      #f0ece5;
+  --bg-elevated:   #ffffff;
+  --bg-hover:      #e2ddd4;
+  --bg-active:     #d8d2c8;
+
+  /* Borders */
+  --color-border-subtle:  #ddd8cf;
+  --color-border-default: #c8c0b4;
+  --color-border-strong:  #a89f90;
+  --border-subtle:  #ddd8cf;
+  --border-default: #c8c0b4;
+  --border-strong:  #a89f90;
+
+  /* Text — WCAG AA 4.5:1 コントラスト比を bg-panel (#f0ece5) 基準で確保 */
+  --color-text-primary:   #1c1a16; /* 15.8:1 */
+  --color-text-secondary: #504838; /* 7.2:1 */
+  --color-text-muted:     #6b6050; /* 4.8:1 */
+  --color-text-faint:     #a89a88; /* 2.5:1 — 装飾用 */
+  --text-primary:   #1c1a16;
+  --text-secondary: #504838;
+  --text-muted:     #6b6050;
+  --text-faint:     #a89a88;
+
+  /* Accent — ブランドカラー維持。ライト背景でもコントラスト確保 */
+  --color-accent:      #b07818;
+  --color-accent-dim:  #c89a40;
+  --color-accent-glow: rgba(176, 120, 24, 0.18);
+  --accent:         #b07818;
+  --accent-dim:     #c89a40;
+  --accent-glow:    rgba(176, 120, 24, 0.18);
+
+  /* パネルアイデンティティカラー — ライト背景でのコントラスト調整 */
+  --color-panel-free-accent:     #a06810;
+  --color-panel-personal-accent: #2e7a94;
+  --color-panel-timeline-accent: #5c4e94;
+  --panel-free-accent:     #a06810;
+  --panel-personal-accent: #2e7a94;
+  --panel-timeline-accent: #5c4e94;
+
+  /* 設定ボタンアクセント */
+  --color-settings-accent: #c45a2a;
+
+  /* Functional */
+  --color-danger:  #c43030;
+  --color-success: #2e7a38;
+  --danger:  #c43030;
+  --success: #2e7a38;
+
+  /* 重要度 — ライト背景で視認性確保 */
+  --color-importance-high:   #d04040;
+  --color-importance-medium: #c08820;
+  --color-importance-low:    #4a9050;
+  --importance-high:   #d04040;
+  --importance-medium: #c08820;
+  --importance-low:    #4a9050;
+
+  /* テーマ依存の共通変数 */
+  --header-btn-border: rgba(0, 0, 0, 0.12);
+  --header-btn-border-hover: rgba(0, 0, 0, 0.25);
+  --shadow-overlay: rgba(0, 0, 0, 0.3);
+  --shadow-menu: rgba(0, 0, 0, 0.15);
+  --shadow-drag: rgba(0, 0, 0, 0.15);
 }
 
 /* ─── Reset & Base ──────────────────────────────────────────────────────────── */
@@ -237,7 +321,7 @@ button:focus-visible {
   transition: background 0.15s, color 0.15s;
   &:hover {
     background: var(--danger);
-    color: var(--bg-base);
+    color: #fff;
   }
   &:disabled {
     border-color: var(--border-subtle);
@@ -288,7 +372,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--shadow-overlay);
   backdrop-filter: blur(2px);
 }
 

@@ -219,7 +219,7 @@ function HourDivider({ label, muted }: { label: string; muted?: boolean }) {
       {/* 左ライン — 縦線とクロスする */}
       <span className="flex-1 h-px" style={{ background: lineColor }} />
       <span
-        className={`text-sm font-mono tracking-[0.06em] shrink-0 opacity-80 ${
+        className={`text-sm font-mono tracking-[0.06em] shrink-0 ${
           muted ? 'text-text-faint' : 'text-text-muted'
         }`}
       >

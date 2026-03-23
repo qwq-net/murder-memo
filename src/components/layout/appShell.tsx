@@ -158,7 +158,7 @@ export function AppShell() {
               alignItems: 'center',
               gap: 6,
               background: 'none',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              border: '1px solid var(--header-btn-border)',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--text-secondary)',
               fontSize: 13,
@@ -169,11 +169,11 @@ export function AppShell() {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.borderColor = 'var(--header-btn-border-hover)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.borderColor = 'var(--header-btn-border)';
             }}
           >
             <Search size={13} />
@@ -187,7 +187,7 @@ export function AppShell() {
               alignItems: 'center',
               gap: 6,
               background: 'none',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              border: '1px solid var(--header-btn-border)',
               borderRadius: 'var(--radius-sm)',
               color: 'var(--text-secondary)',
               fontSize: 13,
@@ -198,11 +198,11 @@ export function AppShell() {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.borderColor = 'var(--header-btn-border-hover)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.borderColor = 'var(--header-btn-border)';
             }}
           >
             <User size={13} />

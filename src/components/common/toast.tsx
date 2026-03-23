@@ -44,7 +44,7 @@ function ToastMessage({ toast, onRemove }: { toast: ToastItem; onRemove: (id: st
         borderLeft: `3px solid ${ACCENT[toast.type]}`,
         borderRadius: 'var(--radius-md)',
         padding: '10px 12px 10px 14px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+        boxShadow: '0 4px 20px var(--shadow-menu)',
         maxWidth: 360,
         minWidth: 200,
         fontSize: 13,

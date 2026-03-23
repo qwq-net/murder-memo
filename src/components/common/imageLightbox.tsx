@@ -25,7 +25,7 @@ export function ImageLightbox({ src, open, onClose }: ImageLightboxProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.8)',
+        background: 'var(--shadow-overlay)',
         cursor: 'zoom-out',
       }}
     >
