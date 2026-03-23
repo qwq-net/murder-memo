@@ -154,8 +154,26 @@ export function buildDemoSession(): {
     ),
     tlEntry(
       tlGroupIds.previous,
+      '医師が被害者の健康診断を行った。「特に異常はないが、精神的に不安定」とのこと',
+      [charIds.doctor, charIds.victim],
+      '17:00',
+    ),
+    tlEntry(
+      tlGroupIds.previous,
+      '夕食。実業家が乾杯の挨拶。被害者は終始無口だった',
+      [charIds.businessman, charIds.victim],
+      '19:00',
+    ),
+    tlEntry(
+      tlGroupIds.previous,
       '被害者と実業家が庭で口論しているのを目撃。内容は聞き取れず',
       [charIds.businessman, charIds.victim],
+      '20:00',
+    ),
+    tlEntry(
+      tlGroupIds.previous,
+      '元刑事が庭を散歩中、実業家が電話で「明日までに片付ける」と話しているのを聞いた',
+      [charIds.detective, charIds.businessman],
       '20:00',
     ),
     tlEntry(
@@ -163,6 +181,12 @@ export function buildDemoSession(): {
       '被害者が「明日、すべてを話すつもりだ」と意味深な発言。作家と医師がその場にいた',
       [charIds.victim, charIds.writer, charIds.doctor],
       '21:30',
+    ),
+    tlEntry(
+      tlGroupIds.previous,
+      '自分（弁護士）が被害者と二人きりで面談。遺言書の書き換えについて相談を受けた',
+      [charIds.lawyer, charIds.victim],
+      '22:00',
     ),
     tlEntry(
       tlGroupIds.previous,
@@ -211,9 +235,33 @@ export function buildDemoSession(): {
     ),
     tlEntry(
       tlGroupIds.today,
+      '作家の証言：朝食後にロビーで被害者と実業家がひそひそ話しているのを見た',
+      [charIds.writer, charIds.victim, charIds.businessman],
+      '9:30',
+    ),
+    tlEntry(
+      tlGroupIds.today,
+      '元刑事の証言：10時頃、書斎付近で物音がした気がしたが確認はしなかった',
+      [charIds.detective],
+      '10:00',
+    ),
+    tlEntry(
+      tlGroupIds.today,
       '医師が死亡を確認。凶器は書斎のペーパーナイフ。元刑事が現場保全を指示',
       [charIds.doctor, charIds.detective],
       '11:05',
+    ),
+    tlEntry(
+      tlGroupIds.today,
+      'メイドの証言：11時前に書斎の前を通ったが、ドアは閉まっていて中の様子はわからなかった',
+      [charIds.maid],
+      '11:00',
+    ),
+    tlEntry(
+      tlGroupIds.today,
+      '全員がリビングに集合。元刑事が各自のアリバイ確認を開始',
+      [charIds.detective],
+      '11:30',
     ),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -244,6 +292,21 @@ export function buildDemoSession(): {
       [charIds.doctor, charIds.victim],
       { groupId: memoGroupIds.freePoints },
     ),
+    freeEntry(
+      '元刑事によると、書斎のドアの鍵は内側からかかっていた。窓も施錠。いわゆる密室状態',
+      [charIds.detective],
+      { groupId: memoGroupIds.freePoints, importance: 'high', type: 'clue' },
+    ),
+    freeEntry(
+      'メイドの証言に矛盾？ 「書斎の前を通った」と言うが、掃除の順番からすると通る必要がないルート',
+      [charIds.maid],
+      { groupId: memoGroupIds.freePoints, importance: 'medium', type: 'clue' },
+    ),
+    freeEntry(
+      '実業家の手に擦り傷があった。本人は「庭の薔薇の手入れ」と説明',
+      [charIds.businessman],
+      { groupId: memoGroupIds.freePoints, importance: 'low', type: 'clue' },
+    ),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 自由メモ: 推理・仮説
@@ -263,6 +326,21 @@ export function buildDemoSession(): {
       [charIds.businessman],
       { groupId: memoGroupIds.freeTheory },
     ),
+    freeEntry(
+      '作家の「脅されていた人がいる」発言 → 実業家？ 医師？ 自分（弁護士）の可能性も排除できない',
+      [charIds.writer],
+      { groupId: memoGroupIds.freeTheory },
+    ),
+    freeEntry(
+      'メイドのルート矛盾 → 書斎に用があった？ 何かを確認しに行った可能性',
+      [charIds.maid],
+      { groupId: memoGroupIds.freeTheory },
+    ),
+    freeEntry(
+      '犯行タイムライン仮説：10:00〜10:30の間に犯人が書斎に侵入し待ち伏せ → 10:30に被害者入室 → 犯行 → 密室偽装して脱出',
+      [],
+      { groupId: memoGroupIds.freeTheory, importance: 'high' },
+    ),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 自由メモ: 未分類
@@ -275,6 +353,14 @@ export function buildDemoSession(): {
     freeEntry(
       '元刑事から聞いた話：凶器のペーパーナイフに指紋はなかった。犯人は手袋を使った可能性',
       [charIds.detective],
+    ),
+    freeEntry(
+      '被害者の遺言書はどこにある？ 書斎を調べたい。元刑事に許可をもらう必要あり',
+      [charIds.detective],
+    ),
+    freeEntry(
+      '作家が何か隠している印象。議論中に目が泳いでいた',
+      [charIds.writer],
     ),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -294,6 +380,14 @@ export function buildDemoSession(): {
     ),
     personalEntry(
       '被害者は「ある人物に弱みを握られている」とも言っていた。具体的な名前は聞けなかった',
+      memoGroupIds.personalHandout,
+    ),
+    personalEntry(
+      '被害者から預かった封筒がある。中身は確認していない。「自分に万一のことがあったら開封してほしい」と言われた',
+      memoGroupIds.personalHandout,
+    ),
+    personalEntry(
+      '実業家が被害者の事業の株式を大量に保有していることを知っている。被害者の死で株価が変動する可能性',
       memoGroupIds.personalHandout,
     ),
 
@@ -329,6 +423,20 @@ export function buildDemoSession(): {
       '作家とは初対面。ただし、作家の最新作のモデルが被害者らしいという噂を聞いたことがある',
       undefined,
       { tags: [charIds.writer], characterDisplayFormat: 'full', characterDisplayVisibility: 'always' },
+    ),
+    personalEntry(
+      '医師とは同じ大学のOB。信頼できるが、被害者の主治医という立場は気になる',
+      undefined,
+      { tags: [charIds.doctor], characterDisplayFormat: 'badge', characterDisplayVisibility: 'always' },
+    ),
+    personalEntry(
+      '元刑事は退職後にコンサルをしているらしい。被害者から何か依頼を受けていた？',
+      undefined,
+      { tags: [charIds.detective], characterDisplayFormat: 'badge', characterDisplayVisibility: 'always' },
+    ),
+    personalEntry(
+      '封筒の中身を開けるべきか迷っている。開けたら目標達成に近づくが、周囲に知られるリスク',
+      undefined,
     ),
   ];
 
