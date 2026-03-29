@@ -90,6 +90,7 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
 export function AppShell() {
   const order = useStore((s) => s.layout.order);
   const activePanel = useStore((s) => s.activePanel);
+  const isSessionReady = useStore((s) => s.isSessionReady);
   const setCharacterSetupOpen = useStore((s) => s.setCharacterSetupOpen);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
   const addToast = useStore((s) => s.addToast);
@@ -108,6 +109,22 @@ export function AppShell() {
   const { isMobile } = useResponsive(1024);
   const { plChars, npcChars } = useFilteredCharacters();
   const sessionRename = useSessionRenaming({ sessions, activeSessionId, renameSession });
+
+  // セッション初期化完了まではローディング表示
+  if (!isSessionReady) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-bg-base gap-3">
+        <img src="/logo.svg" alt="マダめもくん" width="32" height="32" className="opacity-60" />
+        <div
+          className="size-5 border-2 rounded-full animate-spin"
+          style={{
+            borderColor: 'var(--border-default)',
+            borderTopColor: 'var(--accent)',
+          }}
+        />
+      </div>
+    );
+  }
 
   const PANEL_CONTENT: Record<PanelId, React.ReactNode> = {
     free:     <FreeMemoPanel />,

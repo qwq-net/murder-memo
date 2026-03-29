@@ -19,6 +19,8 @@ export interface UiSlice {
   layout: PanelLayoutConfig;
   activePanel: PanelId;
   highlightCharacterId: string | null;
+  /** セッション初期化（IDB読込 + データ投入）が完了したか */
+  isSessionReady: boolean;
   isCharacterSetupOpen: boolean;
   isSettingsOpen: boolean;
   isSessionSwitcherOpen: boolean;
@@ -43,6 +45,7 @@ export interface UiSlice {
   setLayout: (layout: Partial<PanelLayoutConfig>) => void;
   setActivePanel: (panel: PanelId) => void;
   setHighlightCharacter: (id: string | null) => void;
+  setSessionReady: (ready: boolean) => void;
   setCharacterSetupOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   setSessionSwitcherOpen: (open: boolean) => void;
@@ -72,6 +75,7 @@ export const createUiSlice = (
   layout: DEFAULT_LAYOUT,
   activePanel: 'free',
   highlightCharacterId: null,
+  isSessionReady: false,
   isCharacterSetupOpen: false,
   isSettingsOpen: false,
   isSessionSwitcherOpen: false,
@@ -91,6 +95,8 @@ export const createUiSlice = (
   setActivePanel: (panel) => set(() => ({ activePanel: panel })),
 
   setHighlightCharacter: (id) => set(() => ({ highlightCharacterId: id })),
+
+  setSessionReady: (ready) => set(() => ({ isSessionReady: ready })),
 
   setCharacterSetupOpen: (open) => set(() => ({ isCharacterSetupOpen: open })),
 

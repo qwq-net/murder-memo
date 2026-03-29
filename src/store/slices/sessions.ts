@@ -11,6 +11,12 @@ import {
   clearSessionData,
   deleteSession,
   getAllSessions,
+  getCharactersBySession,
+  getDeductionsBySession,
+  getEntriesBySession,
+  getMemoGroupsBySession,
+  getRelationsBySession,
+  getTimelineGroupsBySession,
   putSession,
 } from '@/lib/idb';
 import type { GameSession } from '@/types/memo';
@@ -47,17 +53,21 @@ export const createSessionsSlice = (
         const sessions = await getAllSessions();
 
         // デモセッションが存在しなければ自動作成
+        let demoData: Awaited<ReturnType<typeof buildDemoSession>> | null = null;
         const hasDemo = sessions.some((s) => s.isDemo);
         if (!hasDemo) {
-          const demo = await buildDemoSession();
-          await putSession(demo.session);
-          await bulkPutCharacters(demo.characters, demo.session.id);
-          await bulkPutTimelineGroups(demo.timelineGroups);
-          await bulkPutMemoGroups(demo.memoGroups);
-          await bulkPutEntries(demo.entries, demo.session.id);
-          await bulkPutDeductions(demo.deductions);
-          await bulkPutRelations(demo.relations);
-          sessions.push(demo.session);
+          demoData = await buildDemoSession();
+          // 各オブジェクトストアは独立しているため並列書き込み
+          await Promise.all([
+            putSession(demoData.session),
+            bulkPutCharacters(demoData.characters, demoData.session.id),
+            bulkPutTimelineGroups(demoData.timelineGroups),
+            bulkPutMemoGroups(demoData.memoGroups),
+            bulkPutEntries(demoData.entries, demoData.session.id),
+            bulkPutDeductions(demoData.deductions),
+            bulkPutRelations(demoData.relations),
+          ]);
+          sessions.push(demoData.session);
         }
 
         sessions.sort((a, b) => a.createdAt - b.createdAt);
@@ -67,9 +77,44 @@ export const createSessionsSlice = (
         const initialId =
           lastId && sessions.some((s) => s.id === lastId) ? lastId : sessions[0].id;
 
+        // 初期セッションのデータをロードし、ストアに一括投入する。
+        // subscriber の二重 IO を防ぐため、ここでデータを直接セットする。
+        let entries, characters, timelineGroups, memoGroups, deductions, relations;
+
+        if (demoData && demoData.session.id === initialId) {
+          // デモデータ作成直後: メモリ上のデータをそのまま使う（IDB 再読込不要）
+          entries = demoData.entries.sort((a, b) => a.sortOrder - b.sortOrder);
+          characters = demoData.characters;
+          timelineGroups = demoData.timelineGroups;
+          memoGroups = demoData.memoGroups;
+          deductions = demoData.deductions;
+          relations = demoData.relations;
+        } else {
+          // 既存セッション: IDB から並列読み込み
+          [entries, characters, timelineGroups, memoGroups, deductions, relations] =
+            await Promise.all([
+              getEntriesBySession(initialId).then((e) =>
+                e.sort((a, b) => a.sortOrder - b.sortOrder),
+              ),
+              getCharactersBySession(initialId),
+              getTimelineGroupsBySession(initialId),
+              getMemoGroupsBySession(initialId),
+              getDeductionsBySession(initialId),
+              getRelationsBySession(initialId),
+            ]);
+          relations = relations.sort((a, b) => a.sortOrder - b.sortOrder);
+        }
+
         set(() => ({
           sessions,
           activeSessionId: initialId,
+          entries,
+          characters,
+          timelineGroups,
+          memoGroups,
+          deductions,
+          relations,
+          isSessionReady: true,
         }));
       })();
       return initPromise;

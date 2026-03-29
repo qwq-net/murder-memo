@@ -105,13 +105,25 @@ useStore.subscribe(
 
 useStore.subscribe(
   (state) => state.activeSessionId,
-  async (sessionId) => {
+  async (sessionId, previousSessionId) => {
     if (!sessionId) return;
+
+    const { pause, resume, clear } = useStore.temporal.getState();
+
+    // 初回ロード（null → 値）: initSessions() がデータを投入済みなので再読込は不要。
+    // undo/redo 履歴のクリアのみ行う。
+    if (previousSessionId === null) {
+      pause();
+      clear();
+      resume();
+      return;
+    }
+
+    // 通常のセッション切替: IDB からデータを読み込む
     const { loadCharacters, loadEntries, loadTimelineGroups, loadMemoGroups, loadDeductions, loadRelations, clearAllCharacterFilters } =
       useStore.getState();
     clearAllCharacterFilters();
     // ロード中は履歴記録を停止（ロード操作自体を undo できないように）
-    const { pause, resume, clear } = useStore.temporal.getState();
     pause();
     const [entries] = await Promise.all([
       getEntriesBySession(sessionId),
