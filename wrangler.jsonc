@@ -5,6 +5,7 @@
   "main": "./worker/index.ts",
   "assets": {
     "directory": "./dist",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "serve_directly": true
   }
 }

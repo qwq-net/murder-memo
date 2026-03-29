@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 
 import { putImage } from '@/lib/idb';
+import { APP_VERSION } from '@/lib/version';
 import type { Character, CharacterDeduction, CharacterRelation, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
 
 /** OffscreenCanvas でプレースホルダ画像を生成し IndexedDB に保存 */
@@ -69,6 +70,7 @@ export async function buildDemoSession(): Promise<{
     createdAt: now,
     updatedAt: now,
     isDemo: true,
+    demoVersion: APP_VERSION,
   };
 
   // ── キャラクター ────────────────────────────────────────────────────────

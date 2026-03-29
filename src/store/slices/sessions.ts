@@ -19,6 +19,7 @@ import {
   getTimelineGroupsBySession,
   putSession,
 } from '@/lib/idb';
+import { APP_VERSION } from '@/lib/version';
 import type { GameSession } from '@/types/memo';
 import type { StoreState } from '@/store/index';
 
@@ -52,10 +53,18 @@ export const createSessionsSlice = (
       initPromise = (async () => {
         const sessions = await getAllSessions();
 
-        // デモセッションが存在しなければ自動作成
+        // デモセッションの確認: 未作成 or バージョン不一致なら（再）作成
         let demoData: Awaited<ReturnType<typeof buildDemoSession>> | null = null;
-        const hasDemo = sessions.some((s) => s.isDemo);
-        if (!hasDemo) {
+        const existingDemo = sessions.find((s) => s.isDemo);
+        const needsDemoRefresh = !existingDemo || existingDemo.demoVersion !== APP_VERSION;
+
+        if (needsDemoRefresh) {
+          // 古いデモがあれば関連データごと削除
+          if (existingDemo) {
+            await deleteSession(existingDemo.id);
+            sessions.splice(sessions.indexOf(existingDemo), 1);
+          }
+
           demoData = await buildDemoSession();
           // 各オブジェクトストアは独立しているため並列書き込み
           await Promise.all([

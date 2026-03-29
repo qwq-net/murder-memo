@@ -104,6 +104,8 @@ export interface GameSession {
   createdAt: number;
   updatedAt: number;
   isDemo?: boolean; // デモセッションフラグ
+  /** デモ作成時の APP_VERSION。バージョン不一致で自動差し替え */
+  demoVersion?: string;
 }
 
 // ─── Layout ──────────────────────────────────────────────────────────────────
