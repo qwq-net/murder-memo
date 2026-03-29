@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://memo.qwqb.net/sitemap.xml
