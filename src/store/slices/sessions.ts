@@ -28,6 +28,8 @@ export interface SessionsSlice {
   clearCurrentSession: () => Promise<void>;
 }
 
+const LAST_SESSION_KEY = 'murder-memo-last-session-id';
+
 export const createSessionsSlice = (
   set: (fn: (s: StoreState) => Partial<StoreState>) => void,
   get: () => StoreState,
@@ -59,9 +61,15 @@ export const createSessionsSlice = (
         }
 
         sessions.sort((a, b) => a.createdAt - b.createdAt);
+
+        // 直前に開いていたセッションを復元。存在しなければ先頭（最古）にフォールバック
+        const lastId = localStorage.getItem(LAST_SESSION_KEY);
+        const initialId =
+          lastId && sessions.some((s) => s.id === lastId) ? lastId : sessions[0].id;
+
         set(() => ({
           sessions,
-          activeSessionId: sessions[0].id,
+          activeSessionId: initialId,
         }));
       })();
       return initPromise;
@@ -75,11 +83,13 @@ export const createSessionsSlice = (
         updatedAt: Date.now(),
       };
       await putSession(session);
+      localStorage.setItem(LAST_SESSION_KEY, session.id);
       set((s) => ({ sessions: [...s.sessions, session], activeSessionId: session.id }));
       return session;
     },
 
     switchSession: (id) => {
+      localStorage.setItem(LAST_SESSION_KEY, id);
       set(() => ({ activeSessionId: id }));
     },
 
@@ -101,6 +111,14 @@ export const createSessionsSlice = (
         const remaining = s.sessions.filter((s2) => s2.id !== id);
         const nextActiveId =
           s.activeSessionId === id ? (remaining[0]?.id ?? null) : s.activeSessionId;
+        // 削除されたセッションが最終開封セッションとして保存されていればクリア
+        if (localStorage.getItem(LAST_SESSION_KEY) === id) {
+          if (nextActiveId) {
+            localStorage.setItem(LAST_SESSION_KEY, nextActiveId);
+          } else {
+            localStorage.removeItem(LAST_SESSION_KEY);
+          }
+        }
         return { sessions: remaining, activeSessionId: nextActiveId };
       });
     },

@@ -264,13 +264,16 @@ export function AppShell() {
             {/* New session */}
             <button
               onClick={() => {
-                const nums = sessions
-                  .map((s) => s.name.match(/^セッション (\d+)$/))
-                  .filter(Boolean)
-                  .map((m) => Number(m![1]));
-                const next = nums.length > 0 ? Math.max(...nums) + 1 : sessions.length + 1;
+                const today = new Date();
+                const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+                const baseName = `セッション ${dateStr}`;
+                // 同じ日付のセッションが既にあれば -2, -3 … と連番を付与
+                const sameDate = sessions.filter(
+                  (s) => s.name === baseName || s.name.match(new RegExp(`^セッション ${dateStr}-(\\d+)$`)),
+                );
+                const name = sameDate.length === 0 ? baseName : `${baseName}-${sameDate.length + 1}`;
                 useStore.temporal.getState().pause();
-                createSession(`セッション ${next}`);
+                createSession(name);
                 addToast('セッションを作成しました');
               }}
               title="新しいセッション"
