@@ -45,7 +45,7 @@ export function WelcomeModal() {
             マダめもくんへようこそ！
           </span>
         </div>
-        <button onClick={handleClose} className="modal-close-btn">
+        <button onClick={handleClose} className="modal-close-btn" aria-label="閉じる">
           <X size={18} />
         </button>
       </div>

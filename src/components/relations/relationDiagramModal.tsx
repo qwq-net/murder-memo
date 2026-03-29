@@ -61,7 +61,7 @@ export function RelationDiagramModal() {
             </div>
           )}
         </div>
-        <button onClick={() => setOpen(false)} className="modal-close-btn">
+        <button onClick={() => setOpen(false)} className="modal-close-btn" aria-label="閉じる">
           <X size={18} />
         </button>
       </div>
