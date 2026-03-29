@@ -61,6 +61,7 @@ export function WelcomeModal() {
       >
         {/* アプリ概要 */}
         <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <h3>※ 現在はPCでの利用を前提としており、βバージョンです。</h3>
           <h3
             style={{
               fontSize: 14,

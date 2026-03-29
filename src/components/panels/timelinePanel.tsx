@@ -9,6 +9,7 @@ import { TimelineGroupSection } from '@/components/panels/timelineGroupSection';
 
 export function TimelinePanel() {
   const allEntries = useStore((s) => s.entries);
+  const allCharacters = useStore((s) => s.characters);
   const timelineGroups = useStore((s) => s.timelineGroups);
   const toggleTimelineGroupCollapse = useStore((s) => s.toggleTimelineGroupCollapse);
   const removeTimelineGroup = useStore((s) => s.removeTimelineGroup);
@@ -22,13 +23,26 @@ export function TimelinePanel() {
 
   const swapGroup = useGroupSwap(timelineGroups, reorderTimelineGroups);
 
+  // フィルター対象キャラクターの名前リスト（テキスト中の名前でも一致させるため）
+  const filterCharNames = useMemo(
+    () => allCharacters
+      .filter((c) => filterIds.includes(c.id) && c.name.length > 0)
+      .map((c) => c.name),
+    [allCharacters, filterIds],
+  );
+
   const timelineEntries = useMemo(() => {
     let result = allEntries.filter((e) => e.panel === 'timeline');
     if (filterIds.length > 0) {
-      result = result.filter((e) => e.characterTags.some((t) => filterIds.includes(t)));
+      // characterTags による手動タグ、またはテキスト中にキャラ名が含まれるエントリを対象とする
+      result = result.filter(
+        (e) =>
+          filterIds.some((id) => e.characterTags.includes(id)) ||
+          filterCharNames.some((name) => e.content.includes(name)),
+      );
     }
     return result;
-  }, [allEntries, filterIds]);
+  }, [allEntries, filterIds, filterCharNames]);
 
   const groupedData = useMemo(
     () => groupEntriesByTimeline(timelineEntries, timelineGroups),

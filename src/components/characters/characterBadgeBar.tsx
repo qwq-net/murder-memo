@@ -7,6 +7,8 @@ interface CharacterBadgeBarProps {
   format: CharacterDisplayFormat;
   visibility: CharacterDisplayVisibility;
   isEntryHovered: boolean;
+  /** テキスト中にインライン表示済みのキャラID。バーから除外して重複を防ぐ */
+  inlineDetectedIds?: string[];
 }
 
 /**
@@ -64,13 +66,13 @@ export function MinimalSlot({
  *   - ミニマルモードでは gap が非表示要素に効かないよう gap: 0 にし、
  *     MinimalSlot 側で幅制御のみ行う
  */
-export function CharacterBadgeBar({ entry, format, visibility, isEntryHovered }: CharacterBadgeBarProps) {
+export function CharacterBadgeBar({ entry, format, visibility, isEntryHovered, inlineDetectedIds }: CharacterBadgeBarProps) {
   const allCharacters = useStore((s) => s.characters);
   const toggleCharacterTag = useStore((s) => s.toggleCharacterTag);
 
-  // showInEntries が true のキャラのみ表示。プレイヤー → NPC の順、その中で行動順（sortOrder）
+  // showInEntries が true かつインライン未表示のキャラのみ。プレイヤー → NPC の順、その中で行動順（sortOrder）
   const characters = allCharacters
-    .filter((c) => c.showInEntries)
+    .filter((c) => c.showInEntries && !inlineDetectedIds?.includes(c.id))
     .sort((a, b) => {
       if (a.role !== b.role) return a.role === 'pl' ? -1 : 1;
       return a.sortOrder - b.sortOrder;
@@ -80,8 +82,15 @@ export function CharacterBadgeBar({ entry, format, visibility, isEntryHovered }:
   if (visibility === 'off') return null;
 
   const isMinimal = visibility === 'minimal';
-  const hasActive = characters.some((c) => entry.characterTags.includes(c.id));
-  // ミニマル: 選択済みが0件かつ非ホバーなら高さを畳む（DOMは維持してアニメーション可能に）
+  // collapsed 判定: 手動タグ（characterTags）とインライン検出（inlineDetectedIds）の
+  // 和集合で「実効アクティブ」を判定する。インライン表示済みキャラはバーから除外されているが、
+  // 1件でも実効アクティブがあればバーを展開してタグ付け操作をしやすくする
+  const effectiveActiveIds = new Set([
+    ...entry.characterTags,
+    ...(inlineDetectedIds ?? []),
+  ]);
+  const hasActive = allCharacters.some((c) => effectiveActiveIds.has(c.id));
+  // ミニマル: 実効アクティブが0件かつ非ホバーなら高さを畳む（DOMは維持してアニメーション可能に）
   const collapsed = isMinimal && !isEntryHovered && !hasActive;
 
   return (

@@ -4,6 +4,7 @@
  */
 
 import type {
+  Character,
   CharacterDisplayFormat,
   CharacterDisplayVisibility,
   MemoEntry,
@@ -44,12 +45,15 @@ export const IMPORTANCE_LABELS: Record<string, string> = {
 export interface MenuContext {
   timelineGroups: TimelineGroup[];
   memoGroups: MemoGroup[];
+  /** showInEntries が true のキャラクター一覧（役職マーカー追加用） */
+  characters: Character[];
   moveEntryToPanel: (id: string, panel: PanelId) => Promise<void>;
   updateEntry: (id: string, patch: Partial<MemoEntry>) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
   addEntry: (
     partial: Pick<MemoEntry, 'panel'> & Partial<Omit<MemoEntry, 'id' | 'createdAt' | 'updatedAt' | 'sortOrder'>>,
   ) => Promise<MemoEntry>;
+  toggleCharacterTag: (entryId: string, characterId: string) => Promise<void>;
   settings: {
     defaultCharacterDisplay: Record<PanelId, { format: CharacterDisplayFormat; visibility: CharacterDisplayVisibility }>;
   };
@@ -381,7 +385,49 @@ export function buildDisplaySubmenu(
 
   return [
     {
-      label: isBulk ? `役職表示 (${entries.length}件)` : '役職表示',
+      label: isBulk ? `役職マーカー設定 (${entries.length}件)` : '役職マーカー設定',
+      submenu: sub,
+    },
+  ];
+}
+
+// ─── 役職マーカー追加サブメニュー ────────────────────────────────────────────
+
+export function buildTagSubmenu(
+  entries: MemoEntry[],
+  ctx: MenuContext,
+): ContextMenuEntry[] {
+  const characters = ctx.characters;
+  if (characters.length === 0) return [];
+
+  const isBulk = entries.length > 1;
+  const sub: ContextMenuEntry[] = [];
+
+  for (const char of characters) {
+    // 単一エントリの場合、既にタグ付け済みかどうかを表示
+    const isTagged = !isBulk && entries[0].characterTags.includes(char.id);
+    sub.push({
+      label: isTagged ? `${char.name}（タグ済み）` : char.name,
+      onClick: async () => {
+        for (const entry of entries) {
+          await ctx.toggleCharacterTag(entry.id, char.id);
+          // タグ付け時にマーカーが非表示だと見えないので minimal に切り替える
+          if (!entry.characterTags.includes(char.id)) {
+            const panelDefault = ctx.settings.defaultCharacterDisplay[entry.panel];
+            const currentVisibility = entry.characterDisplayVisibility ?? panelDefault.visibility;
+            if (currentVisibility === 'off') {
+              await ctx.updateEntry(entry.id, { characterDisplayVisibility: 'minimal' });
+            }
+          }
+        }
+        ctx.onDone?.();
+      },
+    });
+  }
+
+  return [
+    {
+      label: isBulk ? `役職マーカー追加 (${entries.length}件)` : '役職マーカー追加',
       submenu: sub,
     },
   ];

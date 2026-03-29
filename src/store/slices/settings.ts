@@ -35,8 +35,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'ja',
   theme: 'auto',
   defaultCharacterDisplay: {
-    free:     { format: 'full', visibility: 'minimal' },
-    timeline: { format: 'full', visibility: 'minimal' },
+    free:     { format: 'full', visibility: 'off' },
+    timeline: { format: 'full', visibility: 'off' },
     personal: { format: 'full', visibility: 'off' },
   },
   panelOrder: ['free', 'timeline', 'personal'],

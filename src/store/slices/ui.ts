@@ -33,6 +33,8 @@ export interface UiSlice {
   isWelcomeOpen: boolean;
   /** 検索オーバーレイの表示状態 */
   isSearchOpen: boolean;
+  /** 検索オーバーレイを開く際の初期クエリ（通常検索時は空文字） */
+  searchInitialQuery: string;
   /** 推理メモモーダルの表示状態 */
   isDeductionOpen: boolean;
   /** 相関図モーダルの表示状態 */
@@ -53,6 +55,8 @@ export interface UiSlice {
   removeToast: (id: string) => void;
   setWelcomeOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
+  /** 初期クエリを指定して検索オーバーレイを開く */
+  openSearchWith: (query: string) => void;
   setDeductionOpen: (open: boolean) => void;
   setRelationDiagramOpen: (open: boolean) => void;
 }
@@ -77,6 +81,7 @@ export const createUiSlice = (
   toasts: [],
   isWelcomeOpen: false,
   isSearchOpen: false,
+  searchInitialQuery: '',
   isDeductionOpen: false,
   isRelationDiagramOpen: false,
 
@@ -124,6 +129,8 @@ export const createUiSlice = (
   setWelcomeOpen: (open) => set(() => ({ isWelcomeOpen: open })),
 
   setSearchOpen: (open) => set(() => ({ isSearchOpen: open })),
+
+  openSearchWith: (query) => set(() => ({ isSearchOpen: true, searchInitialQuery: query })),
 
   setDeductionOpen: (open) => set(() => ({ isDeductionOpen: open })),
 

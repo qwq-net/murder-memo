@@ -9,6 +9,7 @@ import {
   buildDuplicateItems,
   buildImportanceSubmenu,
   buildMoveSubmenu,
+  buildTagSubmenu,
 } from '@/components/entries/actions/menuItems';
 import { useMenuContext } from '@/hooks/useMenuContext';
 
@@ -28,6 +29,7 @@ export function BulkContextMenu({ entries, x, y, onClose, onDone }: BulkContextM
       ...buildMoveSubmenu(entries, ctx),
       ...buildImportanceSubmenu(entries, ctx),
       ...buildDisplaySubmenu(entries, ctx),
+      ...buildTagSubmenu(entries, ctx),
       { separator: true as const },
       ...buildDuplicateItems(entries, ctx),
       ...buildDeleteItems(entries, ctx),

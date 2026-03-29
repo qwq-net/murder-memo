@@ -40,7 +40,15 @@ async function createPlaceholderImage(
 
 /**
  * デモセッション用のデータを一括生成する。
- * 呼び出しごとに nanoid で新しい ID を振るため、何度呼んでも衝突しない。
+ *
+ * ペルソナ: 弁護士役のプレイヤー。分析的で、密談や証言を丁寧に整理しながらメモを取る。
+ *
+ * 機能ショーケース:
+ *   - テキスト中のキャラクター名がインラインで色付き表示される
+ *   - [キーワード] が検索ショートカットとしてリンク化される
+ *   - 手動タグ（右クリック→役職マーカー追加）はテキストに名前がないエントリで使用
+ *   - 重要度によるハイライト
+ *   - 画像エントリ（キャプション内もインライン変換対象）
  */
 export async function buildDemoSession(): Promise<{
   session: GameSession;
@@ -140,7 +148,12 @@ export async function buildDemoSession(): Promise<{
   const freeEntry = (
     content: string,
     tags: string[],
-    opts?: { groupId?: string; importance?: 'low' | 'medium' | 'high'; type?: MemoEntry['type'] },
+    opts?: {
+      groupId?: string;
+      importance?: 'low' | 'medium' | 'high';
+      type?: MemoEntry['type'];
+      characterDisplayVisibility?: 'always' | 'minimal' | 'off';
+    },
   ): MemoEntry => ({
     id: nanoid(),
     type: opts?.type ?? 'text',
@@ -152,6 +165,7 @@ export async function buildDemoSession(): Promise<{
     sortOrder: sortCounter.free++,
     groupId: opts?.groupId,
     importance: opts?.importance,
+    characterDisplayVisibility: opts?.characterDisplayVisibility,
   });
 
   /** 個人メモエントリ */
@@ -160,7 +174,6 @@ export async function buildDemoSession(): Promise<{
     groupId?: string,
     opts?: {
       tags?: string[];
-      characterDisplayFormat?: 'full' | 'badge' | 'text';
       characterDisplayVisibility?: 'always' | 'minimal' | 'off';
     },
   ): MemoEntry => ({
@@ -173,11 +186,15 @@ export async function buildDemoSession(): Promise<{
     updatedAt: now,
     sortOrder: sortCounter.personal++,
     groupId,
-    characterDisplayFormat: opts?.characterDisplayFormat,
     characterDisplayVisibility: opts?.characterDisplayVisibility,
   });
 
   // ── エントリ ────────────────────────────────────────────────────────────
+  //
+  // テキスト中にキャラクター名を自然に含めることで、インライン色付き表示を活用。
+  // [キーワード] で検索ショートカットを配置し、横断的な情報参照を容易にする。
+  // characterTags はテキストに名前が含まれないエントリでのみ使用（手動タグのショーケース）。
+
   const entries: MemoEntry[] = [
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // タイムライン: 前日
@@ -185,55 +202,55 @@ export async function buildDemoSession(): Promise<{
     tlEntry(
       tlGroupIds.previous,
       '全員が洋館に到着。実業家が出迎え、各自の部屋に案内された',
-      [charIds.businessman],
+      [],
       '15:00',
     ),
     tlEntry(
       tlGroupIds.previous,
-      '医師が被害者の健康診断を行った。「特に異常はないが、精神的に不安定」とのこと',
-      [charIds.doctor, charIds.victim],
+      '医師が被害者の健康診断を実施。「特に異常はないが、精神的に不安定」とのこと',
+      [],
       '17:00',
     ),
     tlEntry(
       tlGroupIds.previous,
       '夕食。実業家が乾杯の挨拶。被害者は発言が少なく、何か考え込んでいる様子だった',
-      [charIds.businessman, charIds.victim],
+      [],
       '19:00',
     ),
     tlEntry(
       tlGroupIds.previous,
-      '被害者と実業家が別室で言い争っていたらしい。メイドが声を聞いたと証言。内容は不明',
-      [charIds.businessman, charIds.victim],
+      '被害者と実業家が別室で言い争い。メイドが声を聞いたと証言。内容は不明',
+      [],
       '20:00',
     ),
     tlEntry(
       tlGroupIds.previous,
-      '元刑事の証言：廊下で実業家が電話しているのを見かけた。「明日までに片付ける」と話していたとのこと',
-      [charIds.detective, charIds.businessman],
+      '元刑事の証言：廊下で実業家が電話しているのを見かけた。「明日までに片付ける」と話していたらしい',
+      [],
       '20:00',
     ),
     tlEntry(
       tlGroupIds.previous,
       '被害者が「明日、すべてを話すつもりだ」と意味深な発言。作家と医師がその場にいた',
-      [charIds.victim, charIds.writer, charIds.doctor],
+      [],
       '21:30',
     ),
     tlEntry(
       tlGroupIds.previous,
-      '自分（弁護士）が被害者と二人きりで面談。遺言書の書き換えについて相談を受けた',
-      [charIds.lawyer, charIds.victim],
+      '自分（弁護士）が被害者と二人きりで面談。[遺言書]の書き換えについて相談を受けた',
+      [],
       '22:00',
     ),
     tlEntry(
       tlGroupIds.previous,
-      '作家が廊下で被害者の部屋から出てくるのを見た（本人に聞いたら「本を借りただけ」とのこと）',
-      [charIds.writer, charIds.victim],
+      '作家が廊下で被害者の部屋から出てくるのを見た（本人曰く「本を借りただけ」）',
+      [],
       '23:00',
     ),
     tlEntry(
       tlGroupIds.previous,
-      'メイドが深夜に不審な電話を目撃したらしい（時刻不明）',
-      [charIds.maid],
+      'メイドが深夜に不審な電話を目撃したらしい（時刻・相手不明）',
+      [],
     ),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -242,61 +259,61 @@ export async function buildDemoSession(): Promise<{
     tlEntry(
       tlGroupIds.today,
       '朝食。全員が食堂に集合。被害者は普段どおりの様子だった',
-      [charIds.businessman, charIds.writer, charIds.doctor, charIds.lawyer, charIds.detective],
+      [],
       '9:00',
     ),
     tlEntry(
       tlGroupIds.today,
       '医師の証言：朝食後に被害者と立ち話。「体調が優れない、薬をもらえないか」と相談された',
-      [charIds.doctor, charIds.victim],
+      [],
       '9:30',
     ),
     tlEntry(
       tlGroupIds.today,
       '元刑事の証言：実業家が書斎の方向から戻ってくるのを見た',
-      [charIds.detective, charIds.businessman],
+      [],
       '10:00',
     ),
     tlEntry(
       tlGroupIds.today,
       'メイドの証言：被害者が書斎に向かうのを見た。「誰にも邪魔されたくない」と言っていた',
-      [charIds.maid, charIds.victim],
+      [],
       '10:30',
     ),
     tlEntry(
       tlGroupIds.today,
-      '悲鳴を聞いて書斎に駆けつけると、被害者が倒れていた。元刑事と医師が最初に現場に到着',
-      [charIds.detective, charIds.doctor],
+      '悲鳴。書斎に駆けつけると被害者が倒れていた。元刑事と医師が最初に現場に到着',
+      [],
       '11:00',
     ),
     tlEntry(
       tlGroupIds.today,
       '作家の証言：朝食後にロビーで被害者と実業家がひそひそ話しているのを見た',
-      [charIds.writer, charIds.victim, charIds.businessman],
+      [],
       '9:30',
     ),
     tlEntry(
       tlGroupIds.today,
       '元刑事の証言：10時頃、書斎付近で物音がした気がしたが確認はしなかった',
-      [charIds.detective],
+      [],
       '10:00',
     ),
     tlEntry(
       tlGroupIds.today,
-      '医師が死亡を確認。凶器は書斎のペーパーナイフ。元刑事が現場保全を指示',
-      [charIds.doctor, charIds.detective],
+      '医師が死亡を確認。凶器は[ペーパーナイフ]。元刑事が現場保全を指示',
+      [],
       '11:05',
     ),
     tlEntry(
       tlGroupIds.today,
       'メイドの証言：11時前に書斎の前を通ったが、ドアは閉まっていて中の様子はわからなかった',
-      [charIds.maid],
+      [],
       '11:00',
     ),
     tlEntry(
       tlGroupIds.today,
       '全員がリビングに集合。元刑事が各自のアリバイ確認を開始',
-      [charIds.detective],
+      [],
       '11:30',
     ),
 
@@ -304,43 +321,43 @@ export async function buildDemoSession(): Promise<{
     // 自由メモ: 気になるポイント
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     freeEntry(
-      '書斎の窓は内側から施錠されていた。密室の可能性',
-      [charIds.detective],
+      '書斎の窓は内側から施錠されていた → [密室]の可能性',
+      [],
       { groupId: memoGroupIds.freePoints, importance: 'high', type: 'clue' },
     ),
     freeEntry(
-      '被害者のポケットから破られたメモの断片が見つかった。「……の件は絶対に……」としか読めない',
+      '被害者のポケットから破られた[メモの断片]が見つかった。「……の件は絶対に……」としか読めない',
       [],
       { groupId: memoGroupIds.freePoints, importance: 'high', type: 'clue' },
     ),
     freeEntry(
       '実業家と被害者は共同事業のトラブルを抱えていたらしい。関係を深掘りする必要あり',
-      [charIds.businessman, charIds.victim],
+      [],
       { groupId: memoGroupIds.freePoints },
     ),
     freeEntry(
-      '作家が「被害者に脅されていた人がいる」と発言。誰のことかは言わず',
-      [charIds.writer],
+      '作家が「被害者に[脅迫]されていた人がいる」と発言。誰のことかは言わず',
+      [],
       { groupId: memoGroupIds.freePoints, importance: 'medium', type: 'clue' },
     ),
     freeEntry(
       '医師が被害者の体調について「以前から不眠を訴えていた」と証言。薬の処方歴あり',
-      [charIds.doctor, charIds.victim],
+      [],
       { groupId: memoGroupIds.freePoints },
     ),
     freeEntry(
-      '元刑事が書斎を調査。暖炉の通気口は大人が通れるサイズではないとのこと → 密室トリックの脱出経路は別にある？',
-      [charIds.detective],
+      '元刑事が書斎を調査。暖炉の[通気口]は大人が通れるサイズではないとのこと → [密室]トリックの脱出経路は別にある？',
+      [],
       { groupId: memoGroupIds.freePoints, importance: 'high', type: 'clue' },
     ),
     freeEntry(
       'メイドの証言に矛盾？ 「書斎の前を通った」と言うが、掃除の順番からすると通る必要がないルート',
-      [charIds.maid],
+      [],
       { groupId: memoGroupIds.freePoints, importance: 'medium', type: 'clue' },
     ),
     freeEntry(
-      '実業家の手に擦り傷があった。本人は「庭の薔薇の手入れ」と説明',
-      [charIds.businessman],
+      '実業家の手に擦り傷。本人は「庭の薔薇の手入れ」と説明',
+      [],
       { groupId: memoGroupIds.freePoints, importance: 'low', type: 'clue' },
     ),
 
@@ -348,32 +365,32 @@ export async function buildDemoSession(): Promise<{
     // 自由メモ: 推理・仮説
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     freeEntry(
-      '密室に見えるが、書斎の暖炉には通気口がある。ここから出入りできた可能性は？',
+      '[密室]に見えるが、書斎の暖炉には[通気口]がある。ここから出入りできた可能性は？',
       [],
       { groupId: memoGroupIds.freeTheory },
     ),
     freeEntry(
-      '動機は遺産か共同事業の利権か？被害者の遺言書の存在を確認したい',
+      '動機は遺産か共同事業の利権か？ 被害者の[遺言書]の存在を確認したい',
       [],
       { groupId: memoGroupIds.freeTheory },
     ),
     freeEntry(
       '実業家は10:00に書斎方向から戻ってきた → 被害者が書斎に入ったのは10:30 → 実業家は書斎で何をしていた？',
-      [charIds.businessman],
+      [],
       { groupId: memoGroupIds.freeTheory },
     ),
     freeEntry(
-      '作家の「脅されていた人がいる」発言 → 実業家？ 医師？ 自分（弁護士）の可能性も排除できない',
-      [charIds.writer],
+      '作家の「[脅迫]されていた人がいる」発言 → 実業家？ 医師？ 弁護士の自分も排除できない',
+      [],
       { groupId: memoGroupIds.freeTheory },
     ),
     freeEntry(
       'メイドのルート矛盾 → 書斎に用があった？ 何かを確認しに行った可能性',
-      [charIds.maid],
+      [],
       { groupId: memoGroupIds.freeTheory },
     ),
     freeEntry(
-      '犯行タイムライン仮説：10:00〜10:30の間に犯人が書斎に侵入し待ち伏せ → 10:30に被害者入室 → 犯行 → 密室偽装して脱出',
+      '犯行タイムライン仮説：10:00〜10:30の間に犯人が書斎に侵入し待ち伏せ → 10:30に被害者入室 → 犯行 → [密室]偽装して脱出',
       [],
       { groupId: memoGroupIds.freeTheory, importance: 'high' },
     ),
@@ -382,28 +399,36 @@ export async function buildDemoSession(): Promise<{
     // 自由メモ: 未分類
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     freeEntry(
-      'メイドが掃除の順番をいつもと変えていた？　些細だが引っかかる',
-      [charIds.maid],
+      'メイドが掃除の順番をいつもと変えていた？ 些細だが引っかかる',
+      [],
       { importance: 'low', type: 'clue' },
     ),
     freeEntry(
-      '元刑事から聞いた話：凶器のペーパーナイフに指紋はなかった。犯人は手袋を使った可能性',
-      [charIds.detective],
+      '元刑事から聞いた話：[ペーパーナイフ]に指紋はなかった。犯人は手袋を使った可能性',
+      [],
     ),
     freeEntry(
-      '被害者の遺言書はどこにある？ 書斎を調べたい。元刑事に許可をもらう必要あり',
-      [charIds.detective],
+      '被害者の[遺言書]はどこにある？ 書斎を調べたい。元刑事に許可をもらう必要あり',
+      [],
     ),
     freeEntry(
-      '作家が何か隠している印象。質問すると回答を濁す場面が多かった',
+      '何か隠している印象。質問すると回答を濁す場面が多かった',
+      // テキストに名前がないエントリ → 手動タグ（右クリック→役職マーカー追加）のショーケース
       [charIds.writer],
+      { characterDisplayVisibility: 'minimal' },
+    ),
+    freeEntry(
+      '密談で核心には触れなかった？ あの沈黙の後の会話の変え方が気になる',
+      // テキストに名前がないエントリ → 手動タグのショーケース
+      [charIds.businessman, charIds.doctor],
+      { characterDisplayVisibility: 'minimal' },
     ),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 個人メモ: 自分のハンドアウト
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     personalEntry(
-      '自分は弁護士として被害者に招待された。被害者から「遺言書の件で相談がある」と事前に連絡を受けていた',
+      '自分は弁護士として被害者に招待された。「[遺言書]の件で相談がある」と事前に連絡を受けていた',
       memoGroupIds.personalHandout,
     ),
     personalEntry(
@@ -411,15 +436,15 @@ export async function buildDemoSession(): Promise<{
       memoGroupIds.personalHandout,
     ),
     personalEntry(
-      '昨晩22時頃、被害者と二人きりで話した。「遺言書を書き換えたい。実業家には渡したくない財産がある」と相談された',
+      '昨晩22時頃、被害者と二人きりで話した。「[遺言書]を書き換えたい。実業家には渡したくない財産がある」と相談された',
       memoGroupIds.personalHandout,
     ),
     personalEntry(
-      '被害者は「ある人物に弱みを握られている」とも言っていた。具体的な名前は聞けなかった',
+      '被害者は「ある人物に弱みを握られている」とも言っていた → [脅迫]？ 具体的な名前は聞けなかった',
       memoGroupIds.personalHandout,
     ),
     personalEntry(
-      '被害者から預かった封筒がある。中身は確認していない。「自分に万一のことがあったら開封してほしい」と言われた',
+      '被害者から預かった[封筒]がある。中身は未確認。「万一のことがあったら開封してほしい」と言われた',
       memoGroupIds.personalHandout,
     ),
     personalEntry(
@@ -431,7 +456,7 @@ export async function buildDemoSession(): Promise<{
     // 個人メモ: 秘密の目標
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     personalEntry(
-      '【3点】被害者の遺言書を見つけ出し、内容を確認すること',
+      '【3点】被害者の[遺言書]を見つけ出し、内容を確認すること',
       memoGroupIds.personalSecret,
     ),
     personalEntry(
@@ -448,58 +473,24 @@ export async function buildDemoSession(): Promise<{
     ),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 個人メモ: 未分類（参加者との関連メモ — 表示設定ショーケース）
+    // 個人メモ: 未分類（各キャラクターとの関係メモ）
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     personalEntry(
       '実業家とは以前、別の案件で対立したことがある。自分のことを快く思っていない可能性',
-      undefined,
-      { tags: [charIds.businessman], characterDisplayFormat: 'badge', characterDisplayVisibility: 'always' },
     ),
     personalEntry(
       '作家とは初対面。ただし、作家の最新作のモデルが被害者らしいという噂を聞いたことがある',
-      undefined,
-      { tags: [charIds.writer], characterDisplayFormat: 'full', characterDisplayVisibility: 'always' },
     ),
     personalEntry(
       '医師とは同じ大学のOB。信頼できるが、被害者の主治医という立場は気になる',
-      undefined,
-      { tags: [charIds.doctor], characterDisplayFormat: 'badge', characterDisplayVisibility: 'always' },
     ),
     personalEntry(
       '元刑事は退職後にコンサルをしているらしい。被害者から何か依頼を受けていた？',
-      undefined,
-      { tags: [charIds.detective], characterDisplayFormat: 'badge', characterDisplayVisibility: 'always' },
     ),
     personalEntry(
-      '封筒の中身を開けるべきか迷っている。開けたら目標達成に近づくが、周囲に知られるリスク',
-      undefined,
+      '[封筒]の中身を開けるべきか迷っている。開けたら目標達成に近づくが、周囲に知られるリスク',
     ),
   ];
-
-  // ── エントリ間リンク ──────────────────────────────────────────────────────
-  // content の先頭文字列でエントリを検索して ID を取得するヘルパー
-  const findEntry = (prefix: string) => entries.find((e) => e.content.startsWith(prefix));
-
-  // 実業家が書斎方向から戻ってきた ↔ 書斎の窓は内側から施錠（密室と実業家の行動の関連）
-  const tlBusinessmanStudy = findEntry('元刑事の証言：実業家が書斎の方向');
-  const freeLockedRoom = findEntry('書斎の窓は内側から施錠');
-  if (tlBusinessmanStudy && freeLockedRoom) {
-    tlBusinessmanStudy.linkedEntryIds = [freeLockedRoom.id];
-  }
-
-  // 「ある人物に弱みを握られている」 ↔ 作家「脅されていた人がいる」
-  const personalBlackmail = findEntry('被害者は「ある人物に弱みを握られている」');
-  const freeWriterThreat = findEntry('作家が「被害者に脅されていた人がいる」');
-  if (personalBlackmail && freeWriterThreat) {
-    personalBlackmail.linkedEntryIds = [freeWriterThreat.id];
-  }
-
-  // 犯行タイムライン仮説 ↔ 実業家10:00の証言 + メイド10:30の証言
-  const freeTimeline = findEntry('犯行タイムライン仮説');
-  const tlMaidStudy = findEntry('メイドの証言：被害者が書斎に向かう');
-  if (freeTimeline && tlBusinessmanStudy && tlMaidStudy) {
-    freeTimeline.linkedEntryIds = [tlBusinessmanStudy.id, tlMaidStudy.id];
-  }
 
   // ── 推理メモ（弁護士視点でのサンプル） ──────────────────────────────────
   const deductions: CharacterDeduction[] = [
@@ -511,8 +502,6 @@ export async function buildDemoSession(): Promise<{
   ];
 
   // ── 相関図 ────────────────────────────────────────────────────────────────
-  // プリセット色: 友人=#3498db, 恋人=#e91e8c, 家族=#2ecc71, 上司部下=#8e44ad,
-  //              敵対=#e74c3c, 協力者=#27ae60, 知人=#95a5a6, 不明=#7f8c8d
   const relations: CharacterRelation[] = [
     { id: nanoid(), sessionId, fromCharacterId: charIds.businessman, toCharacterId: charIds.victim, label: '共同事業', color: '#8e44ad', sortOrder: 0 },
     { id: nanoid(), sessionId, fromCharacterId: charIds.lawyer, toCharacterId: charIds.victim, label: '知人', color: '#95a5a6', sortOrder: 1 },
@@ -531,18 +520,18 @@ export async function buildDemoSession(): Promise<{
 
   entries.push(
     freeEntry(
-      '書斎の見取り図。窓は南側、暖炉は北壁、入口は東側の1箇所のみ',
-      [charIds.detective],
+      '書斎の見取り図。窓は南側、暖炉は北壁、入口は東側の1箇所のみ → [密室]の構造を把握',
+      [],
       { groupId: memoGroupIds.freePoints, importance: 'high', type: 'image' },
     ),
     freeEntry(
-      '凶器のペーパーナイフ。指紋なし。刃渡り約15cm',
-      [charIds.detective],
+      '凶器の[ペーパーナイフ]。指紋なし。刃渡り約15cm',
+      [],
       { groupId: memoGroupIds.freePoints, importance: 'medium', type: 'image' },
     ),
     freeEntry(
-      '被害者のポケットから見つかったメモの断片',
-      [charIds.victim],
+      '被害者のポケットから見つかった[メモの断片]',
+      [],
       { groupId: memoGroupIds.freePoints, importance: 'high', type: 'image' },
     ),
   );

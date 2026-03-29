@@ -1,8 +1,9 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
 import { useImageBlob } from '@/hooks/useImageBlob';
+import { detectInlineCharacterIds, parseCharacterText } from '@/lib/parseCharacterText';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
 import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
@@ -21,7 +22,9 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   const updateEntry = useStore((s) => s.updateEntry);
   const focusedEntryId = useStore((s) => s.focusedEntryId);
   const setFocusedEntry = useStore((s) => s.setFocusedEntry);
+  const openSearchWith = useStore((s) => s.openSearchWith);
   const settings = useStore((s) => s.settings);
+  const allCharacters = useStore((s) => s.characters);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const isEditing = focusedEntryId === entry.id;
@@ -29,6 +32,24 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   const panelDefault = settings.defaultCharacterDisplay[entry.panel];
   const effectiveFormat = entry.characterDisplayFormat ?? panelDefault.format;
   const effectiveVisibility = entry.characterDisplayVisibility ?? panelDefault.visibility;
+
+  // showInEntries のキャラクターのみをパース対象にする
+  const visibleCharacters = useMemo(
+    () => allCharacters.filter((c) => c.showInEntries),
+    [allCharacters],
+  );
+
+  // 閲覧モード用: キャプションテキスト → セグメント列
+  const segments = useMemo(
+    () => parseCharacterText(entry.content, visibleCharacters),
+    [entry.content, visibleCharacters],
+  );
+
+  // バッジバーから重複排除するためにインライン検出済み ID を渡す
+  const inlineDetectedIds = useMemo(
+    () => detectInlineCharacterIds(entry.content, visibleCharacters),
+    [entry.content, visibleCharacters],
+  );
 
   // ── キャプション編集（EntryContent と同パターン） ──
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -120,15 +141,59 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
           />
         ) : (
           <div
-            onMouseUp={(e) => {
+            onClick={(e) => {
               if (e.shiftKey) return;
               setFocusedEntry(entry.id);
             }}
             className="cursor-text pt-px whitespace-pre-wrap break-words text-sm leading-[1.2] min-w-0 flex-1"
             style={{ minHeight: THUMB_HEIGHT }}
           >
-            {entry.content || (
+            {!entry.content ? (
               <span className="text-text-faint">キャプションを入力</span>
+            ) : (
+              segments.map((seg, i) => {
+                if (seg.type === 'text') {
+                  return <span key={i}>{seg.content}</span>;
+                }
+                if (seg.type === 'search-link') {
+                  return (
+                    <button
+                      key={i}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openSearchWith(seg.keyword);
+                      }}
+                      title={`「${seg.keyword}」を検索`}
+                      style={{
+                        display: 'inline',
+                        background: 'none',
+                        border: 'none',
+                        padding: '0 1px',
+                        cursor: 'pointer',
+                        color: 'var(--accent)',
+                        fontWeight: 500,
+                        fontSize: 'inherit',
+                        lineHeight: 'inherit',
+                        fontFamily: 'inherit',
+                        textDecoration: 'underline',
+                        textDecorationStyle: 'dashed',
+                        textUnderlineOffset: '2px',
+                      }}
+                    >
+                      {seg.keyword}
+                    </button>
+                  );
+                }
+                // キャラクター名をインライン色付きテキストとして表示
+                return (
+                  <span
+                    key={i}
+                    style={{ color: seg.character.color, fontWeight: 600 }}
+                  >
+                    {seg.character.name}
+                  </span>
+                );
+              })
             )}
           </div>
         )}
@@ -141,6 +206,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
           format={effectiveFormat}
           visibility={effectiveVisibility}
           isEntryHovered={isHovered || isEditing}
+          inlineDetectedIds={inlineDetectedIds}
         />
       </div>
 

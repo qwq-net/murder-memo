@@ -2,11 +2,12 @@
  * テキスト編集 + 役職マーカー（CharacterBadgeBar）の共通コンポーネント。
  * TextEntry と TimelineEntry の両方から利用される。
  */
-import { type RefObject, useCallback, useLayoutEffect, useRef } from 'react';
+import { type RefObject, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useCaretPosition } from '@/hooks/useCaretPosition';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
+import { detectInlineCharacterIds, parseCharacterText } from '@/lib/parseCharacterText';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
 import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
@@ -35,9 +36,29 @@ export function EntryContent({
 }: EntryContentProps) {
   const focusedEntryId = useStore((s) => s.focusedEntryId);
   const setFocusedEntry = useStore((s) => s.setFocusedEntry);
+  const openSearchWith = useStore((s) => s.openSearchWith);
   const settings = useStore((s) => s.settings);
+  const allCharacters = useStore((s) => s.characters);
 
   const isEditing = focusedEntryId === entry.id;
+
+  // showInEntries のキャラクターのみをパース対象にする
+  const visibleCharacters = useMemo(
+    () => allCharacters.filter((c) => c.showInEntries),
+    [allCharacters],
+  );
+
+  // 閲覧モード用: テキスト → セグメント列（キャラ名 / プレーンテキスト）
+  const segments = useMemo(
+    () => parseCharacterText(entry.content, visibleCharacters),
+    [entry.content, visibleCharacters],
+  );
+
+  // バッジバーから重複排除するためにインライン検出済み ID を渡す
+  const inlineDetectedIds = useMemo(
+    () => detectInlineCharacterIds(entry.content, visibleCharacters),
+    [entry.content, visibleCharacters],
+  );
 
   const panelDefault = settings.defaultCharacterDisplay[entry.panel];
   const effectiveFormat = entry.characterDisplayFormat ?? panelDefault.format;
@@ -123,14 +144,61 @@ export function EntryContent({
         </div>
       ) : (
         <div
-          onMouseUp={(e) => {
+          onClick={(e) => {
             if (e.shiftKey) return;
             captureFromMouseEvent(e, entry.content.length);
             setFocusedEntry(entry.id);
           }}
           className="cursor-text pt-px pr-1 pb-0 pl-3.5 whitespace-pre-wrap break-words text-sm leading-[1.2]"
         >
-          {entry.content || <span className="text-text-faint">空のメモ</span>}
+          {!entry.content ? (
+            <span className="text-text-faint">空のメモ</span>
+          ) : (
+            segments.map((seg, i) => {
+              if (seg.type === 'text') {
+                return <span key={i}>{seg.content}</span>;
+              }
+              if (seg.type === 'search-link') {
+                // [キーワード] をクリッカブルな検索ショートカットとして表示
+                return (
+                  <button
+                    key={i}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openSearchWith(seg.keyword);
+                    }}
+                    title={`「${seg.keyword}」を検索`}
+                    style={{
+                      display: 'inline',
+                      background: 'none',
+                      border: 'none',
+                      padding: '0 1px',
+                      cursor: 'pointer',
+                      color: 'var(--accent)',
+                      fontWeight: 500,
+                      fontSize: 'inherit',
+                      lineHeight: 'inherit',
+                      fontFamily: 'inherit',
+                      textDecoration: 'underline',
+                      textDecorationStyle: 'dashed',
+                      textUnderlineOffset: '2px',
+                    }}
+                  >
+                    {seg.keyword}
+                  </button>
+                );
+              }
+              // キャラクター名をインライン色付きテキストとして表示
+              return (
+                <span
+                  key={i}
+                  style={{ color: seg.character.color, fontWeight: 600 }}
+                >
+                  {seg.character.name}
+                </span>
+              );
+            })
+          )}
         </div>
       )}
 
@@ -141,6 +209,7 @@ export function EntryContent({
           format={effectiveFormat}
           visibility={effectiveVisibility}
           isEntryHovered={isHovered || isEditing}
+          inlineDetectedIds={inlineDetectedIds}
         />
       </div>
     </div>

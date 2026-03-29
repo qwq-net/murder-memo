@@ -19,6 +19,7 @@ interface MemoPanelProps {
 
 export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) {
   const allEntries = useStore((s) => s.entries);
+  const allCharacters = useStore((s) => s.characters);
   const memoGroups = useStore((s) => s.memoGroups);
   const toggleMemoGroupCollapse = useStore((s) => s.toggleMemoGroupCollapse);
   const removeMemoGroup = useStore((s) => s.removeMemoGroup);
@@ -35,13 +36,26 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
     [memoGroups, panel],
   );
 
+  // フィルター対象キャラクターの名前リスト（テキスト中の名前でも一致させるため）
+  const filterCharNames = useMemo(
+    () => allCharacters
+      .filter((c) => filterIds.includes(c.id) && c.name.length > 0)
+      .map((c) => c.name),
+    [allCharacters, filterIds],
+  );
+
   const entries = useMemo(() => {
     let result = allEntries.filter((e) => e.panel === panel);
     if (filterIds.length > 0) {
-      result = result.filter((e) => e.characterTags.some((t) => filterIds.includes(t)));
+      // characterTags による手動タグ、またはテキスト中にキャラ名が含まれるエントリを対象とする
+      result = result.filter(
+        (e) =>
+          filterIds.some((id) => e.characterTags.includes(id)) ||
+          filterCharNames.some((name) => e.content.includes(name)),
+      );
     }
     return result.sort((a, b) => a.sortOrder - b.sortOrder);
-  }, [allEntries, panel, filterIds]);
+  }, [allEntries, panel, filterIds, filterCharNames]);
 
   const groupedData = useMemo(
     () => groupEntriesByMemoGroup(entries, panelGroups),

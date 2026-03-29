@@ -36,8 +36,6 @@ export interface MemoEntry {
   characterDisplayFormat?: CharacterDisplayFormat;
   characterDisplayVisibility?: CharacterDisplayVisibility;
 
-  // エントリ間リンク
-  linkedEntryIds?: string[];
 }
 
 // ─── Memo Group (自由メモ / 自分用メモ) ─────────────────────────────────────

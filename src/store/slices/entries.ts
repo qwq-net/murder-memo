@@ -65,20 +65,8 @@ export const createEntriesSlice = (
     const entry = get().entries.find((e) => e.id === id);
     if (entry?.imageBlobKey) await deleteImage(entry.imageBlobKey);
     await deleteEntry(id);
-    // 他エントリの linkedEntryIds からも除去
-    const sessionId = get().activeSessionId;
-    const linked = get().entries.filter((e) => e.linkedEntryIds?.includes(id));
-    for (const e of linked) {
-      const updated = { ...e, linkedEntryIds: e.linkedEntryIds!.filter((lid) => lid !== id), updatedAt: Date.now() };
-      if (sessionId) await putEntry(updated, sessionId);
-    }
     set((s) => ({
-      entries: s.entries
-        .filter((e) => e.id !== id)
-        .map((e) => e.linkedEntryIds?.includes(id)
-          ? { ...e, linkedEntryIds: e.linkedEntryIds.filter((lid) => lid !== id) }
-          : e,
-        ),
+      entries: s.entries.filter((e) => e.id !== id),
     }));
   },
 

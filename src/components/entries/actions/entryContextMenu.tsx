@@ -10,6 +10,7 @@ import {
   buildDuplicateItems,
   buildImportanceSubmenu,
   buildMoveSubmenu,
+  buildTagSubmenu,
 } from '@/components/entries/actions/menuItems';
 import { useMenuContext } from '@/hooks/useMenuContext';
 
@@ -18,10 +19,9 @@ interface EntryContextMenuProps {
   x: number;
   y: number;
   onClose: () => void;
-  onLinkRequest?: () => void;
 }
 
-export function EntryContextMenu({ entry, x, y, onClose, onLinkRequest }: EntryContextMenuProps) {
+export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps) {
   const ctx = useMenuContext();
 
   const items = useMemo<ContextMenuEntry[]>(() => {
@@ -31,6 +31,7 @@ export function EntryContextMenu({ entry, x, y, onClose, onLinkRequest }: EntryC
       ...buildMoveSubmenu(entries, ctx),
       ...buildImportanceSubmenu(entries, ctx),
       ...buildDisplaySubmenu(entries, ctx),
+      ...buildTagSubmenu(entries, ctx),
     ];
 
     // ── タイムライン固有: 時刻トグル ──
@@ -51,18 +52,11 @@ export function EntryContextMenu({ entry, x, y, onClose, onLinkRequest }: EntryC
     }
 
     result.push({ separator: true as const });
-    if (onLinkRequest) {
-      const linkCount = entry.linkedEntryIds?.length ?? 0;
-      result.push({
-        label: linkCount > 0 ? `リンク設定（${linkCount}件）` : 'リンク設定',
-        onClick: () => { onLinkRequest(); },
-      });
-    }
     result.push(...buildDuplicateItems(entries, ctx));
     result.push(...buildDeleteItems(entries, ctx));
 
     return result;
-  }, [entry, ctx, onLinkRequest]);
+  }, [entry, ctx]);
 
   return <ContextMenu x={x} y={y} items={items} onClose={onClose} />;
 }

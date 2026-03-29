@@ -26,6 +26,7 @@ const DEBOUNCE_MS = 150;
 export function SearchOverlay() {
   const isOpen = useStore((s) => s.isSearchOpen);
   const setSearchOpen = useStore((s) => s.setSearchOpen);
+  const searchInitialQuery = useStore((s) => s.searchInitialQuery);
   const entries = useStore((s) => s.entries);
   const order = useStore((s) => s.layout.order);
   const setActivePanel = useStore((s) => s.setActivePanel);
@@ -39,15 +40,15 @@ export function SearchOverlay() {
   useEffect(() => {
     if (isOpen) {
       previousFocusRef.current = document.activeElement;
-      setQuery('');
-      setDebouncedQuery('');
+      setQuery(searchInitialQuery);
+      setDebouncedQuery(searchInitialQuery);
       // 次フレームで autofocus
       requestAnimationFrame(() => inputRef.current?.focus());
     } else if (previousFocusRef.current instanceof HTMLElement) {
       previousFocusRef.current.focus();
       previousFocusRef.current = null;
     }
-  }, [isOpen]);
+  }, [isOpen, searchInitialQuery]);
 
   // デバウンス
   useEffect(() => {

@@ -6,8 +6,6 @@ import { IconImportance } from '@/components/icons';
 import { BulkContextMenu } from '@/components/entries/actions/bulkContextMenu';
 import { EntryContextMenu } from '@/components/entries/actions/entryContextMenu';
 import { ImageEntry } from '@/components/entries/imageEntry';
-import { LinkEntryModal } from '@/components/entries/linkEntryModal';
-import { LinkPopover } from '@/components/entries/linkPopover';
 import { useSelection } from '@/components/entries/selectionContext';
 import { TextEntry } from '@/components/entries/textEntry';
 import { TimelineEntry } from '@/components/entries/timelineEntry';
@@ -33,10 +31,6 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const [bulkCtxMenu, setBulkCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const [hovered, setHovered] = useState(false);
-  const [linkModalOpen, setLinkModalOpen] = useState(false);
-  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
-  const entries = useStore((s) => s.entries);
-  const setActivePanel = useStore((s) => s.setActivePanel);
   const accent = PANEL_ACCENT[entry.panel] ?? 'var(--border-default)';
 
   const { isSelected, selectedIds, clearSelection } = useSelection();
@@ -150,44 +144,30 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
           {renderContent()}
         </div>
 
-        {/* 右端インジケータ列 — 重要度は上下中央、リンクは右下 */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 18,
-            flexShrink: 0,
-            paddingTop: 2,
-            paddingBottom: 2,
-          }}
-        >
-          {/* 重要度 — 上下中央 (flex:1 で上下均等スペース) */}
-          {importanceColor && (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-              <IconImportance
-                size={12}
-                color={importanceColor}
-                className="pointer-events-none"
-                style={{
-                  opacity: hovered ? 0.9 : 0.6,
-                  transition: 'opacity 0.12s',
-                }}
-              />
-            </div>
-          )}
-
-          {/* リンク — 下端に寄る */}
-          <LinkPopover
-            entry={entry}
-            entries={entries}
-            hovered={hovered}
-            setActivePanel={setActivePanel}
-            linkPopoverOpen={linkPopoverOpen}
-            setLinkPopoverOpen={setLinkPopoverOpen}
-          />
-        </div>
+        {/* 右端インジケータ列 — 重要度アイコン */}
+        {importanceColor && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 18,
+              flexShrink: 0,
+              paddingTop: 2,
+              paddingBottom: 2,
+            }}
+          >
+            <IconImportance
+              size={12}
+              color={importanceColor}
+              className="pointer-events-none"
+              style={{
+                opacity: hovered ? 0.9 : 0.6,
+                transition: 'opacity 0.12s',
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* 単体コンテキストメニュー */}
@@ -197,7 +177,6 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
           x={ctxMenu.x}
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
-          onLinkRequest={() => { setCtxMenu(null); setLinkModalOpen(true); }}
         />
       )}
 
@@ -215,14 +194,6 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
         />
       )}
 
-      {/* リンク設定モーダル */}
-      {linkModalOpen && (
-        <LinkEntryModal
-          entry={entry}
-          open={linkModalOpen}
-          onClose={() => setLinkModalOpen(false)}
-        />
-      )}
     </div>
   );
 }
