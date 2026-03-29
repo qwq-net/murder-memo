@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useTimeInput } from '@/hooks/useTimeInput';
 import { parseEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
-import { GroupSelector, useSelectedGroupId } from '@/components/entries/groupSelector';
+import { GroupSelector } from '@/components/entries/groupSelector';
 import { useImagePicker } from '@/components/layout/panel';
 
 interface EntryInputProps {
@@ -15,6 +16,7 @@ interface EntryInputProps {
 export function EntryInput({ panel }: EntryInputProps) {
   const addEntry = useStore((s) => s.addEntry);
   const timelineGroups = useStore((s) => s.timelineGroups);
+  const memoGroups = useStore((s) => s.memoGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
   const addToast = useStore((s) => s.addToast);
 
@@ -29,7 +31,27 @@ export function EntryInput({ panel }: EntryInputProps) {
   const openImagePicker = useImagePicker();
 
   const timeInput = useTimeInput();
-  const effectiveGroupId = useSelectedGroupId(panel);
+
+  // グループ選択状態を EntryInput が一元管理し、GroupSelector と共有する
+  const [selectedGroupId, setSelectedGroupId] = useLocalStorage(
+    `murder-memo-selected-group-${panel}`,
+    '',
+  );
+
+  const groups = useMemo(() => {
+    if (isTimeline) return timelineGroups;
+    if (isMemoPanel)
+      return memoGroups
+        .filter((g) => g.panel === panel)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    return [];
+  }, [isTimeline, isMemoPanel, timelineGroups, memoGroups, panel]);
+
+  const validSelectedId = groups.some((g) => g.id === selectedGroupId) ? selectedGroupId : '';
+  const effectiveGroupId =
+    isTimeline && timelineGroups.length === 1 && !validSelectedId
+      ? timelineGroups[0].id
+      : validSelectedId;
 
   useEffect(() => {
     resizeInput(inputRef.current);
@@ -93,7 +115,11 @@ export function EntryInput({ panel }: EntryInputProps) {
       }`}
     >
       {/* グループセレクタ + 追加ボタン */}
-      <GroupSelector panel={panel} />
+      <GroupSelector
+        panel={panel}
+        selectedGroupId={selectedGroupId}
+        onGroupIdChange={setSelectedGroupId}
+      />
 
       {/* 入力行 */}
       <div className="flex gap-1 items-center min-h-6">

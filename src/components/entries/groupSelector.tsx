@@ -1,26 +1,29 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 import { Plus } from '@/components/icons';
 
 interface GroupSelectorProps {
   panel: PanelId;
+  /** 現在選択中のグループID（親が管理） */
+  selectedGroupId: string;
+  /** グループIDが変更されたときのコールバック */
+  onGroupIdChange: (id: string) => void;
 }
 
 /**
  * エントリ入力フォームのグループセレクタ行。
  * グループ選択 + 新規グループ追加 UI を提供する。
+ * 選択状態は親（EntryInput）が管理するため controlled component として動作する。
  */
-export function GroupSelector({ panel }: GroupSelectorProps) {
+export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: GroupSelectorProps) {
   const timelineGroups = useStore((s) => s.timelineGroups);
   const memoGroups = useStore((s) => s.memoGroups);
   const addMemoGroup = useStore((s) => s.addMemoGroup);
   const addTimelineGroup = useStore((s) => s.addTimelineGroup);
   const addToast = useStore((s) => s.addToast);
 
-  const [selectedGroupId, persistGroupId] = useLocalStorage(`murder-memo-selected-group-${panel}`, '');
   const [newGroupLabel, setNewGroupLabel] = useState('');
   const [isAddingGroup, setIsAddingGroup] = useState(false);
 
@@ -45,22 +48,22 @@ export function GroupSelector({ panel }: GroupSelectorProps) {
     if (!label) return;
     if (isTimeline) {
       const group = await addTimelineGroup(label);
-      persistGroupId(group.id);
+      onGroupIdChange(group.id);
     } else if (isMemoPanel) {
       const group = await addMemoGroup(label, panel as 'free' | 'personal');
-      persistGroupId(group.id);
+      onGroupIdChange(group.id);
     }
     addToast('グループを追加しました');
     setNewGroupLabel('');
     setIsAddingGroup(false);
-  }, [newGroupLabel, isTimeline, isMemoPanel, panel, addTimelineGroup, addMemoGroup, persistGroupId, addToast]);
+  }, [newGroupLabel, isTimeline, isMemoPanel, panel, addTimelineGroup, addMemoGroup, onGroupIdChange, addToast]);
 
   return (
     <div className="flex gap-1 items-center min-h-6">
       {/* グループセレクタ */}
       <select
         value={effectiveGroupId}
-        onChange={(e) => persistGroupId(e.target.value)}
+        onChange={(e) => onGroupIdChange(e.target.value)}
         aria-label="追加先メモグループ"
         className="flex-1 bg-bg-elevated border border-border-subtle rounded-sm text-text-secondary text-sm px-1.5 py-[3px] outline-none"
       >
@@ -126,29 +129,3 @@ export function GroupSelector({ panel }: GroupSelectorProps) {
   );
 }
 
-/**
- * 現在選択中のグループ ID を取得するフック。
- * entryInput の submit ロジックが参照するため、同じ localStorage キーを使う。
- */
-export function useSelectedGroupId(panel: PanelId) {
-  const timelineGroups = useStore((s) => s.timelineGroups);
-  const memoGroups = useStore((s) => s.memoGroups);
-  const [selectedGroupId] = useLocalStorage(`murder-memo-selected-group-${panel}`, '');
-
-  const isTimeline = panel === 'timeline';
-  const isMemoPanel = panel === 'free' || panel === 'personal';
-
-  const groups = useMemo(() => {
-    if (isTimeline) return timelineGroups;
-    if (isMemoPanel) return memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder);
-    return [];
-  }, [isTimeline, isMemoPanel, timelineGroups, memoGroups, panel]);
-
-  const validSelectedId = groups.some((g) => g.id === selectedGroupId) ? selectedGroupId : '';
-
-  const effectiveGroupId = isTimeline && timelineGroups.length === 1 && !validSelectedId
-    ? timelineGroups[0].id
-    : validSelectedId;
-
-  return effectiveGroupId;
-}
