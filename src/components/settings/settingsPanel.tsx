@@ -90,6 +90,7 @@ export function SettingsPanel() {
 
           <SettingRow
             label="言語"
+            note="※WIP"
             value={settings.language}
             onChange={(v) => update('language', v)}
             options={[

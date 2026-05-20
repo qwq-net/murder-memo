@@ -1,6 +1,8 @@
 {
   "name": "マダめもくん",
   "short_name": "マダめも",
+  "id": "/app",
+  "start_url": "/app",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",

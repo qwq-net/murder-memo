@@ -3,13 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>マダめもくん — マーダーミステリー専用メモアプリ</title>
-    <meta
-      name="description"
-      content="マーダーミステリーのプレイ中に使える、メモ特化の無料Webアプリ。タイムライン・フリーメモ・自分用メモの3パネルで情報を整理し、推理をスムーズに進められます。"
-    />
-
-    <link rel="canonical" href="https://memo.qwqb.net/" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -25,45 +18,18 @@
     <!-- Theme color (dark theme) -->
     <meta name="theme-color" content="#0d0c0a" />
 
-    <!-- Open Graph -->
+    <!--
+      ページ固有のメタ（title / description / canonical / og:* / twitter:* / JSON-LD / robots）は
+      各ページコンポーネントから vite-react-ssg の <Head> で注入する。
+      ここには全ページ共通の最小要素のみを残す。
+    -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="マダめもくん — マーダーミステリー専用メモアプリ" />
-    <meta
-      property="og:description"
-      content="マーダーミステリーのプレイ中に使える、メモ特化の無料Webアプリ。タイムライン・フリーメモ・自分用メモの3パネルで情報を整理し、推理をスムーズに進められます。"
-    />
-    <meta property="og:image" content="https://memo.qwqb.net/og-image.png" />
     <meta property="og:locale" content="ja_JP" />
     <meta property="og:site_name" content="マダめもくん" />
-    <meta property="og:url" content="https://memo.qwqb.net/" />
+    <meta property="og:image" content="https://memo.qwqb.net/og-image.png" />
 
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="マダめもくん — マーダーミステリー専用メモアプリ" />
-    <meta
-      name="twitter:description"
-      content="マーダーミステリーのプレイ中に使える、メモ特化の無料Webアプリ。タイムライン・フリーメモ・自分用メモの3パネルで推理をスムーズに。"
-    />
     <meta name="twitter:image" content="https://memo.qwqb.net/og-image.png" />
-
-    <!-- 構造化データ -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "マダめもくん",
-        "description": "マーダーミステリーのプレイ中に使える、メモ特化の無料Webアプリ",
-        "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "All",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "JPY"
-        },
-        "inLanguage": "ja",
-        "url": "https://memo.qwqb.net/"
-      }
-    </script>
   </head>
   <body>
     <div id="root"></div>
