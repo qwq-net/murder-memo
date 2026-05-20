@@ -8,6 +8,7 @@ import {
   bulkPutRelations,
   bulkPutMemoGroups,
   bulkPutTimelineGroups,
+  deleteSession,
   getCharactersBySession,
   getDeductionsBySession,
   getEntriesBySession,
@@ -284,23 +285,41 @@ export async function importSession(file: File): Promise<GameSession> {
     createdAt: kw.createdAt,
   }));
 
-  // IDB に書き込み
-  await putSession(newSession);
-  await bulkPutCharacters(newCharacters, newSession.id);
-  await bulkPutTimelineGroups(newTimelineGroups);
-  await bulkPutMemoGroups(newMemoGroups);
-  await bulkPutEntries(newEntries, newSession.id);
-  if (newDeductions.length > 0) await bulkPutDeductions(newDeductions);
-  if (newRelations.length > 0) await bulkPutRelations(newRelations);
-  if (newLinkKeywords.length > 0) await bulkPutLinkKeywords(newLinkKeywords, newSession.id);
+  // IDB に書き込み。
+  // 途中で失敗した場合は `deleteSession` で部分書き込みを一括クリーンアップする
+  // （壊れた中途半端なセッションが IDB に残らないようにするため）。
+  try {
+    await putSession(newSession);
+    // 各 by-session ストアは独立しているため並列書き込みで安全に高速化できる
+    await Promise.all([
+      bulkPutCharacters(newCharacters, newSession.id),
+      bulkPutTimelineGroups(newTimelineGroups),
+      bulkPutMemoGroups(newMemoGroups),
+      bulkPutEntries(newEntries, newSession.id),
+      newDeductions.length > 0 ? bulkPutDeductions(newDeductions) : Promise.resolve(),
+      newRelations.length > 0 ? bulkPutRelations(newRelations) : Promise.resolve(),
+      newLinkKeywords.length > 0
+        ? bulkPutLinkKeywords(newLinkKeywords, newSession.id)
+        : Promise.resolve(),
+    ]);
 
-  // 画像の復元
-  for (const img of data.images) {
-    const newKey = idMap.get(img.blobKey);
-    if (newKey) {
-      const blob = base64ToBlob(img.base64, img.mimeType);
-      await putImage(newKey, blob);
+    // 画像の復元（並列で書き込み。画像は entries.imageBlobKey から参照される）
+    await Promise.all(
+      data.images.map(async (img) => {
+        const newKey = idMap.get(img.blobKey);
+        if (!newKey) return;
+        const blob = base64ToBlob(img.base64, img.mimeType);
+        await putImage(newKey, blob);
+      }),
+    );
+  } catch (err) {
+    // 部分書き込みをロールバック（deleteSession は対象セッションの全ストアを掃除する）
+    try {
+      await deleteSession(newSession.id);
+    } catch (cleanupErr) {
+      console.error('インポート失敗時のクリーンアップにも失敗しました', cleanupErr);
     }
+    throw err instanceof Error ? err : new Error('インポートに失敗しました');
   }
 
   return newSession;

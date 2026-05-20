@@ -69,21 +69,30 @@ export function BackupSection({
   }, [activeSessionId, doExport, addToast, setExportSizeInfo, setShowExportConfirm]);
 
   const handleImportBackup = useCallback(async (file: File) => {
+    const { setSessionReady } = useStore.getState();
+    // ファイル読み込み・IDB 書き込み・画像復元が完了するまで UI 操作を不能にする
+    // （途中状態でメモを編集してインポートデータと混ざるのを防ぐ）。
+    setSessionReady(false);
+    const { pause, resume, clear } = useStore.temporal.getState();
+    pause();
     try {
-      const { pause, resume, clear } = useStore.temporal.getState();
-      pause();
       const newSession = await importSession(file);
       const { sessions: current } = useStore.getState();
+      // セッション切替を伴う setState。store/index.ts の subscribe フックが発火し、
+      // 切替先セッションのデータ再ロード + ローディング解除を担う。
       useStore.setState({
         sessions: [...current, newSession],
         activeSessionId: newSession.id,
       });
       clear();
-      resume();
       addToast(`「${newSession.name}」をインポートしました`, 'success');
       setOpen(false);
     } catch (e) {
       addToast(e instanceof Error ? e.message : 'インポートに失敗しました', 'error');
+      // 失敗時は subscribe フックが発火しないため、ここでローディングを解除する必要がある
+      setSessionReady(true);
+    } finally {
+      resume();
     }
   }, [addToast, setOpen]);
 
