@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { useImageBlob } from '../useImageBlob';
 
 // IndexedDB モック
@@ -32,8 +32,8 @@ describe('useImageBlob', () => {
 
     const { result } = renderHook(() => useImageBlob('key-1'));
 
-    // 非同期で URL が設定される
-    await vi.waitFor(() => {
+    // 非同期で URL が設定される（waitFor は内部で act ラップしてくれる）
+    await waitFor(() => {
       expect(result.current).toBe('blob:mock-url');
     });
     expect(mockCreateObjectURL).toHaveBeenCalledWith(mockBlob);
@@ -53,14 +53,14 @@ describe('useImageBlob', () => {
       { initialProps: { blobKey: 'key-1' } },
     );
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(result.current).toBe('blob:mock-url');
     });
 
     // blobKey を変更すると cleanup が走り revokeObjectURL が呼ばれる
     rerender({ blobKey: 'key-2' });
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(mockRevokeObjectURL).toHaveBeenCalled();
     });
   });
@@ -71,8 +71,10 @@ describe('useImageBlob', () => {
 
     const { result } = renderHook(() => useImageBlob('missing-key'));
 
-    // 少し待っても null のまま
-    await new Promise((r) => setTimeout(r, 50));
+    // 少し待っても null のまま（Promise 解決を act 内で待つ）
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
     expect(result.current).toBeNull();
   });
 });
