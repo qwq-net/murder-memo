@@ -7,7 +7,7 @@ import { parseEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 import { GroupSelector } from '@/components/entries/groupSelector';
-import { useImagePicker } from '@/components/layout/panel';
+import { useImagePicker } from '@/components/layout/imagePickerContext';
 
 interface EntryInputProps {
   panel: PanelId;

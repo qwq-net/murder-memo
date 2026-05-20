@@ -36,19 +36,31 @@ export function SearchOverlay() {
   const inputRef = useRef<HTMLInputElement>(null);
   const previousFocusRef = useRef<Element | null>(null);
 
-  // 開閉時のフォーカス管理
+  // 開く瞬間（または開いた状態で初期クエリが変わった瞬間）に検索クエリを同期する。
+  // useEffect 内の setState はカスケード再レンダーを招くため、render 中に直接比較・更新する。
+  const [openSyncKey, setOpenSyncKey] = useState({ isOpen, searchInitialQuery });
+  if (
+    isOpen !== openSyncKey.isOpen ||
+    (isOpen && searchInitialQuery !== openSyncKey.searchInitialQuery)
+  ) {
+    setOpenSyncKey({ isOpen, searchInitialQuery });
+    if (isOpen) {
+      setQuery(searchInitialQuery);
+      setDebouncedQuery(searchInitialQuery);
+    }
+  }
+
+  // フォーカス管理（DOM への副作用なので useEffect に残す）
   useEffect(() => {
     if (isOpen) {
       previousFocusRef.current = document.activeElement;
-      setQuery(searchInitialQuery);
-      setDebouncedQuery(searchInitialQuery);
       // 次フレームで autofocus
       requestAnimationFrame(() => inputRef.current?.focus());
     } else if (previousFocusRef.current instanceof HTMLElement) {
       previousFocusRef.current.focus();
       previousFocusRef.current = null;
     }
-  }, [isOpen, searchInitialQuery]);
+  }, [isOpen]);
 
   // デバウンス
   useEffect(() => {

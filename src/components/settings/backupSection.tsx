@@ -5,8 +5,7 @@ import { copyToClipboard, formatSessionAsText } from '@/lib/textExport';
 import { useStore } from '@/store';
 import type { GameSession, PanelId } from '@/types/memo';
 import { ConfirmModal } from '@/components/common/confirmModal';
-import { PANEL_CARD_ACCENT } from '@/components/settings/markerCard';
-import { PANEL_ORDER_LABELS } from '@/components/settings/panelOrderEditor';
+import { PANEL_CARD_ACCENT, PANEL_ORDER_LABELS } from '@/components/settings/panelConstants';
 import { SectionHeader } from '@/components/settings/sectionHeader';
 
 export function BackupSection({

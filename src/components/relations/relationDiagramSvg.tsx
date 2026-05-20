@@ -38,7 +38,10 @@ export function RelationDiagramSvg() {
   // ── ズーム・パン状態 ──
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  // ドラッグ位置情報は ref（追従計算用、再レンダー不要）
   const dragRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
+  // カーソル表示用にドラッグ中フラグは state で持つ（render で参照するため）
+  const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // viewBox を計算: ズームが上がると viewBox が小さくなる（拡大）
@@ -57,6 +60,7 @@ export function RelationDiagramSvg() {
     if (e.button !== 0) return;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     dragRef.current = { startX: e.clientX, startY: e.clientY, startPanX: pan.x, startPanY: pan.y };
+    setIsDragging(true);
   }, [pan]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
@@ -71,6 +75,7 @@ export function RelationDiagramSvg() {
 
   const handlePointerUp = useCallback(() => {
     dragRef.current = null;
+    setIsDragging(false);
   }, []);
 
   const handleReset = useCallback(() => {
@@ -119,7 +124,7 @@ export function RelationDiagramSvg() {
         style={{
           display: 'flex',
           justifyContent: 'center',
-          cursor: dragRef.current ? 'grabbing' : 'grab',
+          cursor: isDragging ? 'grabbing' : 'grab',
           touchAction: 'none',
           userSelect: 'none',
         }}

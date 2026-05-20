@@ -1,11 +1,5 @@
-import { PANEL_CARD_ACCENT } from '@/components/settings/markerCard';
+import { PANEL_CARD_ACCENT, PANEL_ORDER_LABELS } from '@/components/settings/panelConstants';
 import type { PanelId } from '@/types/memo';
-
-export const PANEL_ORDER_LABELS: Record<PanelId, string> = {
-  free: 'フリーメモ',
-  timeline: 'タイムライン',
-  personal: '自分用メモ',
-};
 
 export function PanelOrderEditor({
   order,

@@ -444,7 +444,9 @@ export function buildDuplicateItems(
       label: entries.length > 1 ? `複製 (${entries.length}件)` : '複製',
       onClick: async () => {
         await forEntries(entries, async (entry) => {
-          const { id, createdAt, updatedAt, sortOrder, ...rest } = entry;
+          // 複製では元エントリの id / 各タイムスタンプ / sortOrder は破棄し、
+          // addEntry 側で採番させる（rest だけが残れば必要なフィールドはすべて含まれる）
+          const { id: _id, createdAt: _c, updatedAt: _u, sortOrder: _s, ...rest } = entry;
           await ctx.addEntry({ ...rest });
         }, ctx, {
           singular: 'メモを複製しました',

@@ -1,12 +1,9 @@
-import { createContext, type ReactNode, useContext } from 'react';
+import { type ReactNode } from 'react';
 
 import { useImageDrop } from '@/hooks/useImageDrop';
 import type { PanelId } from '@/types/memo';
 import { DropOverlay } from '@/components/common/dropOverlay';
-
-/** パネル内から画像ファイルピッカーを開くためのコンテキスト */
-const ImagePickerContext = createContext<(() => void) | null>(null);
-export const useImagePicker = () => useContext(ImagePickerContext);
+import { ImagePickerContext } from '@/components/layout/imagePickerContext';
 
 interface PanelProps {
   panelId: PanelId;

@@ -3,15 +3,10 @@ import { useState } from 'react';
 import { CharacterBadge } from '@/components/characters/characterBadge';
 import { MinimalSlot } from '@/components/characters/characterBadgeBar';
 import { RadioGroup } from '@/components/common/radioGroup';
+import { PANEL_CARD_ACCENT } from '@/components/settings/panelConstants';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
 
 /* ── 共通定数 ─────────────────────────────────────────────────────────────── */
-
-export const PANEL_CARD_ACCENT: Record<PanelId, string> = {
-  free: 'var(--panel-free-accent)',
-  timeline: 'var(--panel-timeline-accent)',
-  personal: 'var(--panel-personal-accent)',
-};
 
 const VISIBILITY_HINTS: Record<CharacterDisplayVisibility, string | null> = {
   always: null,

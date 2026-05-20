@@ -26,8 +26,11 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
   const isImage = !!entry.imageBlobKey;
   const [draftTime, setDraftTime] = useState(entry.eventTime ?? '');
   const containerRef = useRef<HTMLDivElement>(null);
-  /** 時刻 span クリックで編集に入った場合 true（textarea ではなく time input にフォーカスする） */
-  const focusTimeRef = useRef(false);
+  /**
+   * 時刻 span クリックで編集に入った場合 true（textarea ではなく time input にフォーカスする）。
+   * autoFocus 属性で render 中に参照するため state で管理する。
+   */
+  const [focusTime, setFocusTime] = useState(false);
 
   // 時刻の props → draft 同期（非編集時のみ）
   const [prevTimeSync, setPrevTimeSync] = useState({ eventTime: entry.eventTime, isEditing });
@@ -142,7 +145,7 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
         <span
           onClick={(e) => {
             if (e.shiftKey) return;
-            focusTimeRef.current = true;
+            setFocusTime(true);
             setFocusedEntry(entry.id);
           }}
           style={{ ...timeStyle, cursor: 'text' }}
@@ -151,11 +154,12 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
         </span>
       ) : (
         <input
-          autoFocus={focusTimeRef.current}
+          autoFocus={focusTime}
           ref={(el) => {
-            if (el && focusTimeRef.current) {
+            if (el && focusTime) {
               el.focus();
-              focusTimeRef.current = false;
+              // フォーカスを当てた直後にフラグを下ろす（1 回のみ発火させる）
+              setFocusTime(false);
             }
           }}
           value={draftTime}
@@ -183,7 +187,7 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
           onSave={handleContentSave}
           isHovered={isHovered}
           onEscape={() => setDraftTime(entry.eventTime ?? '')}
-          autoFocus={!focusTimeRef.current}
+          autoFocus={!focusTime}
           containerRef={containerRef}
         />
       )}
