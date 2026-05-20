@@ -35,9 +35,7 @@ export function SettingRow<T extends string>({
         }}
       >
         {label}
-        {note && (
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{note}</span>
-        )}
+        {note && <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{note}</span>}
       </span>
       <RadioGroup options={options} value={value} onChange={onChange} />
     </div>

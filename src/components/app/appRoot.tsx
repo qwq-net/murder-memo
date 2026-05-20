@@ -21,6 +21,16 @@ export default function AppRoot() {
   const setWelcomeOpen = useStore((s) => s.setWelcomeOpen);
   const theme = useStore((s) => s.settings.theme);
 
+  // /app マウント時のみ html.app-mode を付与し、ビューポート固定 + テキスト選択禁止を有効化する
+  // （LP / Guide ではこのクラスが付かないため、ふつうにスクロール / コピペできる）
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.add('app-mode');
+    return () => {
+      html.classList.remove('app-mode');
+    };
+  }, []);
+
   useEffect(() => {
     initSessions();
   }, [initSessions]);
