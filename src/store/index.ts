@@ -133,22 +133,33 @@ useStore.subscribe(
       loadRelations,
       loadLinkKeywords,
       clearAllCharacterFilters,
+      setSessionReady,
+      addToast,
     } = useStore.getState();
     clearAllCharacterFilters();
+    // ロード完了まで UI をローディング表示に切り替える（中途半端なデータでの操作を防ぐ）
+    setSessionReady(false);
     // ロード中は履歴記録を停止（ロード操作自体を undo できないように）
     pause();
-    const [entries] = await Promise.all([
-      getEntriesBySession(sessionId),
-      loadCharacters(sessionId),
-      loadTimelineGroups(sessionId),
-      loadMemoGroups(sessionId),
-      loadDeductions(sessionId),
-      loadRelations(sessionId),
-      loadLinkKeywords(sessionId),
-    ]);
-    loadEntries(entries.sort((a, b) => a.sortOrder - b.sortOrder));
-    clear();
-    resume();
+    try {
+      const [entries] = await Promise.all([
+        getEntriesBySession(sessionId),
+        loadCharacters(sessionId),
+        loadTimelineGroups(sessionId),
+        loadMemoGroups(sessionId),
+        loadDeductions(sessionId),
+        loadRelations(sessionId),
+        loadLinkKeywords(sessionId),
+      ]);
+      loadEntries(entries.sort((a, b) => a.sortOrder - b.sortOrder));
+      clear();
+    } catch (err) {
+      console.error('セッション切替時のデータ読み込みに失敗しました', err);
+      addToast('セッション切替に失敗しました。ページを再読み込みしてください。', 'error');
+    } finally {
+      resume();
+      setSessionReady(true);
+    }
   },
 );
 

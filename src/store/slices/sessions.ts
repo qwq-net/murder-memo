@@ -53,90 +53,106 @@ export const createSessionsSlice = (
     initSessions: () => {
       if (initPromise) return initPromise;
       initPromise = (async () => {
-        const sessions = await getAllSessions();
+        try {
+          const sessions = await getAllSessions();
 
-        // デモセッションの確認: 未作成 or バージョン不一致なら（再）作成
-        let demoData: Awaited<ReturnType<typeof buildDemoSession>> | null = null;
-        const existingDemo = sessions.find((s) => s.isDemo);
-        const needsDemoRefresh = !existingDemo || existingDemo.demoVersion !== APP_VERSION;
+          // デモセッションの確認: 未作成 or バージョン不一致なら（再）作成
+          let demoData: Awaited<ReturnType<typeof buildDemoSession>> | null = null;
+          const existingDemo = sessions.find((s) => s.isDemo);
+          const needsDemoRefresh = !existingDemo || existingDemo.demoVersion !== APP_VERSION;
 
-        if (needsDemoRefresh) {
-          // 古いデモがあれば関連データごと削除
-          if (existingDemo) {
-            await deleteSession(existingDemo.id);
-            sessions.splice(sessions.indexOf(existingDemo), 1);
+          if (needsDemoRefresh) {
+            // 古いデモがあれば関連データごと削除
+            if (existingDemo) {
+              await deleteSession(existingDemo.id);
+              sessions.splice(sessions.indexOf(existingDemo), 1);
+            }
+
+            demoData = await buildDemoSession();
+            // 各オブジェクトストアは独立しているため並列書き込み
+            await Promise.all([
+              putSession(demoData.session),
+              bulkPutCharacters(demoData.characters, demoData.session.id),
+              bulkPutTimelineGroups(demoData.timelineGroups),
+              bulkPutMemoGroups(demoData.memoGroups),
+              bulkPutEntries(demoData.entries, demoData.session.id),
+              bulkPutDeductions(demoData.deductions),
+              bulkPutRelations(demoData.relations),
+              bulkPutLinkKeywords(demoData.linkKeywords, demoData.session.id),
+            ]);
+            sessions.push(demoData.session);
           }
 
-          demoData = await buildDemoSession();
-          // 各オブジェクトストアは独立しているため並列書き込み
-          await Promise.all([
-            putSession(demoData.session),
-            bulkPutCharacters(demoData.characters, demoData.session.id),
-            bulkPutTimelineGroups(demoData.timelineGroups),
-            bulkPutMemoGroups(demoData.memoGroups),
-            bulkPutEntries(demoData.entries, demoData.session.id),
-            bulkPutDeductions(demoData.deductions),
-            bulkPutRelations(demoData.relations),
-            bulkPutLinkKeywords(demoData.linkKeywords, demoData.session.id),
-          ]);
-          sessions.push(demoData.session);
+          sessions.sort((a, b) => a.createdAt - b.createdAt);
+
+          // 直前に開いていたセッションを復元。存在しなければ先頭（最古）にフォールバック
+          const lastId = localStorage.getItem(LAST_SESSION_KEY);
+          const initialId =
+            lastId && sessions.some((s) => s.id === lastId) ? lastId : sessions[0].id;
+
+          // 初期セッションのデータをロードし、ストアに一括投入する。
+          // subscriber の二重 IO を防ぐため、ここでデータを直接セットする。
+          let entries,
+            characters,
+            timelineGroups,
+            memoGroups,
+            deductions,
+            relations,
+            linkKeywords;
+
+          if (demoData && demoData.session.id === initialId) {
+            // デモデータ作成直後: メモリ上のデータをそのまま使う（IDB 再読込不要）
+            entries = demoData.entries.sort((a, b) => a.sortOrder - b.sortOrder);
+            characters = demoData.characters;
+            timelineGroups = demoData.timelineGroups;
+            memoGroups = demoData.memoGroups;
+            deductions = demoData.deductions;
+            relations = demoData.relations;
+            linkKeywords = demoData.linkKeywords;
+          } else {
+            // 既存セッション: IDB から並列読み込み
+            [entries, characters, timelineGroups, memoGroups, deductions, relations, linkKeywords] =
+              await Promise.all([
+                getEntriesBySession(initialId).then((e) =>
+                  e.sort((a, b) => a.sortOrder - b.sortOrder),
+                ),
+                getCharactersBySession(initialId),
+                getTimelineGroupsBySession(initialId),
+                getMemoGroupsBySession(initialId),
+                getDeductionsBySession(initialId),
+                getRelationsBySession(initialId),
+                getLinkKeywordsBySession(initialId),
+              ]);
+            relations = relations.sort((a, b) => a.sortOrder - b.sortOrder);
+          }
+
+          // 全 IDB 書き込み・読み込みが完了してから一括で state 投入する。
+          // 途中で失敗するとここまで来ないので、ストアが中途半端な状態にならない。
+          set(() => ({
+            sessions,
+            activeSessionId: initialId,
+            entries,
+            characters,
+            timelineGroups,
+            memoGroups,
+            deductions,
+            relations,
+            linkKeywords,
+            isSessionReady: true,
+          }));
+        } catch (err) {
+          // IDB のマイグレーション失敗・デモ投入失敗など、致命的エラーをユーザーに通知。
+          // ローディング画面で固まらないよう、UI を出して再操作可能な状態にする。
+          console.error('セッション初期化に失敗しました', err);
+          get().addToast(
+            'データの読み込みに失敗しました。ページを再読み込みしてください。',
+            'error',
+          );
+          // 初期化リトライ可能にするため Promise キャッシュをクリア
+          initPromise = null;
+          // 初期化途中の中途半端な状態でも UI が出るよう ready フラグだけ立てる
+          set(() => ({ isSessionReady: true }));
         }
-
-        sessions.sort((a, b) => a.createdAt - b.createdAt);
-
-        // 直前に開いていたセッションを復元。存在しなければ先頭（最古）にフォールバック
-        const lastId = localStorage.getItem(LAST_SESSION_KEY);
-        const initialId =
-          lastId && sessions.some((s) => s.id === lastId) ? lastId : sessions[0].id;
-
-        // 初期セッションのデータをロードし、ストアに一括投入する。
-        // subscriber の二重 IO を防ぐため、ここでデータを直接セットする。
-        let entries,
-          characters,
-          timelineGroups,
-          memoGroups,
-          deductions,
-          relations,
-          linkKeywords;
-
-        if (demoData && demoData.session.id === initialId) {
-          // デモデータ作成直後: メモリ上のデータをそのまま使う（IDB 再読込不要）
-          entries = demoData.entries.sort((a, b) => a.sortOrder - b.sortOrder);
-          characters = demoData.characters;
-          timelineGroups = demoData.timelineGroups;
-          memoGroups = demoData.memoGroups;
-          deductions = demoData.deductions;
-          relations = demoData.relations;
-          linkKeywords = demoData.linkKeywords;
-        } else {
-          // 既存セッション: IDB から並列読み込み
-          [entries, characters, timelineGroups, memoGroups, deductions, relations, linkKeywords] =
-            await Promise.all([
-              getEntriesBySession(initialId).then((e) =>
-                e.sort((a, b) => a.sortOrder - b.sortOrder),
-              ),
-              getCharactersBySession(initialId),
-              getTimelineGroupsBySession(initialId),
-              getMemoGroupsBySession(initialId),
-              getDeductionsBySession(initialId),
-              getRelationsBySession(initialId),
-              getLinkKeywordsBySession(initialId),
-            ]);
-          relations = relations.sort((a, b) => a.sortOrder - b.sortOrder);
-        }
-
-        set(() => ({
-          sessions,
-          activeSessionId: initialId,
-          entries,
-          characters,
-          timelineGroups,
-          memoGroups,
-          deductions,
-          relations,
-          linkKeywords,
-          isSessionReady: true,
-        }));
       })();
       return initPromise;
     },

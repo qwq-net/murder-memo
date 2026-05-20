@@ -112,10 +112,16 @@ export function AppShell() {
   const { plChars, npcChars } = useFilteredCharacters();
   const sessionRename = useSessionRenaming({ sessions, activeSessionId, renameSession });
 
-  // セッション初期化完了まではローディング表示
+  // セッション初期化／切替完了まではローディング表示。
+  // 初回起動時は IDB マイグレーションやサンプルシナリオ再投入を待ち、
+  // セッション切替時もデータロード完了まで操作不能にする（中途半端なデータでの編集を防ぐ）。
   if (!isSessionReady) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-bg-base gap-3">
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex flex-col items-center justify-center h-full bg-bg-base gap-3"
+      >
         <img src="/logo.svg" alt="マダめもくん" width="32" height="32" className="opacity-60" />
         <div
           className="size-5 border-2 rounded-full animate-spin"
@@ -123,7 +129,9 @@ export function AppShell() {
             borderColor: 'var(--border-default)',
             borderTopColor: 'var(--accent)',
           }}
+          aria-hidden="true"
         />
+        <span className="text-xs text-text-muted">データを準備しています…</span>
       </div>
     );
   }
