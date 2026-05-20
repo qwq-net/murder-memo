@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { useAutoRegisterLinkKeywords } from '@/hooks/useAutoRegisterLinkKeywords';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
 import { useImageBlob } from '@/hooks/useImageBlob';
@@ -8,6 +9,7 @@ import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
 import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
 import { ImageLightbox } from '@/components/common/imageLightbox';
+import { SearchLinkButton } from '@/components/common/searchLinkButton';
 
 /** サムネイルの高さ — テキスト2行分相当 (13px * 1.2 * 2 + padding ≒ 40px) */
 const THUMB_HEIGHT = 40;
@@ -25,6 +27,8 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   const openSearchWith = useStore((s) => s.openSearchWith);
   const settings = useStore((s) => s.settings);
   const allCharacters = useStore((s) => s.characters);
+  const linkKeywords = useStore((s) => s.linkKeywords);
+  const registerKeywords = useAutoRegisterLinkKeywords();
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const isEditing = focusedEntryId === entry.id;
@@ -41,14 +45,15 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
 
   // 閲覧モード用: キャプションテキスト → セグメント列
   const segments = useMemo(
-    () => parseCharacterText(entry.content, visibleCharacters),
-    [entry.content, visibleCharacters],
+    () => parseCharacterText(entry.content, visibleCharacters, linkKeywords),
+    [entry.content, visibleCharacters, linkKeywords],
   );
 
-  // バッジバーから重複排除するためにインライン検出済み ID を渡す
+  // バッジバーから重複排除するためにインライン検出済み ID を渡す。
+  // 辞書ワードと衝突したキャラ名は本文に出ないので、ここからも除外される。
   const inlineDetectedIds = useMemo(
-    () => detectInlineCharacterIds(entry.content, visibleCharacters),
-    [entry.content, visibleCharacters],
+    () => detectInlineCharacterIds(entry.content, visibleCharacters, linkKeywords),
+    [entry.content, visibleCharacters, linkKeywords],
   );
 
   // ── キャプション編集（EntryContent と同パターン） ──
@@ -61,7 +66,10 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
       currentValues: { content: entry.content },
       isEditing,
       onSave: (values) => {
-        updateEntry(entry.id, { content: values.content.trim() });
+        const trimmed = values.content.trim();
+        // キャプション内の `[キーワード]` を辞書に自動登録する
+        registerKeywords(trimmed);
+        updateEntry(entry.id, { content: trimmed });
       },
     });
 
@@ -157,31 +165,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
                 }
                 if (seg.type === 'search-link') {
                   return (
-                    <button
-                      key={i}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openSearchWith(seg.keyword);
-                      }}
-                      title={`「${seg.keyword}」を検索`}
-                      style={{
-                        display: 'inline',
-                        background: 'none',
-                        border: 'none',
-                        padding: '0 1px',
-                        cursor: 'pointer',
-                        color: 'var(--accent)',
-                        fontWeight: 500,
-                        fontSize: 'inherit',
-                        lineHeight: 'inherit',
-                        fontFamily: 'inherit',
-                        textDecoration: 'underline',
-                        textDecorationStyle: 'dashed',
-                        textUnderlineOffset: '2px',
-                      }}
-                    >
-                      {seg.keyword}
-                    </button>
+                    <SearchLinkButton key={i} keyword={seg.keyword} onClick={openSearchWith} />
                   );
                 }
                 // キャラクター名をインライン色付きテキストとして表示

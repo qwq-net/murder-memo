@@ -1,7 +1,16 @@
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
 
-import type { Character, CharacterDeduction, CharacterRelation, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
+import type {
+  Character,
+  CharacterDeduction,
+  CharacterRelation,
+  GameSession,
+  LinkKeyword,
+  MemoEntry,
+  MemoGroup,
+  TimelineGroup,
+} from '@/types/memo';
 
 // ─── スキーマ ────────────────────────────────────────────────────────────────
 
@@ -39,6 +48,11 @@ interface MurderMemoDB extends DBSchema {
     value: CharacterRelation;
     indexes: { 'by-session': string };
   };
+  'link-keywords': {
+    key: string;
+    value: LinkKeyword & { sessionId: string };
+    indexes: { 'by-session': string };
+  };
   sessions: {
     key: string;
     value: GameSession;
@@ -53,7 +67,7 @@ interface MurderMemoDB extends DBSchema {
 }
 
 const DB_NAME = 'murder-memo';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 let dbPromise: Promise<IDBPDatabase<MurderMemoDB>> | null = null;
 
@@ -101,6 +115,12 @@ export function getDb(): Promise<IDBPDatabase<MurderMemoDB>> {
           const relationsStore = db.createObjectStore('relations', { keyPath: 'id' });
           relationsStore.createIndex('by-session', 'sessionId');
         }
+
+        if (oldVersion < 6) {
+          // リンクキーワード辞書（自動リンク化対象ワード）
+          const linkKeywordsStore = db.createObjectStore('link-keywords', { keyPath: 'id' });
+          linkKeywordsStore.createIndex('by-session', 'sessionId');
+        }
       },
     });
   }
@@ -122,7 +142,17 @@ export async function putSession(session: GameSession): Promise<void> {
 export async function deleteSession(id: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
-    ['sessions', 'entries', 'characters', 'timeline-groups', 'memo-groups', 'deductions', 'relations', 'images'],
+    [
+      'sessions',
+      'entries',
+      'characters',
+      'timeline-groups',
+      'memo-groups',
+      'deductions',
+      'relations',
+      'link-keywords',
+      'images',
+    ],
     'readwrite',
   );
 
@@ -160,6 +190,11 @@ export async function deleteSession(id: string): Promise<void> {
     await tx.objectStore('relations').delete(r.id);
   }
 
+  const linkKeywords = await tx.objectStore('link-keywords').index('by-session').getAll(id);
+  for (const kw of linkKeywords) {
+    await tx.objectStore('link-keywords').delete(kw.id);
+  }
+
   await tx.objectStore('sessions').delete(id);
   await tx.done;
 }
@@ -168,7 +203,16 @@ export async function deleteSession(id: string): Promise<void> {
 export async function clearSessionData(id: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
-    ['entries', 'characters', 'timeline-groups', 'memo-groups', 'deductions', 'relations', 'images'],
+    [
+      'entries',
+      'characters',
+      'timeline-groups',
+      'memo-groups',
+      'deductions',
+      'relations',
+      'link-keywords',
+      'images',
+    ],
     'readwrite',
   );
 
@@ -203,6 +247,11 @@ export async function clearSessionData(id: string): Promise<void> {
   const relations = await tx.objectStore('relations').index('by-session').getAll(id);
   for (const r of relations) {
     await tx.objectStore('relations').delete(r.id);
+  }
+
+  const linkKeywords = await tx.objectStore('link-keywords').index('by-session').getAll(id);
+  for (const kw of linkKeywords) {
+    await tx.objectStore('link-keywords').delete(kw.id);
   }
 
   await tx.done;
@@ -391,6 +440,41 @@ export async function bulkPutRelations(relations: CharacterRelation[]): Promise<
   const db = await getDb();
   const tx = db.transaction('relations', 'readwrite');
   await Promise.all(relations.map((r) => tx.store.put(r)));
+  await tx.done;
+}
+
+// ─── リンクキーワード辞書 ─────────────────────────────────────────────────
+
+export async function getLinkKeywordsBySession(
+  sessionId: string,
+): Promise<LinkKeyword[]> {
+  const db = await getDb();
+  const rows = await db.getAllFromIndex('link-keywords', 'by-session', sessionId);
+  // sessionId フィールドはアプリ層に露出させない
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  return rows.map(({ sessionId, ...kw }) => kw);
+}
+
+export async function putLinkKeyword(
+  keyword: LinkKeyword,
+  sessionId: string,
+): Promise<void> {
+  const db = await getDb();
+  await db.put('link-keywords', { ...keyword, sessionId });
+}
+
+export async function deleteLinkKeyword(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete('link-keywords', id);
+}
+
+export async function bulkPutLinkKeywords(
+  keywords: LinkKeyword[],
+  sessionId: string,
+): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction('link-keywords', 'readwrite');
+  await Promise.all(keywords.map((kw) => tx.store.put({ ...kw, sessionId })));
   await tx.done;
 }
 

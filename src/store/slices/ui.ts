@@ -41,6 +41,8 @@ export interface UiSlice {
   isDeductionOpen: boolean;
   /** 相関図モーダルの表示状態 */
   isRelationDiagramOpen: boolean;
+  /** リンク一覧モーダルの表示状態 */
+  isLinkListOpen: boolean;
 
   setLayout: (layout: Partial<PanelLayoutConfig>) => void;
   setActivePanel: (panel: PanelId) => void;
@@ -62,6 +64,7 @@ export interface UiSlice {
   openSearchWith: (query: string) => void;
   setDeductionOpen: (open: boolean) => void;
   setRelationDiagramOpen: (open: boolean) => void;
+  setLinkListOpen: (open: boolean) => void;
 }
 
 const DEFAULT_LAYOUT: PanelLayoutConfig = {
@@ -88,6 +91,7 @@ export const createUiSlice = (
   searchInitialQuery: '',
   isDeductionOpen: false,
   isRelationDiagramOpen: false,
+  isLinkListOpen: false,
 
   setLayout: (patch) =>
     set((s) => ({ layout: { ...s.layout, ...patch } })),
@@ -141,4 +145,6 @@ export const createUiSlice = (
   setDeductionOpen: (open) => set(() => ({ isDeductionOpen: open })),
 
   setRelationDiagramOpen: (open) => set(() => ({ isRelationDiagramOpen: open })),
+
+  setLinkListOpen: (open) => set(() => ({ isLinkListOpen: open })),
 });

@@ -15,10 +15,12 @@ export {
   ChevronUp,
   ChevronsDownUp,
   ChevronsUpDown,
+  Link2,
   Plus,
   Search,
   Settings,
   SquarePen,
+  Trash2,
   User,
   X,
 } from 'lucide-react';

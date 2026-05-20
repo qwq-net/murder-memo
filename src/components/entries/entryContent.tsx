@@ -4,6 +4,7 @@
  */
 import { type RefObject, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 
+import { useAutoRegisterLinkKeywords } from '@/hooks/useAutoRegisterLinkKeywords';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useCaretPosition } from '@/hooks/useCaretPosition';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
@@ -11,6 +12,7 @@ import { detectInlineCharacterIds, parseCharacterText } from '@/lib/parseCharact
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
 import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
+import { SearchLinkButton } from '@/components/common/searchLinkButton';
 
 interface EntryContentProps {
   entry: MemoEntry;
@@ -39,6 +41,8 @@ export function EntryContent({
   const openSearchWith = useStore((s) => s.openSearchWith);
   const settings = useStore((s) => s.settings);
   const allCharacters = useStore((s) => s.characters);
+  const linkKeywords = useStore((s) => s.linkKeywords);
+  const registerKeywords = useAutoRegisterLinkKeywords();
 
   const isEditing = focusedEntryId === entry.id;
 
@@ -48,16 +52,17 @@ export function EntryContent({
     [allCharacters],
   );
 
-  // 閲覧モード用: テキスト → セグメント列（キャラ名 / プレーンテキスト）
+  // 閲覧モード用: テキスト → セグメント列（キャラ名 / プレーンテキスト / 検索リンク）
   const segments = useMemo(
-    () => parseCharacterText(entry.content, visibleCharacters),
-    [entry.content, visibleCharacters],
+    () => parseCharacterText(entry.content, visibleCharacters, linkKeywords),
+    [entry.content, visibleCharacters, linkKeywords],
   );
 
-  // バッジバーから重複排除するためにインライン検出済み ID を渡す
+  // バッジバーから重複排除するためにインライン検出済み ID を渡す。
+  // 辞書ワードと衝突したキャラ名は本文に出ないので、ここからも除外される。
   const inlineDetectedIds = useMemo(
-    () => detectInlineCharacterIds(entry.content, visibleCharacters),
-    [entry.content, visibleCharacters],
+    () => detectInlineCharacterIds(entry.content, visibleCharacters, linkKeywords),
+    [entry.content, visibleCharacters, linkKeywords],
   );
 
   const panelDefault = settings.defaultCharacterDisplay[entry.panel];
@@ -69,7 +74,12 @@ export function EntryContent({
       entryId: entry.id,
       currentValues: { content: entry.content },
       isEditing,
-      onSave: (values) => onSave(values.content.trim()),
+      onSave: (values) => {
+        const trimmed = values.content.trim();
+        // 確定時、本文中の `[キーワード]` を辞書に自動登録する
+        registerKeywords(trimmed);
+        onSave(trimmed);
+      },
     });
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -159,33 +169,9 @@ export function EntryContent({
                 return <span key={i}>{seg.content}</span>;
               }
               if (seg.type === 'search-link') {
-                // [キーワード] をクリッカブルな検索ショートカットとして表示
+                // [キーワード] または辞書ワードをクリッカブルな検索ショートカットとして表示
                 return (
-                  <button
-                    key={i}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openSearchWith(seg.keyword);
-                    }}
-                    title={`「${seg.keyword}」を検索`}
-                    style={{
-                      display: 'inline',
-                      background: 'none',
-                      border: 'none',
-                      padding: '0 1px',
-                      cursor: 'pointer',
-                      color: 'var(--accent)',
-                      fontWeight: 500,
-                      fontSize: 'inherit',
-                      lineHeight: 'inherit',
-                      fontFamily: 'inherit',
-                      textDecoration: 'underline',
-                      textDecorationStyle: 'dashed',
-                      textUnderlineOffset: '2px',
-                    }}
-                  >
-                    {seg.keyword}
-                  </button>
+                  <SearchLinkButton key={i} keyword={seg.keyword} onClick={openSearchWith} />
                 );
               }
               // キャラクター名をインライン色付きテキストとして表示

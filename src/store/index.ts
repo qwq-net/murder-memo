@@ -7,6 +7,8 @@ import type { CharactersSlice } from '@/store/slices/characters';
 import { createCharactersSlice } from '@/store/slices/characters';
 import type { EntriesSlice } from '@/store/slices/entries';
 import { createEntriesSlice } from '@/store/slices/entries';
+import type { LinkKeywordsSlice } from '@/store/slices/linkKeywords';
+import { createLinkKeywordsSlice } from '@/store/slices/linkKeywords';
 import type { MemoGroupsSlice } from '@/store/slices/memoGroups';
 import { createMemoGroupsSlice } from '@/store/slices/memoGroups';
 import type { SessionsSlice } from '@/store/slices/sessions';
@@ -29,6 +31,7 @@ export type StoreState = SessionsSlice &
   MemoGroupsSlice &
   DeductionsSlice &
   RelationsSlice &
+  LinkKeywordsSlice &
   SettingsSlice &
   UiSlice;
 
@@ -45,6 +48,7 @@ export const useStore = create<StoreState>()(
       ...createMemoGroupsSlice(set as Parameters<typeof createMemoGroupsSlice>[0], get),
       ...createDeductionsSlice(set as Parameters<typeof createDeductionsSlice>[0], get),
       ...createRelationsSlice(set as Parameters<typeof createRelationsSlice>[0], get),
+      ...createLinkKeywordsSlice(set as Parameters<typeof createLinkKeywordsSlice>[0], get),
       ...createSettingsSlice(set as Parameters<typeof createSettingsSlice>[0]),
       ...createUiSlice(set as Parameters<typeof createUiSlice>[0]),
     })),
@@ -120,8 +124,16 @@ useStore.subscribe(
     }
 
     // 通常のセッション切替: IDB からデータを読み込む
-    const { loadCharacters, loadEntries, loadTimelineGroups, loadMemoGroups, loadDeductions, loadRelations, clearAllCharacterFilters } =
-      useStore.getState();
+    const {
+      loadCharacters,
+      loadEntries,
+      loadTimelineGroups,
+      loadMemoGroups,
+      loadDeductions,
+      loadRelations,
+      loadLinkKeywords,
+      clearAllCharacterFilters,
+    } = useStore.getState();
     clearAllCharacterFilters();
     // ロード中は履歴記録を停止（ロード操作自体を undo できないように）
     pause();
@@ -132,6 +144,7 @@ useStore.subscribe(
       loadMemoGroups(sessionId),
       loadDeductions(sessionId),
       loadRelations(sessionId),
+      loadLinkKeywords(sessionId),
     ]);
     loadEntries(entries.sort((a, b) => a.sortOrder - b.sortOrder));
     clear();

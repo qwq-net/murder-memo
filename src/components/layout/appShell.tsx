@@ -10,8 +10,9 @@ import { RelationDiagramModal } from '@/components/relations/relationDiagramModa
 import { ToastContainer } from '@/components/common/toast';
 import { WelcomeModal } from '@/components/common/welcomeModal';
 import { useSelection } from '@/components/entries/selectionContext';
-import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, Settings, User } from '@/components/icons';
+import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Link2, Search, Settings, User } from '@/components/icons';
 import { HeaderButton } from '@/components/layout/headerButton';
+import { LinkListModal } from '@/components/links/linkListModal';
 import { FreeMemoPanel } from '@/components/panels/freeMemoPanel';
 import { SearchOverlay } from '@/components/search/searchOverlay';
 import { SettingsPanel } from '@/components/settings/settingsPanel';
@@ -102,6 +103,7 @@ export function AppShell() {
   const setSearchOpen = useStore((s) => s.setSearchOpen);
   const setDeductionOpen = useStore((s) => s.setDeductionOpen);
   const setRelationDiagramOpen = useStore((s) => s.setRelationDiagramOpen);
+  const setLinkListOpen = useStore((s) => s.setLinkListOpen);
   const { hasSelection, clearSelection } = useSelection();
 
   const isDemo = sessions.find((s) => s.id === activeSessionId)?.isDemo ?? false;
@@ -176,6 +178,12 @@ export function AppShell() {
           <HeaderButton onClick={() => setSearchOpen(true)}>
             <Search size={13} />
             {!isMobile && '検索'}
+          </HeaderButton>
+
+          {/* リンク一覧 — 検索の隣に配置（関連機能としてグルーピング） */}
+          <HeaderButton onClick={() => setLinkListOpen(true)}>
+            <Link2 size={13} />
+            {!isMobile && 'リンク一覧'}
           </HeaderButton>
 
           <HeaderButton onClick={() => setDeductionOpen(true)}>
@@ -377,6 +385,7 @@ export function AppShell() {
       <CharacterSetupPanel />
       <DeductionModal />
       <RelationDiagramModal />
+      <LinkListModal />
       <SettingsPanel />
       <SearchOverlay />
     </div>

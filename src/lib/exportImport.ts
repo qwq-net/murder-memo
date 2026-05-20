@@ -4,12 +4,14 @@ import {
   bulkPutCharacters,
   bulkPutDeductions,
   bulkPutEntries,
+  bulkPutLinkKeywords,
   bulkPutRelations,
   bulkPutMemoGroups,
   bulkPutTimelineGroups,
   getCharactersBySession,
   getDeductionsBySession,
   getEntriesBySession,
+  getLinkKeywordsBySession,
   getRelationsBySession,
   getImage,
   getMemoGroupsBySession,
@@ -17,7 +19,7 @@ import {
   putImage,
   putSession,
 } from '@/lib/idb';
-import type { ExportedImage, GameSession, MurderMemoExport } from '@/types/memo';
+import type { ExportedImage, GameSession, LinkKeyword, MurderMemoExport } from '@/types/memo';
 import { EXPORT_VERSION } from '@/types/memo';
 
 // ─── マイグレーション ────────────────────────────────────────────────────────
@@ -32,17 +34,18 @@ import { EXPORT_VERSION } from '@/types/memo';
 type MigrationFn = (data: any) => any;
 
 const migrations: Record<number, MigrationFn> = {
-  // 現在 v1 が最新なのでマイグレーション関数はまだ不要。
-  // v2 が必要になったら以下のように追加:
-  // 1: (data) => ({ ...data, newField: [], version: 2 }),
+  // v1 → v2: リンクキーワード辞書フィールドを追加
+  1: (data) => ({ ...data, linkKeywords: [], version: 2 }),
 };
 
 /**
  * エクスポートデータを現行バージョンにマイグレーションする。
  * version が EXPORT_VERSION と一致していればそのまま返す。
+ *
+ * （テスト容易性のため公開しているが、通常は `importSession` 経由で内部利用される）
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function migrateToLatest(data: any): MurderMemoExport {
+export function migrateToLatest(data: any): MurderMemoExport {
   let current = data;
   while (current.version < EXPORT_VERSION) {
     const fn = migrations[current.version as number];
@@ -120,14 +123,16 @@ export const EXPORT_WARN_BYTES = 50 * 1024 * 1024;
 
 /** セッションの全データをエクスポート用オブジェクトに変換 */
 export async function exportSession(session: GameSession): Promise<MurderMemoExport> {
-  const [entries, characters, timelineGroups, memoGroups, deductions, relations] = await Promise.all([
-    getEntriesBySession(session.id),
-    getCharactersBySession(session.id),
-    getTimelineGroupsBySession(session.id),
-    getMemoGroupsBySession(session.id),
-    getDeductionsBySession(session.id),
-    getRelationsBySession(session.id),
-  ]);
+  const [entries, characters, timelineGroups, memoGroups, deductions, relations, linkKeywords] =
+    await Promise.all([
+      getEntriesBySession(session.id),
+      getCharactersBySession(session.id),
+      getTimelineGroupsBySession(session.id),
+      getMemoGroupsBySession(session.id),
+      getDeductionsBySession(session.id),
+      getRelationsBySession(session.id),
+      getLinkKeywordsBySession(session.id),
+    ]);
 
   // 画像の収集
   const images: ExportedImage[] = [];
@@ -157,6 +162,7 @@ export async function exportSession(session: GameSession): Promise<MurderMemoExp
     images,
     deductions,
     relations,
+    linkKeywords,
   };
 }
 
@@ -270,6 +276,14 @@ export async function importSession(file: File): Promise<GameSession> {
     toCharacterId: remap(r.toCharacterId),
   }));
 
+  // リンクキーワード辞書（optional — v2 で追加）
+  // id は外部から参照されないため、ID リマップではなく新規 nanoid 発行で十分
+  const newLinkKeywords: LinkKeyword[] = (data.linkKeywords ?? []).map((kw) => ({
+    id: nanoid(),
+    keyword: kw.keyword,
+    createdAt: kw.createdAt,
+  }));
+
   // IDB に書き込み
   await putSession(newSession);
   await bulkPutCharacters(newCharacters, newSession.id);
@@ -278,6 +292,7 @@ export async function importSession(file: File): Promise<GameSession> {
   await bulkPutEntries(newEntries, newSession.id);
   if (newDeductions.length > 0) await bulkPutDeductions(newDeductions);
   if (newRelations.length > 0) await bulkPutRelations(newRelations);
+  if (newLinkKeywords.length > 0) await bulkPutLinkKeywords(newLinkKeywords, newSession.id);
 
   // 画像の復元
   for (const img of data.images) {

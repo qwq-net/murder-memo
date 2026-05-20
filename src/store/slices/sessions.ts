@@ -5,6 +5,7 @@ import {
   bulkPutCharacters,
   bulkPutDeductions,
   bulkPutEntries,
+  bulkPutLinkKeywords,
   bulkPutMemoGroups,
   bulkPutRelations,
   bulkPutTimelineGroups,
@@ -14,6 +15,7 @@ import {
   getCharactersBySession,
   getDeductionsBySession,
   getEntriesBySession,
+  getLinkKeywordsBySession,
   getMemoGroupsBySession,
   getRelationsBySession,
   getTimelineGroupsBySession,
@@ -75,6 +77,7 @@ export const createSessionsSlice = (
             bulkPutEntries(demoData.entries, demoData.session.id),
             bulkPutDeductions(demoData.deductions),
             bulkPutRelations(demoData.relations),
+            bulkPutLinkKeywords(demoData.linkKeywords, demoData.session.id),
           ]);
           sessions.push(demoData.session);
         }
@@ -88,7 +91,13 @@ export const createSessionsSlice = (
 
         // 初期セッションのデータをロードし、ストアに一括投入する。
         // subscriber の二重 IO を防ぐため、ここでデータを直接セットする。
-        let entries, characters, timelineGroups, memoGroups, deductions, relations;
+        let entries,
+          characters,
+          timelineGroups,
+          memoGroups,
+          deductions,
+          relations,
+          linkKeywords;
 
         if (demoData && demoData.session.id === initialId) {
           // デモデータ作成直後: メモリ上のデータをそのまま使う（IDB 再読込不要）
@@ -98,9 +107,10 @@ export const createSessionsSlice = (
           memoGroups = demoData.memoGroups;
           deductions = demoData.deductions;
           relations = demoData.relations;
+          linkKeywords = demoData.linkKeywords;
         } else {
           // 既存セッション: IDB から並列読み込み
-          [entries, characters, timelineGroups, memoGroups, deductions, relations] =
+          [entries, characters, timelineGroups, memoGroups, deductions, relations, linkKeywords] =
             await Promise.all([
               getEntriesBySession(initialId).then((e) =>
                 e.sort((a, b) => a.sortOrder - b.sortOrder),
@@ -110,6 +120,7 @@ export const createSessionsSlice = (
               getMemoGroupsBySession(initialId),
               getDeductionsBySession(initialId),
               getRelationsBySession(initialId),
+              getLinkKeywordsBySession(initialId),
             ]);
           relations = relations.sort((a, b) => a.sortOrder - b.sortOrder);
         }
@@ -123,6 +134,7 @@ export const createSessionsSlice = (
           memoGroups,
           deductions,
           relations,
+          linkKeywords,
           isSessionReady: true,
         }));
       })();
@@ -202,6 +214,7 @@ export const createSessionsSlice = (
         memoGroups: [],
         deductions: [],
         relations: [],
+        linkKeywords: [],
       }));
     },
   };

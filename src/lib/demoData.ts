@@ -1,8 +1,18 @@
 import { nanoid } from 'nanoid';
 
 import { putImage } from '@/lib/idb';
+import { extractBracketedWords } from '@/lib/linkKeywords';
 import { APP_VERSION } from '@/lib/version';
-import type { Character, CharacterDeduction, CharacterRelation, GameSession, MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
+import type {
+  Character,
+  CharacterDeduction,
+  CharacterRelation,
+  GameSession,
+  LinkKeyword,
+  MemoEntry,
+  MemoGroup,
+  TimelineGroup,
+} from '@/types/memo';
 
 /** OffscreenCanvas でプレースホルダ画像を生成し IndexedDB に保存 */
 async function createPlaceholderImage(
@@ -59,6 +69,7 @@ export async function buildDemoSession(): Promise<{
   entries: MemoEntry[];
   deductions: CharacterDeduction[];
   relations: CharacterRelation[];
+  linkKeywords: LinkKeyword[];
 }> {
   const sessionId = nanoid();
   const now = Date.now();
@@ -543,5 +554,28 @@ export async function buildDemoSession(): Promise<{
   imageEntries[1].imageBlobKey = evidenceKey;
   imageEntries[2].imageBlobKey = memoFragmentKey;
 
-  return { session, characters, timelineGroups, memoGroups, entries, deductions, relations };
+  // デモエントリ中の `[キーワード]` を辞書に事前投入
+  // （デモを開いた直後に「リンク一覧」モーダルが空にならないようにするため）
+  const linkKeywordSet = new Set<string>();
+  for (const entry of entries) {
+    for (const word of extractBracketedWords(entry.content)) {
+      linkKeywordSet.add(word);
+    }
+  }
+  const linkKeywords: LinkKeyword[] = [...linkKeywordSet].map((keyword) => ({
+    id: nanoid(),
+    keyword,
+    createdAt: now,
+  }));
+
+  return {
+    session,
+    characters,
+    timelineGroups,
+    memoGroups,
+    entries,
+    deductions,
+    relations,
+    linkKeywords,
+  };
 }

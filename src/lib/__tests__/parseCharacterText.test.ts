@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Character } from '@/types/memo';
+import type { Character, LinkKeyword } from '@/types/memo';
 import { detectInlineCharacterIds, parseCharacterText } from '@/lib/parseCharacterText';
 
 const makeChar = (id: string, name: string): Character => ({
@@ -10,6 +10,12 @@ const makeChar = (id: string, name: string): Character => ({
   sortOrder: 0,
   role: 'pl',
   showInEntries: true,
+});
+
+const makeKw = (id: string, keyword: string): LinkKeyword => ({
+  id,
+  keyword,
+  createdAt: 0,
 });
 
 const 登山家 = makeChar('c1', '登山家');
@@ -124,6 +130,84 @@ describe('parseCharacterText', () => {
     const result = parseCharacterText('これ[]はリンクでない', []);
     expect(result).toEqual([{ type: 'text', content: 'これ[]はリンクでない' }]);
   });
+
+  // ─── リンクキーワード辞書 ───────────────────────────────────────────────
+  describe('リンクキーワード辞書', () => {
+    it('辞書ワードがテキスト中に出現すれば search-link 化される', () => {
+      const result = parseCharacterText('凶器はキッチンで見つかった', [], [makeKw('k1', '凶器')]);
+      expect(result).toEqual([
+        { type: 'search-link', keyword: '凶器' },
+        { type: 'text', content: 'はキッチンで見つかった' },
+      ]);
+    });
+
+    it('辞書が空 / undefined の場合は既存挙動と一致する', () => {
+      const a = parseCharacterText('凶器はキッチンで見つかった', []);
+      const b = parseCharacterText('凶器はキッチンで見つかった', [], []);
+      expect(a).toEqual(b);
+      expect(a).toEqual([{ type: 'text', content: '凶器はキッチンで見つかった' }]);
+    });
+
+    it('辞書ワード同士で最長が優先される', () => {
+      // 「凶器」と「凶器の場所」両方登録 → 後者を優先
+      const result = parseCharacterText(
+        '凶器の場所を確認した',
+        [],
+        [makeKw('k1', '凶器'), makeKw('k2', '凶器の場所')],
+      );
+      expect(result).toEqual([
+        { type: 'search-link', keyword: '凶器の場所' },
+        { type: 'text', content: 'を確認した' },
+      ]);
+    });
+
+    it('キャラ名より長い辞書ワードはリンクとして優先される', () => {
+      // キャラ「医者」と辞書「医者の証言」→ 長い辞書ワードが勝つ
+      const result = parseCharacterText(
+        '医者の証言は怪しい',
+        [医者],
+        [makeKw('k1', '医者の証言')],
+      );
+      expect(result).toEqual([
+        { type: 'search-link', keyword: '医者の証言' },
+        { type: 'text', content: 'は怪しい' },
+      ]);
+    });
+
+    it('辞書ワードより長いキャラ名はキャラとして優先される', () => {
+      // キャラ「山田太郎」と辞書「山田」→ 長いキャラ名が勝つ
+      const result = parseCharacterText('山田太郎が来た', [山田太郎], [makeKw('k1', '山田')]);
+      expect(result).toEqual([
+        { type: 'character', character: 山田太郎 },
+        { type: 'text', content: 'が来た' },
+      ]);
+    });
+
+    it('[キーワード] 形式は辞書登録より優先される（ブラケット内は再パースしない）', () => {
+      // 辞書に「凶器」あり、本文に [凶器] → 既存通り search-link 1個だけ
+      const result = parseCharacterText('[凶器]を発見', [], [makeKw('k1', '凶器')]);
+      expect(result).toEqual([
+        { type: 'search-link', keyword: '凶器' },
+        { type: 'text', content: 'を発見' },
+      ]);
+    });
+
+    it('キャラ・辞書・[] が同じ文に混在しても期待通り分解される', () => {
+      const result = parseCharacterText(
+        '医者が[現場]で凶器を見た',
+        [医者],
+        [makeKw('k1', '凶器')],
+      );
+      expect(result).toEqual([
+        { type: 'character', character: 医者 },
+        { type: 'text', content: 'が' },
+        { type: 'search-link', keyword: '現場' },
+        { type: 'text', content: 'で' },
+        { type: 'search-link', keyword: '凶器' },
+        { type: 'text', content: 'を見た' },
+      ]);
+    });
+  });
 });
 
 describe('detectInlineCharacterIds', () => {
@@ -137,5 +221,29 @@ describe('detectInlineCharacterIds', () => {
 
   it('マッチなしの場合は空配列を返す', () => {
     expect(detectInlineCharacterIds('関係ない', [登山家])).toEqual([]);
+  });
+
+  it('長い辞書ワードに食われたキャラ ID は検出されない（本文表示と整合）', () => {
+    // 本文「医者の証言は怪しい」は parseCharacterText 側で
+    // search-link「医者の証言」+ text「は怪しい」になる。
+    // detectInlineCharacterIds も linkKeywords を考慮して同じ判断をし、
+    // 「医者」をキャラ ID として返してはいけない（CharacterBadgeBar の重複排除が誤判定するため）。
+    const ids = detectInlineCharacterIds(
+      '医者の証言は怪しい',
+      [医者],
+      [{ id: 'k1', keyword: '医者の証言', createdAt: 0 }],
+    );
+    expect(ids).toEqual([]);
+  });
+
+  it('辞書ワードと無関係な位置に出るキャラ ID は通常通り検出される', () => {
+    // 「医者が[現場]に来た」では、辞書「医者の証言」が登録されていても
+    // 「医者」は別位置のキャラとして検出される
+    const ids = detectInlineCharacterIds(
+      '医者が現場に来た',
+      [医者],
+      [{ id: 'k1', keyword: '医者の証言', createdAt: 0 }],
+    );
+    expect(ids).toEqual(['c3']);
   });
 });

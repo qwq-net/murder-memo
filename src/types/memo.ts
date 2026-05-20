@@ -85,6 +85,19 @@ export interface CharacterRelation {
   sortOrder: number;
 }
 
+// ─── Link Keyword（自動リンク化辞書） ───────────────────────────────────────
+
+/**
+ * セッション内で蓄積されるリンクキーワード辞書のエントリ。
+ * `[テキスト]` 形式で確定したワードを自動登録し、以降のメモで `[]` なしでも
+ * 自動的にリンク化（既存 search-link セグメントと同等）するための辞書。
+ */
+export interface LinkKeyword {
+  id: string;
+  keyword: string;
+  createdAt: number;
+}
+
 // ─── Deduction（推理メモ / 犯人投票） ────────────────────────────────────────
 
 export interface CharacterDeduction {
@@ -117,7 +130,7 @@ export interface PanelLayoutConfig {
 
 // ─── Export / Import ─────────────────────────────────────────────────────────
 
-export const EXPORT_VERSION = 1 as const;
+export const EXPORT_VERSION = 2 as const;
 export type ExportVersion = typeof EXPORT_VERSION;
 
 export interface ExportedImage {
@@ -137,4 +150,5 @@ export interface MurderMemoExport {
   images: ExportedImage[];
   deductions?: CharacterDeduction[];
   relations?: CharacterRelation[];
+  linkKeywords?: LinkKeyword[];
 }

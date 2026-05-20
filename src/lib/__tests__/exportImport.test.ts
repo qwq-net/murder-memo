@@ -1,6 +1,6 @@
 import type { Character, MemoEntry, MemoGroup, MurderMemoExport, TimelineGroup } from '@/types/memo';
 import { EXPORT_VERSION } from '@/types/memo';
-import { formatBytes, validateExport } from '../exportImport';
+import { formatBytes, migrateToLatest, validateExport } from '../exportImport';
 
 // ─── テストデータ生成ヘルパー ─────────────────────────────────────────────────
 
@@ -148,6 +148,76 @@ describe('validateExport', () => {
     expect(validateExport(makeValidExport({
       images: [{ blobKey: 'k1', mimeType: 'image/png', base64: 'abc123' }],
     }))).toBe(true);
+  });
+});
+
+// ─── マイグレーション (v1 → v2 linkKeywords 追加) ────────────────────────────
+
+describe('migrateToLatest (v1 → v2: linkKeywords)', () => {
+  /** v1 形式のエクスポートデータ（linkKeywords フィールドなし） */
+  const v1Export = {
+    version: 1 as const,
+    exportedAt: 1700000000000,
+    session: { id: 's1', name: '旧データ', createdAt: 0, updatedAt: 0 },
+    entries: [makeEntry({ id: 'e1', content: '[凶器]はキッチン' })],
+    characters: [makeChar({ id: 'c1', name: '医者' })],
+    timelineGroups: [makeTlGroup({ id: 'tg1' })],
+    memoGroups: [makeMemoGroup({ id: 'mg1' })],
+    images: [],
+    // deductions / relations / linkKeywords は欠落
+  };
+
+  it('v1 データ（linkKeywords 欠落）が v2 に移行され、空配列が補完される', () => {
+    const migrated = migrateToLatest(v1Export);
+    expect(migrated.version).toBe(EXPORT_VERSION);
+    expect(migrated.linkKeywords).toEqual([]);
+  });
+
+  it('v1 移行後も既存フィールドは保持される', () => {
+    const migrated = migrateToLatest(v1Export);
+    expect(migrated.session.id).toBe('s1');
+    expect(migrated.entries).toHaveLength(1);
+    expect(migrated.entries[0].content).toBe('[凶器]はキッチン');
+  });
+
+  it('既に v2 のデータはそのまま返る（migration 不要）', () => {
+    const v2 = makeValidExport({
+      linkKeywords: [{ id: 'k1', keyword: '凶器', createdAt: 123 }],
+    });
+    const migrated = migrateToLatest(v2);
+    expect(migrated.version).toBe(EXPORT_VERSION);
+    expect(migrated.linkKeywords).toEqual([{ id: 'k1', keyword: '凶器', createdAt: 123 }]);
+  });
+});
+
+describe('validateExport (linkKeywords は optional)', () => {
+  it('v2 export に linkKeywords があれば valid', () => {
+    expect(
+      validateExport(
+        makeValidExport({ linkKeywords: [{ id: 'k1', keyword: 'X', createdAt: 0 }] }),
+      ),
+    ).toBe(true);
+  });
+
+  it('v2 export で linkKeywords が省略されていても valid（optional フィールド）', () => {
+    const data = makeValidExport();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (data as any).linkKeywords;
+    expect(validateExport(data)).toBe(true);
+  });
+
+  it('v1 形式の旧データも valid として受け入れる（後方互換）', () => {
+    const v1Data = {
+      version: 1,
+      exportedAt: 1700000000000,
+      session: { id: 's1', name: '旧データ', createdAt: 0, updatedAt: 0 },
+      entries: [],
+      characters: [],
+      timelineGroups: [],
+      memoGroups: [],
+      images: [],
+    };
+    expect(validateExport(v1Data)).toBe(true);
   });
 });
 
