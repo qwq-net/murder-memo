@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 
+import { MemoPanel } from '@/components/panels/memoPanel';
 import { useClipboardPaste } from '@/hooks/useClipboardPaste';
 import { useStore } from '@/store';
-import { MemoPanel } from '@/components/panels/memoPanel';
 
 export function FreeMemoPanel() {
   const addEntry = useStore((s) => s.addEntry);

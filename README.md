@@ -5,16 +5,16 @@
 
 ## 技術スタック
 
-| カテゴリ | 技術 |
-|---------|------|
-| フレームワーク | React 19 + TypeScript 5.9 |
-| ビルド | Vite 7 |
-| スタイリング | Tailwind CSS 4 + CSS カスタムプロパティ |
-| 状態管理 | Zustand 5（スライスパターン） |
-| データ永続化 | IndexedDB（idb ライブラリ） |
-| ドラッグ&ドロップ | @dnd-kit |
-| アニメーション | Motion |
-| デプロイ | Cloudflare Pages + Workers |
+| カテゴリ          | 技術                                    |
+| ----------------- | --------------------------------------- |
+| フレームワーク    | React 19 + TypeScript 5.9               |
+| ビルド            | Vite 7                                  |
+| スタイリング      | Tailwind CSS 4 + CSS カスタムプロパティ |
+| 状態管理          | Zustand 5（スライスパターン）           |
+| データ永続化      | IndexedDB（idb ライブラリ）             |
+| ドラッグ&ドロップ | @dnd-kit                                |
+| アニメーション    | Motion                                  |
+| デプロイ          | Cloudflare Pages + Workers              |
 
 ## セットアップ
 

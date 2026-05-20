@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
-import { useStore } from '@/store';
 import type { MenuContext } from '@/components/entries/actions/menuItems';
+import { useStore } from '@/store';
 
 /**
  * コンテキストメニュー用の共通ストアセレクタをまとめて取得するフック。
@@ -21,17 +21,42 @@ export function useMenuContext(onDone?: () => void): MenuContext {
 
   // showInEntries が true のキャラのみ。プレイヤー → NPC、sortOrder 順
   const characters = useMemo(
-    () => allCharacters
-      .filter((c) => c.showInEntries)
-      .sort((a, b) => {
-        if (a.role !== b.role) return a.role === 'pl' ? -1 : 1;
-        return a.sortOrder - b.sortOrder;
-      }),
+    () =>
+      allCharacters
+        .filter((c) => c.showInEntries)
+        .sort((a, b) => {
+          if (a.role !== b.role) return a.role === 'pl' ? -1 : 1;
+          return a.sortOrder - b.sortOrder;
+        }),
     [allCharacters],
   );
 
   return useMemo(
-    () => ({ moveEntryToPanel, updateEntry, deleteEntry, addEntry, toggleCharacterTag, characters, timelineGroups, memoGroups, settings, addToast, onDone }),
-    [moveEntryToPanel, updateEntry, deleteEntry, addEntry, toggleCharacterTag, characters, timelineGroups, memoGroups, settings, addToast, onDone],
+    () => ({
+      moveEntryToPanel,
+      updateEntry,
+      deleteEntry,
+      addEntry,
+      toggleCharacterTag,
+      characters,
+      timelineGroups,
+      memoGroups,
+      settings,
+      addToast,
+      onDone,
+    }),
+    [
+      moveEntryToPanel,
+      updateEntry,
+      deleteEntry,
+      addEntry,
+      toggleCharacterTag,
+      characters,
+      timelineGroups,
+      memoGroups,
+      settings,
+      addToast,
+      onDone,
+    ],
   );
 }

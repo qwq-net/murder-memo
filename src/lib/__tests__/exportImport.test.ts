@@ -1,4 +1,10 @@
-import type { Character, MemoEntry, MemoGroup, MurderMemoExport, TimelineGroup } from '@/types/memo';
+import type {
+  Character,
+  MemoEntry,
+  MemoGroup,
+  MurderMemoExport,
+  TimelineGroup,
+} from '@/types/memo';
 import { EXPORT_VERSION } from '@/types/memo';
 import { formatBytes, migrateToLatest, validateExport } from '../exportImport';
 
@@ -135,19 +141,27 @@ describe('validateExport', () => {
   });
 
   it('空配列でも valid', () => {
-    expect(validateExport(makeValidExport({
-      entries: [],
-      characters: [],
-      timelineGroups: [],
-      memoGroups: [],
-      images: [],
-    }))).toBe(true);
+    expect(
+      validateExport(
+        makeValidExport({
+          entries: [],
+          characters: [],
+          timelineGroups: [],
+          memoGroups: [],
+          images: [],
+        }),
+      ),
+    ).toBe(true);
   });
 
   it('画像データ付きでも valid', () => {
-    expect(validateExport(makeValidExport({
-      images: [{ blobKey: 'k1', mimeType: 'image/png', base64: 'abc123' }],
-    }))).toBe(true);
+    expect(
+      validateExport(
+        makeValidExport({
+          images: [{ blobKey: 'k1', mimeType: 'image/png', base64: 'abc123' }],
+        }),
+      ),
+    ).toBe(true);
   });
 });
 
@@ -193,9 +207,7 @@ describe('migrateToLatest (v1 → v2: linkKeywords)', () => {
 describe('validateExport (linkKeywords は optional)', () => {
   it('v2 export に linkKeywords があれば valid', () => {
     expect(
-      validateExport(
-        makeValidExport({ linkKeywords: [{ id: 'k1', keyword: 'X', createdAt: 0 }] }),
-      ),
+      validateExport(makeValidExport({ linkKeywords: [{ id: 'k1', keyword: 'X', createdAt: 0 }] })),
     ).toBe(true);
   });
 

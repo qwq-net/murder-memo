@@ -1,29 +1,38 @@
+import { CharacterFilterBar } from '@/components/characters/characterFilterBar';
+import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel';
+import { ToastContainer } from '@/components/common/toast';
+import { WelcomeModal } from '@/components/common/welcomeModal';
+import { DeductionModal } from '@/components/deductions/deductionModal';
+import { useSelection } from '@/components/entries/selectionContext';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Link2,
+  Search,
+  Settings,
+  User,
+} from '@/components/icons';
+import { HeaderButton } from '@/components/layout/headerButton';
+import { MobileTabNav } from '@/components/layout/mobileTabNav';
+import { Panel } from '@/components/layout/panel';
+import { PanelContainer } from '@/components/layout/panelContainer';
+import { LinkListModal } from '@/components/links/linkListModal';
+import { FreeMemoPanel } from '@/components/panels/freeMemoPanel';
+import { PersonalMemoPanel } from '@/components/panels/personalMemoPanel';
+import { TimelinePanel } from '@/components/panels/timelinePanel';
+import { RelationDiagramModal } from '@/components/relations/relationDiagramModal';
+import { SearchOverlay } from '@/components/search/searchOverlay';
+import { SettingsPanel } from '@/components/settings/settingsPanel';
 import { useFilteredCharacters } from '@/hooks/useFilteredCharacters';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useSessionRenaming } from '@/hooks/useSessionRenaming';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
-import { CharacterFilterBar } from '@/components/characters/characterFilterBar';
-import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel';
-import { DeductionModal } from '@/components/deductions/deductionModal';
-import { RelationDiagramModal } from '@/components/relations/relationDiagramModal';
-import { ToastContainer } from '@/components/common/toast';
-import { WelcomeModal } from '@/components/common/welcomeModal';
-import { useSelection } from '@/components/entries/selectionContext';
-import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Link2, Search, Settings, User } from '@/components/icons';
-import { HeaderButton } from '@/components/layout/headerButton';
-import { LinkListModal } from '@/components/links/linkListModal';
-import { FreeMemoPanel } from '@/components/panels/freeMemoPanel';
-import { SearchOverlay } from '@/components/search/searchOverlay';
-import { SettingsPanel } from '@/components/settings/settingsPanel';
-import { PersonalMemoPanel } from '@/components/panels/personalMemoPanel';
-import { TimelinePanel } from '@/components/panels/timelinePanel';
-import { MobileTabNav } from '@/components/layout/mobileTabNav';
-import { Panel } from '@/components/layout/panel';
-import { PanelContainer } from '@/components/layout/panelContainer';
 
 const PANEL_TITLES: Record<PanelId, string> = {
-  free:     'フリーメモ',
+  free: 'フリーメモ',
   personal: '自分用メモ',
   timeline: 'タイムライン',
 };
@@ -37,16 +46,17 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
   const uncategorizedCollapsed = useStore((s) => s.uncategorizedCollapsed[panelId] ?? false);
   const setUncategorizedCollapsed = useStore((s) => s.setUncategorizedCollapsed);
 
-  const groups = panelId === 'timeline'
-    ? timelineGroups
-    : memoGroups.filter((g) => g.panel === panelId);
+  const groups =
+    panelId === 'timeline' ? timelineGroups : memoGroups.filter((g) => g.panel === panelId);
 
   if (groups.length === 0) return null;
 
   // 未分類も含めた全体の折りたたみ状態を判定
   const hasUncategorized = panelId !== 'timeline';
-  const allCollapsed = groups.every((g) => g.collapsed) && (!hasUncategorized || uncategorizedCollapsed);
-  const allExpanded = groups.every((g) => !g.collapsed) && (!hasUncategorized || !uncategorizedCollapsed);
+  const allCollapsed =
+    groups.every((g) => g.collapsed) && (!hasUncategorized || uncategorizedCollapsed);
+  const allExpanded =
+    groups.every((g) => !g.collapsed) && (!hasUncategorized || !uncategorizedCollapsed);
 
   const setAll = (collapsed: boolean) => {
     for (const g of groups) {
@@ -71,7 +81,7 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
         onClick={() => setAll(false)}
         title="すべて開く"
         aria-label="すべてのグループを開く"
-        className="flex items-center bg-transparent border-none text-text-muted p-0.5 cursor-pointer opacity-70 transition-opacity duration-150 hover:opacity-100 disabled:opacity-30 disabled:cursor-default disabled:hover:opacity-30"
+        className="text-text-muted flex cursor-pointer items-center border-none bg-transparent p-0.5 opacity-70 transition-opacity duration-150 hover:opacity-100 disabled:cursor-default disabled:opacity-30 disabled:hover:opacity-30"
       >
         <ChevronsUpDown size={14} />
       </button>
@@ -80,7 +90,7 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
         onClick={() => setAll(true)}
         title="すべて閉じる"
         aria-label="すべてのグループを閉じる"
-        className="flex items-center bg-transparent border-none text-text-muted p-0.5 cursor-pointer opacity-70 transition-opacity duration-150 hover:opacity-100 disabled:opacity-30 disabled:cursor-default disabled:hover:opacity-30"
+        className="text-text-muted flex cursor-pointer items-center border-none bg-transparent p-0.5 opacity-70 transition-opacity duration-150 hover:opacity-100 disabled:cursor-default disabled:opacity-30 disabled:hover:opacity-30"
       >
         <ChevronsDownUp size={14} />
       </button>
@@ -120,24 +130,24 @@ export function AppShell() {
       <div
         role="status"
         aria-live="polite"
-        className="flex flex-col items-center justify-center h-full bg-bg-base gap-3"
+        className="bg-bg-base flex h-full flex-col items-center justify-center gap-3"
       >
         <img src="/logo.svg" alt="マダめもくん" width="32" height="32" className="opacity-60" />
         <div
-          className="size-5 border-2 rounded-full animate-spin"
+          className="size-5 animate-spin rounded-full border-2"
           style={{
             borderColor: 'var(--border-default)',
             borderTopColor: 'var(--accent)',
           }}
           aria-hidden="true"
         />
-        <span className="text-xs text-text-muted">データを準備しています…</span>
+        <span className="text-text-muted text-xs">データを準備しています…</span>
       </div>
     );
   }
 
   const PANEL_CONTENT: Record<PanelId, React.ReactNode> = {
-    free:     <FreeMemoPanel />,
+    free: <FreeMemoPanel />,
     personal: <PersonalMemoPanel />,
     timeline: <TimelinePanel />,
   };
@@ -162,11 +172,13 @@ export function AppShell() {
 
   return (
     <div
-      onClick={() => { if (hasSelection) clearSelection(); }}
-      className="flex flex-col h-full bg-bg-base"
+      onClick={() => {
+        if (hasSelection) clearSelection();
+      }}
+      className="bg-bg-base flex h-full flex-col"
     >
       {/* ── Global Header ── */}
-      <header className="flex flex-col bg-bg-surface border-b border-border-subtle z-20 shrink-0">
+      <header className="bg-bg-surface border-border-subtle z-20 flex shrink-0 flex-col border-b">
         {/* ── Row 1: Logo + 登場人物設定 ── */}
         <div
           className="flex items-center justify-between px-[14px]"
@@ -175,61 +187,90 @@ export function AppShell() {
           {/* Logo / title */}
           <div className="flex items-center gap-2">
             <img src="/logo.svg" alt="マダめもくん" width="20" height="20" />
-            <span className="text-sm text-text-primary tracking-[0.08em] font-semibold">
+            <span className="text-text-primary text-sm font-semibold tracking-[0.08em]">
               マダめもくん
             </span>
           </div>
 
           {/* 右側ボタン群 */}
           <div className="flex items-center gap-2">
-          {/* 検索ボタン */}
-          <HeaderButton onClick={() => setSearchOpen(true)}>
-            <Search size={13} />
-            {!isMobile && '検索'}
-          </HeaderButton>
+            {/* 検索ボタン */}
+            <HeaderButton onClick={() => setSearchOpen(true)}>
+              <Search size={13} />
+              {!isMobile && '検索'}
+            </HeaderButton>
 
-          {/* リンク一覧 — 検索の隣に配置（関連機能としてグルーピング） */}
-          <HeaderButton onClick={() => setLinkListOpen(true)}>
-            <Link2 size={13} />
-            {!isMobile && 'リンク一覧'}
-          </HeaderButton>
+            {/* リンク一覧 — 検索の隣に配置（関連機能としてグルーピング） */}
+            <HeaderButton onClick={() => setLinkListOpen(true)}>
+              <Link2 size={13} />
+              {!isMobile && 'リンク一覧'}
+            </HeaderButton>
 
-          <HeaderButton onClick={() => setDeductionOpen(true)}>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-              <path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.5 4.3 12.3l.7-4.1-3-2.9 4.2-.7L8 1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-            </svg>
-            {!isMobile && '人物推理メモ'}
-          </HeaderButton>
+            <HeaderButton onClick={() => setDeductionOpen(true)}>
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.5 4.3 12.3l.7-4.1-3-2.9 4.2-.7L8 1z"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {!isMobile && '人物推理メモ'}
+            </HeaderButton>
 
-          <HeaderButton onClick={() => setRelationDiagramOpen(true)}>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-              <circle cx="4" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.2" />
-              <circle cx="12" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.2" />
-              <circle cx="8" cy="13" r="2.5" stroke="currentColor" strokeWidth="1.2" />
-              <line x1="6" y1="5" x2="10" y2="5" stroke="currentColor" strokeWidth="1" opacity="0.5" />
-              <line x1="5" y1="6" x2="7" y2="11" stroke="currentColor" strokeWidth="1" opacity="0.5" />
-              <line x1="11" y1="6" x2="9" y2="11" stroke="currentColor" strokeWidth="1" opacity="0.5" />
-            </svg>
-            {!isMobile && '相関図'}
-          </HeaderButton>
+            <HeaderButton onClick={() => setRelationDiagramOpen(true)}>
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <circle cx="4" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.2" />
+                <circle cx="12" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.2" />
+                <circle cx="8" cy="13" r="2.5" stroke="currentColor" strokeWidth="1.2" />
+                <line
+                  x1="6"
+                  y1="5"
+                  x2="10"
+                  y2="5"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  opacity="0.5"
+                />
+                <line
+                  x1="5"
+                  y1="6"
+                  x2="7"
+                  y2="11"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  opacity="0.5"
+                />
+                <line
+                  x1="11"
+                  y1="6"
+                  x2="9"
+                  y2="11"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  opacity="0.5"
+                />
+              </svg>
+              {!isMobile && '相関図'}
+            </HeaderButton>
 
-          <HeaderButton onClick={() => setCharacterSetupOpen(true)}>
-            <User size={13} />
-            登場人物設定
-          </HeaderButton>
+            <HeaderButton onClick={() => setCharacterSetupOpen(true)}>
+              <User size={13} />
+              登場人物設定
+            </HeaderButton>
 
-          {/* アプリ設定ボタン */}
-          <HeaderButton onClick={() => setSettingsOpen(true)} variant="settings">
-            <Settings size={13} />
-            アプリ設定
-          </HeaderButton>
+            {/* アプリ設定ボタン */}
+            <HeaderButton onClick={() => setSettingsOpen(true)} variant="settings">
+              <Settings size={13} />
+              アプリ設定
+            </HeaderButton>
           </div>
         </div>
 
         {/* ── Row 2: Session (left) + Action order strip (right) ── */}
-        <div className="flex items-center justify-between px-[14px] pb-2 gap-3 min-h-[28px]">
+        <div className="flex min-h-[28px] items-center justify-between gap-3 px-[14px] pb-2">
           {/* Session switcher */}
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
             {sessionRename.isRenaming ? (
               <input
                 autoFocus
@@ -275,11 +316,17 @@ export function AppShell() {
                   transition: 'border-color 0.15s',
                   outline: 'none',
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-strong)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-default)';
+                }}
               >
                 {sessions.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
                 ))}
               </select>
             )}
@@ -291,7 +338,13 @@ export function AppShell() {
               style={{ width: 26, height: 26, justifyContent: 'center', padding: 0, flexShrink: 0 }}
             >
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                <path d="M11.5 1.5a2.121 2.121 0 0 1 3 3L5 14l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M11.5 1.5a2.121 2.121 0 0 1 3 3L5 14l-4 1 1-4 9.5-9.5z"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
             {/* New session */}
@@ -302,22 +355,33 @@ export function AppShell() {
                 const baseName = `セッション ${dateStr}`;
                 // 同じ日付のセッションが既にあれば -2, -3 … と連番を付与
                 const sameDate = sessions.filter(
-                  (s) => s.name === baseName || s.name.match(new RegExp(`^セッション ${dateStr}-(\\d+)$`)),
+                  (s) =>
+                    s.name === baseName ||
+                    s.name.match(new RegExp(`^セッション ${dateStr}-(\\d+)$`)),
                 );
-                const name = sameDate.length === 0 ? baseName : `${baseName}-${sameDate.length + 1}`;
+                const name =
+                  sameDate.length === 0 ? baseName : `${baseName}-${sameDate.length + 1}`;
                 useStore.temporal.getState().pause();
                 createSession(name);
                 addToast('セッションを作成しました');
               }}
               title="新しいセッション"
               className="btn-ghost"
-              style={{ width: 26, height: 26, justifyContent: 'center', padding: 0, flexShrink: 0, fontSize: 14, lineHeight: 1 }}
+              style={{
+                width: 26,
+                height: 26,
+                justifyContent: 'center',
+                padding: 0,
+                flexShrink: 0,
+                fontSize: 14,
+                lineHeight: 1,
+              }}
             >
               +
             </button>
             {isDemo && (
               <span
-                className="flex items-center gap-0.5 text-xs whitespace-nowrap animate-pulse"
+                className="flex animate-pulse items-center gap-0.5 text-xs whitespace-nowrap"
                 style={{ color: 'var(--accent)' }}
               >
                 <ChevronLeft size={14} />
@@ -328,15 +392,16 @@ export function AppShell() {
 
           {/* 行動順ステッパー — プレイヤー | NPC */}
           {(plChars.length > 0 || npcChars.length > 0) && (
-            <div className="flex items-center overflow-hidden gap-2">
+            <div className="flex items-center gap-2 overflow-hidden">
               {/* プレイヤー */}
               {plChars.map((char, i) => (
-                <div key={char.id} className="flex items-center shrink-0">
-                  {i > 0 && (
-                    <ChevronRight size={14} className="shrink-0 mx-0.5 text-text-faint" />
-                  )}
-                  <span className="flex items-center gap-1 text-sm text-text-secondary whitespace-nowrap">
-                    <span className="inline-block size-2.5 rounded-full shrink-0" style={{ background: char.color, boxShadow: `0 0 6px ${char.color}44` }} />
+                <div key={char.id} className="flex shrink-0 items-center">
+                  {i > 0 && <ChevronRight size={14} className="text-text-faint mx-0.5 shrink-0" />}
+                  <span className="text-text-secondary flex items-center gap-1 text-sm whitespace-nowrap">
+                    <span
+                      className="inline-block size-2.5 shrink-0 rounded-full"
+                      style={{ background: char.color, boxShadow: `0 0 6px ${char.color}44` }}
+                    />
                     {char.name}
                   </span>
                 </div>
@@ -344,17 +409,18 @@ export function AppShell() {
 
               {/* セパレータ */}
               {plChars.length > 0 && npcChars.length > 0 && (
-                <span className="text-text-faint text-sm mx-1 shrink-0">|</span>
+                <span className="text-text-faint mx-1 shrink-0 text-sm">|</span>
               )}
 
               {/* NPC */}
               {npcChars.map((char, i) => (
-                <div key={char.id} className="flex items-center shrink-0">
-                  {i > 0 && (
-                    <ChevronRight size={14} className="shrink-0 mx-0.5 text-text-faint" />
-                  )}
-                  <span className="flex items-center gap-1 text-sm text-text-muted whitespace-nowrap">
-                    <span className="inline-block size-2.5 rounded-full shrink-0 opacity-70" style={{ background: char.color, boxShadow: `0 0 6px ${char.color}44` }} />
+                <div key={char.id} className="flex shrink-0 items-center">
+                  {i > 0 && <ChevronRight size={14} className="text-text-faint mx-0.5 shrink-0" />}
+                  <span className="text-text-muted flex items-center gap-1 text-sm whitespace-nowrap">
+                    <span
+                      className="inline-block size-2.5 shrink-0 rounded-full opacity-70"
+                      style={{ background: char.color, boxShadow: `0 0 6px ${char.color}44` }}
+                    />
                     {char.name}
                   </span>
                 </div>
@@ -373,16 +439,14 @@ export function AppShell() {
           <MobileTabNav />
         </>
       ) : (
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-hidden">
           <PanelContainer panels={orderedPanels} />
         </div>
       )}
 
       {/* Footer */}
-      <footer className="flex items-center justify-center px-[14px] py-1.5 border-t border-border-subtle bg-bg-surface shrink-0">
-        <span className="text-sm text-text-faint tracking-[0.04em]">
-          &copy; 2026 マダめもくん
-        </span>
+      <footer className="border-border-subtle bg-bg-surface flex shrink-0 items-center justify-center border-t px-[14px] py-1.5">
+        <span className="text-text-faint text-sm tracking-[0.04em]">&copy; 2026 マダめもくん</span>
       </footer>
 
       {/* Toast */}
@@ -399,4 +463,3 @@ export function AppShell() {
     </div>
   );
 }
-

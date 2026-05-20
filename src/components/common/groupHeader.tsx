@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
+import { ConfirmModal } from '@/components/common/confirmModal';
+import { ArrowDown, ArrowUp, ChevronDown, SquarePen, X } from '@/components/icons';
 import type { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import type { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
-import { ArrowDown, ArrowUp, ChevronDown, SquarePen, X } from '@/components/icons';
-import { ConfirmModal } from '@/components/common/confirmModal';
 
 interface GroupHeaderProps {
   /** グループラベル */
@@ -52,7 +52,7 @@ export function GroupHeader({
         onMouseEnter={() => setHeaderHovered(true)}
         onMouseLeave={() => setHeaderHovered(false)}
         onClick={labelEditor.isEditing ? undefined : onToggle}
-        className="flex items-center gap-2 px-2.5 py-[7px] cursor-pointer select-none"
+        className="flex cursor-pointer items-center gap-2 px-2.5 py-[7px] select-none"
         style={{
           background: `color-mix(in srgb, ${accentColor} 5%, transparent)`,
           borderBottom: `1px solid color-mix(in srgb, ${accentColor} 12%, transparent)`,
@@ -60,7 +60,7 @@ export function GroupHeader({
       >
         {/* 折りたたみ矢印 */}
         <span
-          className="flex items-center shrink-0 transition-transform duration-150"
+          className="flex shrink-0 items-center transition-transform duration-150"
           style={{
             color: accentColor,
             transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
@@ -79,7 +79,7 @@ export function GroupHeader({
             onClick={(e) => e.stopPropagation()}
             onKeyDown={labelEditor.handleKeyDown}
             aria-label="グループ名を編集"
-            className="flex-1 bg-bg-base rounded-sm text-sm font-semibold px-1.5 py-px outline-none"
+            className="bg-bg-base flex-1 rounded-sm px-1.5 py-px text-sm font-semibold outline-none"
             style={{
               border: `1px solid ${accentColor}`,
               color: accentColor,
@@ -102,23 +102,37 @@ export function GroupHeader({
           >
             <button
               disabled={!onMoveUp}
-              onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveUp?.();
+              }}
               aria-label={`${label}を上に移動`}
-              className="bg-transparent border-none cursor-pointer p-0 flex items-center transition-colors duration-150"
+              className="flex cursor-pointer items-center border-none bg-transparent p-0 transition-colors duration-150"
               style={{ color: 'var(--text-faint)', opacity: onMoveUp ? 1 : 0.3 }}
-              onMouseEnter={(e) => { if (onMoveUp) e.currentTarget.style.color = accentColor; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
+              onMouseEnter={(e) => {
+                if (onMoveUp) e.currentTarget.style.color = accentColor;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-faint)';
+              }}
             >
               <ArrowUp size={14} />
             </button>
             <button
               disabled={!onMoveDown}
-              onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveDown?.();
+              }}
               aria-label={`${label}を下に移動`}
-              className="bg-transparent border-none cursor-pointer p-0 flex items-center transition-colors duration-150"
+              className="flex cursor-pointer items-center border-none bg-transparent p-0 transition-colors duration-150"
               style={{ color: 'var(--text-faint)', opacity: onMoveDown ? 1 : 0.3 }}
-              onMouseEnter={(e) => { if (onMoveDown) e.currentTarget.style.color = accentColor; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
+              onMouseEnter={(e) => {
+                if (onMoveDown) e.currentTarget.style.color = accentColor;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-faint)';
+              }}
             >
               <ArrowDown size={14} />
             </button>
@@ -134,12 +148,16 @@ export function GroupHeader({
             }}
             title="グループ名を変更"
             aria-label={`${label}の名前を変更`}
-            className="bg-transparent border-none text-text-faint cursor-pointer px-0.5 flex items-center transition-[color,opacity] duration-150"
+            className="text-text-faint flex cursor-pointer items-center border-none bg-transparent px-0.5 transition-[color,opacity] duration-150"
             style={{
               opacity: headerHovered ? 0.8 : 0,
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = accentColor; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = accentColor;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-faint)';
+            }}
           >
             <SquarePen size={14} />
           </button>
@@ -153,12 +171,16 @@ export function GroupHeader({
           }}
           title="グループを削除"
           aria-label={`${label}を削除`}
-          className="bg-transparent border-none text-text-faint cursor-pointer px-0.5 flex items-center transition-[color,opacity] duration-150"
+          className="text-text-faint flex cursor-pointer items-center border-none bg-transparent px-0.5 transition-[color,opacity] duration-150"
           style={{
             opacity: headerHovered ? 1 : 0,
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--danger)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-faint)';
+          }}
         >
           <X size={14} />
         </button>

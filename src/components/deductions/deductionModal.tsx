@@ -1,16 +1,16 @@
 import { useCallback, useMemo, useRef } from 'react';
 
-import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
-import { useStore } from '@/store';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { X } from '@/components/icons';
+import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
+import { useStore } from '@/store';
 
 /** 星の色 — suspicionLevel に対応 */
 const STAR_COLORS = [
-  'var(--text-faint)',        // 0: 未設定
-  'var(--importance-low)',    // 1
+  'var(--text-faint)', // 0: 未設定
+  'var(--importance-low)', // 1
   'var(--importance-medium)', // 2
-  'var(--importance-high)',   // 3
+  'var(--importance-high)', // 3
 ] as const;
 
 function StarRating({
@@ -102,9 +102,7 @@ function DeductionRow({
             flexShrink: 0,
           }}
         />
-        <span style={{ fontSize: 14, color: 'var(--text-primary)', flex: 1 }}>
-          {characterName}
-        </span>
+        <span style={{ fontSize: 14, color: 'var(--text-primary)', flex: 1 }}>{characterName}</span>
         <StarRating value={suspicionLevel} onChange={handleStarChange} />
       </div>
 
@@ -121,7 +119,7 @@ function DeductionRow({
           }
         }}
         rows={1}
-        className="w-full bg-transparent border-none outline-none text-text-secondary text-sm leading-[1.4] p-0 ml-4 resize-none overflow-hidden"
+        className="text-text-secondary ml-4 w-full resize-none overflow-hidden border-none bg-transparent p-0 text-sm leading-[1.4] outline-none"
       />
     </div>
   );
@@ -142,12 +140,7 @@ export function DeductionModal() {
   );
 
   return (
-    <ModalFrame
-      open={isOpen}
-      onClose={() => setOpen(false)}
-      width={440}
-      ariaLabel="人物推理メモ"
-    >
+    <ModalFrame open={isOpen} onClose={() => setOpen(false)} width={440} ariaLabel="人物推理メモ">
       {/* ヘッダー */}
       <div
         style={{

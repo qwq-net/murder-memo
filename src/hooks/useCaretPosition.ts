@@ -11,9 +11,11 @@ export function getCaretOffset(x: number, y: number): number | null {
     const r = document.caretRangeFromPoint(x, y);
     return r ? r.startOffset : null;
   }
-  const cp = (document as Document & {
-    caretPositionFromPoint?: (x: number, y: number) => { offset: number } | null;
-  }).caretPositionFromPoint?.(x, y);
+  const cp = (
+    document as Document & {
+      caretPositionFromPoint?: (x: number, y: number) => { offset: number } | null;
+    }
+  ).caretPositionFromPoint?.(x, y);
   return cp ? cp.offset : null;
 }
 

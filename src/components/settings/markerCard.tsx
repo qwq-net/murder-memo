@@ -48,7 +48,9 @@ function MarkerPreview({
   if (visibility === 'off') {
     return (
       <div style={{ ...containerStyle, justifyContent: 'center' }}>
-        <span style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic' }}>非表示</span>
+        <span style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+          非表示
+        </span>
       </div>
     );
   }
@@ -69,7 +71,9 @@ function MarkerPreview({
               color={c.color}
               name={c.name}
               isActive={c.active}
-              onClick={() => { /* プレビュー用: 操作なし */ }}
+              onClick={() => {
+                /* プレビュー用: 操作なし */
+              }}
               format={format}
             />
           );
@@ -132,7 +136,9 @@ export function MarkerCard({
         />
         <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</span>
         {hint && (
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginLeft: 'auto' }}>{hint}</span>
+          <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginLeft: 'auto' }}>
+            {hint}
+          </span>
         )}
       </div>
 
@@ -146,7 +152,9 @@ export function MarkerCard({
       >
         {/* format column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>形式</span>
+          <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
+            形式
+          </span>
           <RadioGroup<CharacterDisplayFormat>
             stretch
             options={[
@@ -161,7 +169,9 @@ export function MarkerCard({
 
         {/* mode column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>モード</span>
+          <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
+            モード
+          </span>
           <RadioGroup<CharacterDisplayVisibility>
             stretch
             options={[

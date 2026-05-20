@@ -1,5 +1,8 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
+import { ImageLightbox } from '@/components/common/imageLightbox';
+import { SearchLinkButton } from '@/components/common/searchLinkButton';
 import { useAutoRegisterLinkKeywords } from '@/hooks/useAutoRegisterLinkKeywords';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
@@ -7,9 +10,6 @@ import { useImageBlob } from '@/hooks/useImageBlob';
 import { detectInlineCharacterIds, parseCharacterText } from '@/lib/parseCharacterText';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
-import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
-import { ImageLightbox } from '@/components/common/imageLightbox';
-import { SearchLinkButton } from '@/components/common/searchLinkButton';
 
 /** サムネイルの高さ — テキスト2行分相当 (13px * 1.2 * 2 + padding ≒ 40px) */
 const THUMB_HEIGHT = 40;
@@ -60,18 +60,23 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { resize } = useAutoResizeTextarea();
 
-  const { draft, setDraft, handleBlur: draftBlur, handleEscape: draftEscape, resetGuards } =
-    useEntryDraft({
-      entryId: entry.id,
-      currentValues: { content: entry.content },
-      isEditing,
-      onSave: (values) => {
-        const trimmed = values.content.trim();
-        // キャプション内の `[キーワード]` を辞書に自動登録する
-        registerKeywords(trimmed);
-        updateEntry(entry.id, { content: trimmed });
-      },
-    });
+  const {
+    draft,
+    setDraft,
+    handleBlur: draftBlur,
+    handleEscape: draftEscape,
+    resetGuards,
+  } = useEntryDraft({
+    entryId: entry.id,
+    currentValues: { content: entry.content },
+    isEditing,
+    onSave: (values) => {
+      const trimmed = values.content.trim();
+      // キャプション内の `[キーワード]` を辞書に自動登録する
+      registerKeywords(trimmed);
+      updateEntry(entry.id, { content: trimmed });
+    },
+  });
 
   // 編集モードに入った瞬間だけ focus（useLayoutEffect で DOM マウント後に実行）
   const editInitRef = useRef(false);
@@ -112,19 +117,19 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       {/* サムネイル + キャプション */}
-      <div className="pl-3.5 pr-2.5 pt-px pb-0 flex items-start gap-2">
+      <div className="flex items-start gap-2 pt-px pr-2.5 pb-0 pl-3.5">
         {/* サムネイル画像 */}
         {src ? (
           <img
             src={src}
             alt=""
             onClick={() => setLightboxOpen(true)}
-            className="block rounded-sm border border-border-subtle cursor-pointer shrink-0 object-cover"
+            className="border-border-subtle block shrink-0 cursor-pointer rounded-sm border object-cover"
             style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
           />
         ) : (
           <div
-            className="shrink-0 rounded-sm border border-border-subtle flex items-center justify-center text-text-faint text-[10px]"
+            className="border-border-subtle text-text-faint flex shrink-0 items-center justify-center rounded-sm border text-[10px]"
             style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
           >
             …
@@ -144,7 +149,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
             onBlur={draftBlur}
             onKeyDown={handleKeyDown}
             rows={2}
-            className="w-full bg-transparent border-none outline-none text-text-primary font-sans text-sm leading-[1.2] p-0 m-0 resize-none overflow-hidden block"
+            className="text-text-primary m-0 block w-full resize-none overflow-hidden border-none bg-transparent p-0 font-sans text-sm leading-[1.2] outline-none"
             style={{ minHeight: THUMB_HEIGHT }}
           />
         ) : (
@@ -153,7 +158,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
               if (e.shiftKey) return;
               setFocusedEntry(entry.id);
             }}
-            className="cursor-text pt-px whitespace-pre-wrap break-words text-sm leading-[1.2] min-w-0 flex-1"
+            className="min-w-0 flex-1 cursor-text pt-px text-sm leading-[1.2] break-words whitespace-pre-wrap"
             style={{ minHeight: THUMB_HEIGHT }}
           >
             {!entry.content ? (
@@ -170,10 +175,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
                 }
                 // キャラクター名をインライン色付きテキストとして表示
                 return (
-                  <span
-                    key={i}
-                    style={{ color: seg.character.color, fontWeight: 600 }}
-                  >
+                  <span key={i} style={{ color: seg.character.color, fontWeight: 600 }}>
                     {seg.character.name}
                   </span>
                 );
@@ -184,7 +186,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
       </div>
 
       {/* 役職マーカー */}
-      <div className="pl-3.5 pr-2.5 pb-0.5">
+      <div className="pr-2.5 pb-0.5 pl-3.5">
         <CharacterBadgeBar
           entry={entry}
           format={effectiveFormat}
@@ -196,11 +198,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
 
       {/* ライトボックス */}
       {src && (
-        <ImageLightbox
-          src={src}
-          open={lightboxOpen}
-          onClose={() => setLightboxOpen(false)}
-        />
+        <ImageLightbox src={src} open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
       )}
     </div>
   );

@@ -4,7 +4,7 @@
  */
 export function normalizeTimeInput(input: string): string {
   return input
-    .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+    .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
     .replace(/：/g, ':');
 }
 

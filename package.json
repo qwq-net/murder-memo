@@ -4,10 +4,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "build": "tsc -b && vite-react-ssg build",
     "preview": "vite preview",
     "test": "vitest run",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run typecheck && npm run lint && npm run format:check",
     "version": "node src/lib/version-stamp.ts"
   },
   "dependencies": {
@@ -16,9 +20,12 @@
     "@dnd-kit/utilities": "^3.2.2",
     "idb": "^8.0.3",
     "lucide-react": "^0.577.0",
-"nanoid": "^5.1.7",
+    "nanoid": "^5.1.7",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-router-dom": "^6.30.3",
+    "vite-plugin-pages": "^0.33.3",
+    "vite-react-ssg": "^0.9.1-beta.1",
     "zundo": "^2.3.0",
     "zustand": "^5.0.12"
   },

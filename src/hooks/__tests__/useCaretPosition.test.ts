@@ -30,8 +30,12 @@ describe('useCaretPosition', () => {
     let selEnd = 0;
     return {
       value: 'hello world',
-      get selectionStart() { return selStart; },
-      get selectionEnd() { return selEnd; },
+      get selectionStart() {
+        return selStart;
+      },
+      get selectionEnd() {
+        return selEnd;
+      },
       setSelectionRange(start: number, end: number) {
         selStart = start;
         selEnd = end;

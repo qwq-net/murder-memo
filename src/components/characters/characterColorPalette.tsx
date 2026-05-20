@@ -21,7 +21,7 @@ interface CharacterColorPaletteProps {
 
 export function CharacterColorPalette({ value, onChange }: CharacterColorPaletteProps) {
   return (
-    <div className="flex gap-1 flex-wrap items-center">
+    <div className="flex flex-wrap items-center gap-1">
       {PRESET_COLORS.map((color) => (
         <button
           key={color}
@@ -41,7 +41,7 @@ export function CharacterColorPalette({ value, onChange }: CharacterColorPalette
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="cursor-pointer border-none p-0 bg-transparent"
+        className="cursor-pointer border-none bg-transparent p-0"
         style={{ width: 20, height: 20 }}
         title="カスタムカラー"
       />

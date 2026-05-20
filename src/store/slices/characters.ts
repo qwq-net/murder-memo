@@ -6,14 +6,16 @@ import {
   getCharactersBySession,
   putCharacter,
 } from '@/lib/idb';
-import type { Character } from '@/types/memo';
 import type { StoreState } from '@/store/index';
+import type { Character } from '@/types/memo';
 
 export interface CharactersSlice {
   characters: Character[];
 
   loadCharacters: (sessionId: string) => Promise<void>;
-  addCharacter: (partial: Partial<Omit<Character, 'id' | 'sortOrder'>> & Pick<Character, 'name' | 'color'>) => Promise<Character>;
+  addCharacter: (
+    partial: Partial<Omit<Character, 'id' | 'sortOrder'>> & Pick<Character, 'name' | 'color'>,
+  ) => Promise<Character>;
   updateCharacter: (id: string, patch: Partial<Character>) => Promise<void>;
   removeCharacter: (id: string) => Promise<void>;
   reorderCharacters: (orderedIds: string[]) => Promise<void>;

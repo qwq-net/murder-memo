@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { GroupSelector } from '@/components/entries/groupSelector';
+import { useImagePicker } from '@/components/layout/imagePickerContext';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useTimeInput } from '@/hooks/useTimeInput';
 import { parseEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
-import { GroupSelector } from '@/components/entries/groupSelector';
-import { useImagePicker } from '@/components/layout/imagePickerContext';
 
 interface EntryInputProps {
   panel: PanelId;
@@ -41,9 +41,7 @@ export function EntryInput({ panel }: EntryInputProps) {
   const groups = useMemo(() => {
     if (isTimeline) return timelineGroups;
     if (isMemoPanel)
-      return memoGroups
-        .filter((g) => g.panel === panel)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
+      return memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder);
     return [];
   }, [isTimeline, isMemoPanel, timelineGroups, memoGroups, panel]);
 
@@ -66,7 +64,10 @@ export function EntryInput({ panel }: EntryInputProps) {
 
     if (isTimeline) {
       if (!text && !timeTrimmed) return;
-      if (timeTrimmed && !text) { setTextError(true); return; }
+      if (timeTrimmed && !text) {
+        setTextError(true);
+        return;
+      }
       if (!effectiveGroupId) return;
     } else {
       if (!text) return;
@@ -75,18 +76,20 @@ export function EntryInput({ panel }: EntryInputProps) {
     submittingRef.current = true;
     try {
       const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
-      const defaultType = isTimeline ? 'timeline' as const : 'text' as const;
+      const defaultType = isTimeline ? ('timeline' as const) : ('text' as const);
       const memoGroupId = isMemoPanel && effectiveGroupId ? effectiveGroupId : undefined;
 
       await addEntry({
         content: text,
         panel,
         type: defaultType,
-        ...(isTimeline ? {
-          timelineGroupId: effectiveGroupId,
-          eventTime: timeTrimmed || undefined,
-          eventTimeSortKey: sortKey,
-        } : {}),
+        ...(isTimeline
+          ? {
+              timelineGroupId: effectiveGroupId,
+              eventTime: timeTrimmed || undefined,
+              eventTimeSortKey: sortKey,
+            }
+          : {}),
         ...(memoGroupId ? { groupId: memoGroupId } : {}),
       });
       addToast('メモを追加しました');
@@ -110,8 +113,8 @@ export function EntryInput({ panel }: EntryInputProps) {
 
   return (
     <div
-      className={`px-2.5 pt-1.5 pb-2 bg-bg-surface shrink-0 flex flex-col gap-1 ${
-        isTop ? 'border-b border-border-subtle' : 'border-t border-border-subtle'
+      className={`bg-bg-surface flex shrink-0 flex-col gap-1 px-2.5 pt-1.5 pb-2 ${
+        isTop ? 'border-border-subtle border-b' : 'border-border-subtle border-t'
       }`}
     >
       {/* グループセレクタ + 追加ボタン */}
@@ -122,7 +125,7 @@ export function EntryInput({ panel }: EntryInputProps) {
       />
 
       {/* 入力行 */}
-      <div className="flex gap-1 items-center min-h-6">
+      <div className="flex min-h-6 items-center gap-1">
         {isTimeline && (
           <input
             ref={timeInput.timeRef}
@@ -139,7 +142,7 @@ export function EntryInput({ panel }: EntryInputProps) {
             aria-label="時刻"
             aria-invalid={timeInput.timeError || undefined}
             aria-describedby={timeInput.timeError ? 'entry-time-error' : undefined}
-            className="w-11 shrink-0 bg-transparent border-0 border-b text-panel-timeline-accent font-mono text-sm px-0.5 py-px outline-none text-center tracking-wide transition-[border-color] duration-150 focus:border-b-panel-timeline-accent"
+            className="text-panel-timeline-accent focus:border-b-panel-timeline-accent w-11 shrink-0 border-0 border-b bg-transparent px-0.5 py-px text-center font-mono text-sm tracking-wide transition-[border-color] duration-150 outline-none"
             style={{
               borderBottomColor: timeInput.timeError ? 'var(--importance-high)' : undefined,
               opacity: disabled ? 0.4 : undefined,
@@ -163,15 +166,13 @@ export function EntryInput({ panel }: EntryInputProps) {
             }
           }}
           placeholder={
-            disabled
-              ? 'まずメモグループを追加してください'
-              : 'メモを入力… (Shift+Enter で改行)'
+            disabled ? 'まずメモグループを追加してください' : 'メモを入力… (Shift+Enter で改行)'
           }
           disabled={disabled}
           aria-invalid={textError || undefined}
           aria-describedby={textError ? 'entry-text-error' : undefined}
           rows={1}
-          className="flex-1 min-w-0 bg-transparent border-0 text-text-primary font-sans text-sm leading-[1.2] py-px resize-none outline-none overflow-hidden"
+          className="text-text-primary min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent py-px font-sans text-sm leading-[1.2] outline-none"
           style={{
             borderBottom: textError ? '1px solid var(--importance-high)' : undefined,
             opacity: disabled ? 0.4 : undefined,
@@ -194,21 +195,46 @@ export function EntryInput({ panel }: EntryInputProps) {
               flexShrink: 0,
               transition: 'color 0.12s',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+            }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.2" />
+              <rect
+                x="1.5"
+                y="1.5"
+                width="13"
+                height="13"
+                rx="2"
+                stroke="currentColor"
+                strokeWidth="1.2"
+              />
               <circle cx="5.5" cy="5.5" r="1.5" stroke="currentColor" strokeWidth="1" />
-              <path d="M1.5 11l3.5-3.5 2.5 2.5 2-2 5 5" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+              <path
+                d="M1.5 11l3.5-3.5 2.5 2.5 2-2 5 5"
+                stroke="currentColor"
+                strokeWidth="1"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
         )}
       </div>
 
       {/* スクリーンリーダー用エラーメッセージ */}
-      {timeInput.timeError && <span id="entry-time-error" className="sr-only">時刻の形式が正しくありません</span>}
-      {textError && <span id="entry-text-error" className="sr-only">テキストを入力してください</span>}
+      {timeInput.timeError && (
+        <span id="entry-time-error" className="sr-only">
+          時刻の形式が正しくありません
+        </span>
+      )}
+      {textError && (
+        <span id="entry-text-error" className="sr-only">
+          テキストを入力してください
+        </span>
+      )}
     </div>
   );
 }

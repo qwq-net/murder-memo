@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 
 import { syncStateToIdb } from '@/lib/undoSync';
-import { useStore } from '@/store';
 import type { StoreState } from '@/store';
+import { useStore } from '@/store';
 
 /** undo/redo で何が変わったかを検出し、説明文を返す */
 function describeChange(before: StoreState, after: StoreState): string {
@@ -37,7 +37,8 @@ export function useUndoRedo() {
     const handler = (e: KeyboardEvent) => {
       // テキスト入力中は無視
       const tag = (e.target as HTMLElement).tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable)
+        return;
 
       const isUndo = (e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey;
       const isRedo = (e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y');

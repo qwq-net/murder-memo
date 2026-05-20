@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-import { useResponsive } from '@/hooks/useResponsive';
-import { useStore } from '@/store';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { X } from '@/components/icons';
 import { RelationDiagramSvg } from '@/components/relations/relationDiagramSvg';
 import { RelationListView } from '@/components/relations/relationListView';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useStore } from '@/store';
 
 export function RelationDiagramModal() {
   const isOpen = useStore((s) => s.isRelationDiagramOpen);
@@ -17,12 +17,7 @@ export function RelationDiagramModal() {
   const hasChars = characters.length >= 2;
 
   return (
-    <ModalFrame
-      open={isOpen}
-      onClose={() => setOpen(false)}
-      width={560}
-      ariaLabel="相関図"
-    >
+    <ModalFrame open={isOpen} onClose={() => setOpen(false)} width={560} ariaLabel="相関図">
       {/* ヘッダー */}
       <div
         style={{
@@ -34,7 +29,14 @@ export function RelationDiagramModal() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              letterSpacing: '0.04em',
+            }}
+          >
             相関図
           </span>
           {/* タブ切替（デスクトップのみ） */}
@@ -69,7 +71,14 @@ export function RelationDiagramModal() {
       {/* ボディ */}
       <div style={{ padding: '4px 18px 18px' }}>
         {!hasChars ? (
-          <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
+          <div
+            style={{
+              padding: '24px 0',
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              fontSize: 14,
+            }}
+          >
             登場人物を2人以上設定してください
           </div>
         ) : tab === 'list' || isMobile ? (

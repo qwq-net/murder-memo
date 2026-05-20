@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Character, LinkKeyword } from '@/types/memo';
 import { detectInlineCharacterIds, parseCharacterText } from '@/lib/parseCharacterText';
+import type { Character, LinkKeyword } from '@/types/memo';
 
 const makeChar = (id: string, name: string): Character => ({
   id,
@@ -30,7 +30,9 @@ describe('parseCharacterText', () => {
   });
 
   it('キャラクターなしの場合は text セグメント1つを返す', () => {
-    expect(parseCharacterText('ふつうのメモ', [])).toEqual([{ type: 'text', content: 'ふつうのメモ' }]);
+    expect(parseCharacterText('ふつうのメモ', [])).toEqual([
+      { type: 'text', content: 'ふつうのメモ' },
+    ]);
   });
 
   it('マッチしないテキストは text セグメント1つを返す', () => {
@@ -163,11 +165,7 @@ describe('parseCharacterText', () => {
 
     it('キャラ名より長い辞書ワードはリンクとして優先される', () => {
       // キャラ「医者」と辞書「医者の証言」→ 長い辞書ワードが勝つ
-      const result = parseCharacterText(
-        '医者の証言は怪しい',
-        [医者],
-        [makeKw('k1', '医者の証言')],
-      );
+      const result = parseCharacterText('医者の証言は怪しい', [医者], [makeKw('k1', '医者の証言')]);
       expect(result).toEqual([
         { type: 'search-link', keyword: '医者の証言' },
         { type: 'text', content: 'は怪しい' },
@@ -193,11 +191,7 @@ describe('parseCharacterText', () => {
     });
 
     it('キャラ・辞書・[] が同じ文に混在しても期待通り分解される', () => {
-      const result = parseCharacterText(
-        '医者が[現場]で凶器を見た',
-        [医者],
-        [makeKw('k1', '凶器')],
-      );
+      const result = parseCharacterText('医者が[現場]で凶器を見た', [医者], [makeKw('k1', '凶器')]);
       expect(result).toEqual([
         { type: 'character', character: 医者 },
         { type: 'text', content: 'が' },

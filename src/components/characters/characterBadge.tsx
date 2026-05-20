@@ -10,7 +10,14 @@ interface CharacterBadgeProps {
   ariaLabel?: string;
 }
 
-export function CharacterBadge({ color, name, isActive, onClick, format, ariaLabel }: CharacterBadgeProps) {
+export function CharacterBadge({
+  color,
+  name,
+  isActive,
+  onClick,
+  format,
+  ariaLabel,
+}: CharacterBadgeProps) {
   const displayName = name.length > 5 ? name.slice(0, 5) + '…' : name;
   const label = ariaLabel ?? `${name}${isActive ? 'のタグを外す' : 'をタグ付け'}`;
 
@@ -23,7 +30,9 @@ export function CharacterBadge({ color, name, isActive, onClick, format, ariaLab
         title={name}
         style={{
           background: isActive ? `color-mix(in srgb, ${color} 18%, transparent)` : 'transparent',
-          border: isActive ? `1px solid color-mix(in srgb, ${color} 40%, transparent)` : '1px solid transparent',
+          border: isActive
+            ? `1px solid color-mix(in srgb, ${color} 40%, transparent)`
+            : '1px solid transparent',
           borderRadius: 'var(--radius-sm)',
           color: isActive ? color : `color-mix(in srgb, ${color} 35%, transparent)`,
           fontSize: 14,
@@ -60,7 +69,9 @@ export function CharacterBadge({ color, name, isActive, onClick, format, ariaLab
         height: 14,
         borderRadius: '50%',
         background: isActive ? color : `color-mix(in srgb, ${color} 5%, transparent)`,
-        border: isActive ? `1.5px solid color-mix(in srgb, ${color}, black 20%)` : `1.5px solid color-mix(in srgb, ${color} 14%, transparent)`,
+        border: isActive
+          ? `1.5px solid color-mix(in srgb, ${color}, black 20%)`
+          : `1.5px solid color-mix(in srgb, ${color} 14%, transparent)`,
         flexShrink: 0,
         display: 'inline-block',
         boxSizing: 'border-box',
@@ -122,7 +133,9 @@ export function CharacterBadge({ color, name, isActive, onClick, format, ariaLab
         height: 14,
         borderRadius: '50%',
         background: isActive ? color : `color-mix(in srgb, ${color} 5%, transparent)`,
-        border: isActive ? `1.5px solid color-mix(in srgb, ${color}, black 20%)` : `1.5px solid color-mix(in srgb, ${color} 14%, transparent)`,
+        border: isActive
+          ? `1.5px solid color-mix(in srgb, ${color}, black 20%)`
+          : `1.5px solid color-mix(in srgb, ${color} 14%, transparent)`,
         cursor: 'pointer',
         flexShrink: 0,
         transition: 'background 0.12s, border-color 0.12s, transform 0.1s',

@@ -6,15 +6,18 @@ import {
   getMemoGroupsBySession,
   putMemoGroup,
 } from '@/lib/idb';
-import type { MemoGroup } from '@/types/memo';
 import type { StoreState } from '@/store/index';
+import type { MemoGroup } from '@/types/memo';
 
 export interface MemoGroupsSlice {
   memoGroups: MemoGroup[];
 
   loadMemoGroups: (sessionId: string) => Promise<void>;
   addMemoGroup: (label: string, panel: 'free' | 'personal') => Promise<MemoGroup>;
-  updateMemoGroup: (id: string, patch: Partial<Pick<MemoGroup, 'label' | 'collapsed'>>) => Promise<void>;
+  updateMemoGroup: (
+    id: string,
+    patch: Partial<Pick<MemoGroup, 'label' | 'collapsed'>>,
+  ) => Promise<void>;
   removeMemoGroup: (id: string) => Promise<void>;
   reorderMemoGroups: (orderedIds: string[]) => Promise<void>;
   toggleMemoGroupCollapse: (id: string) => void;

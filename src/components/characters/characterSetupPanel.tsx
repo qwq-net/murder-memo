@@ -1,3 +1,4 @@
+import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
   KeyboardSensor,
@@ -6,7 +7,6 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
 import {
   SortableContext,
   arrayMove,
@@ -16,16 +16,23 @@ import {
 } from '@dnd-kit/sortable';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { useStore } from '@/store';
-import type { Character, CharacterRole } from '@/types/memo';
+import { CharacterColorPalette } from '@/components/characters/characterColorPalette';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { RadioGroup } from '@/components/common/radioGroup';
 import { X } from '@/components/icons';
-import { CharacterColorPalette } from '@/components/characters/characterColorPalette';
+import { useStore } from '@/store';
+import type { Character, CharacterRole } from '@/types/memo';
 
 const DEFAULT_COLORS = [
-  '#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6',
-  '#e67e22', '#1abc9c', '#e91e8c', '#607d8b',
+  '#e74c3c',
+  '#3498db',
+  '#2ecc71',
+  '#f1c40f',
+  '#9b59b6',
+  '#e67e22',
+  '#1abc9c',
+  '#e91e8c',
+  '#607d8b',
 ];
 
 export function CharacterSetupPanel() {
@@ -89,7 +96,8 @@ export function CharacterSetupPanel() {
     flex: 1,
     background: activeTab === tab ? 'var(--bg-elevated)' : 'transparent',
     border: 'none',
-    borderBottom: activeTab === tab ? '2px solid var(--color-settings-accent)' : '2px solid transparent',
+    borderBottom:
+      activeTab === tab ? '2px solid var(--color-settings-accent)' : '2px solid transparent',
     color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
     fontSize: 14,
     fontWeight: activeTab === tab ? 600 : 400,
@@ -100,14 +108,16 @@ export function CharacterSetupPanel() {
   });
 
   return (
-    <ModalFrame
-      open={isOpen}
-      onClose={() => setOpen(false)}
-      width={480}
-      ariaLabel="登場人物設定"
-    >
+    <ModalFrame open={isOpen} onClose={() => setOpen(false)} width={480} ariaLabel="登場人物設定">
       {/* ModalFrame の overflowY: auto 内で、ヘッダー/タブ固定 + リスト部スクロールを実現 */}
-      <div style={{ display: 'flex', flexDirection: 'column', maxHeight: 'calc(80vh - 2px)', overflow: 'hidden' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: 'calc(80vh - 2px)',
+          overflow: 'hidden',
+        }}
+      >
         {/* Header */}
         <div
           style={{
@@ -129,14 +139,8 @@ export function CharacterSetupPanel() {
           >
             登場人物
           </span>
-          <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>
-            ドラッグで行動順を変更
-          </span>
-          <button
-            onClick={() => setOpen(false)}
-            aria-label="閉じる"
-            className="modal-close-btn"
-          >
+          <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>ドラッグで行動順を変更</span>
+          <button onClick={() => setOpen(false)} aria-label="閉じる" className="modal-close-btn">
             <X size={18} />
           </button>
         </div>
@@ -147,16 +151,35 @@ export function CharacterSetupPanel() {
           aria-label="キャラクタータイプ"
           style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}
         >
-          <button role="tab" aria-selected={activeTab === 'pl'} id="tab-pl" aria-controls="tabpanel-characters" onClick={() => setActiveTab('pl')} style={tabStyle('pl')}>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'pl'}
+            id="tab-pl"
+            aria-controls="tabpanel-characters"
+            onClick={() => setActiveTab('pl')}
+            style={tabStyle('pl')}
+          >
             プレイヤー（{plChars.length}）
           </button>
-          <button role="tab" aria-selected={activeTab === 'npc'} id="tab-npc" aria-controls="tabpanel-characters" onClick={() => setActiveTab('npc')} style={tabStyle('npc')}>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'npc'}
+            id="tab-npc"
+            aria-controls="tabpanel-characters"
+            onClick={() => setActiveTab('npc')}
+            style={tabStyle('npc')}
+          >
             NPC（{npcChars.length}）
           </button>
         </div>
 
         {/* Character list */}
-        <div role="tabpanel" id="tabpanel-characters" aria-labelledby={`tab-${activeTab}`} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+        <div
+          role="tabpanel"
+          id="tabpanel-characters"
+          aria-labelledby={`tab-${activeTab}`}
+          style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}
+        >
           {activeChars.length === 0 && (
             <div
               style={{
@@ -185,7 +208,10 @@ export function CharacterSetupPanel() {
                   char={char}
                   isLast={i === activeChars.length - 1}
                   onUpdate={updateCharacter}
-                  onRemove={(id) => { removeCharacter(id); addToast('登場人物を削除しました'); }}
+                  onRemove={(id) => {
+                    removeCharacter(id);
+                    addToast('登場人物を削除しました');
+                  }}
                 />
               ))}
             </SortableContext>
@@ -217,11 +243,7 @@ export function CharacterSetupPanel() {
             className="input-base"
             style={{ flex: 1, padding: '6px 10px' }}
           />
-          <button
-            onClick={handleAdd}
-            disabled={!newName.trim()}
-            className="btn-primary btn-lg"
-          >
+          <button onClick={handleAdd} disabled={!newName.trim()} className="btn-primary btn-lg">
             追加
           </button>
         </div>
@@ -243,11 +265,11 @@ function SortableCharacterRow({
   onUpdate: (id: string, patch: Partial<Character>) => void;
   onRemove: (id: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: char.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: char.id,
+  });
 
-  const transformStyle = transform
-    ? `translate3d(0, ${transform.y}px, 0)`
-    : undefined;
+  const transformStyle = transform ? `translate3d(0, ${transform.y}px, 0)` : undefined;
 
   return (
     <div
@@ -348,7 +370,9 @@ function CharacterRow({
         <input
           value={localName}
           onChange={(e) => setLocalName(e.target.value)}
-          onCompositionStart={() => { composingRef.current = true; }}
+          onCompositionStart={() => {
+            composingRef.current = true;
+          }}
           onCompositionEnd={(e) => {
             composingRef.current = false;
             onUpdate(char.id, { name: e.currentTarget.value });
@@ -395,12 +419,32 @@ function CharacterRow({
             transition: 'color 0.12s',
             flexShrink: 0,
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--danger)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-faint)';
+          }}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <line
+              x1="4"
+              y1="4"
+              x2="12"
+              y2="12"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            <line
+              x1="12"
+              y1="4"
+              x2="4"
+              y2="12"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
           </svg>
         </button>
       </div>
@@ -408,7 +452,10 @@ function CharacterRow({
       {/* Expanded: color palette */}
       {expanded && (
         <div style={{ padding: '8px 0 4px 42px' }}>
-          <CharacterColorPalette value={char.color} onChange={(c) => onUpdate(char.id, { color: c })} />
+          <CharacterColorPalette
+            value={char.color}
+            onChange={(c) => onUpdate(char.id, { color: c })}
+          />
         </div>
       )}
     </div>

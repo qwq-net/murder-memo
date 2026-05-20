@@ -1,14 +1,14 @@
 import { useCallback, useState } from 'react';
 
-import { useStore } from '@/store';
-import type { MemoEntry } from '@/types/memo';
-import { IconImportance } from '@/components/icons';
 import { BulkContextMenu } from '@/components/entries/actions/bulkContextMenu';
 import { EntryContextMenu } from '@/components/entries/actions/entryContextMenu';
 import { ImageEntry } from '@/components/entries/imageEntry';
 import { useSelection } from '@/components/entries/selectionContext';
 import { TextEntry } from '@/components/entries/textEntry';
 import { TimelineEntry } from '@/components/entries/timelineEntry';
+import { IconImportance } from '@/components/icons';
+import { useStore } from '@/store';
+import type { MemoEntry } from '@/types/memo';
 
 interface EntryCardProps {
   entry: MemoEntry;
@@ -16,15 +16,15 @@ interface EntryCardProps {
 }
 
 const PANEL_ACCENT: Record<string, string> = {
-  free:     'var(--panel-free-accent)',
+  free: 'var(--panel-free-accent)',
   personal: 'var(--panel-personal-accent)',
   timeline: 'var(--panel-timeline-accent)',
 };
 
 const IMPORTANCE_COLOR: Record<string, string> = {
-  high:   'var(--importance-high)',
+  high: 'var(--importance-high)',
   medium: 'var(--importance-medium)',
-  low:    'var(--importance-low)',
+  low: 'var(--importance-low)',
 };
 
 export function EntryCard({ entry, hideTime }: EntryCardProps) {
@@ -39,14 +39,17 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
   const isEditing = focusedEntryId === entry.id;
   const isEntryHovered = (hovered && !ctxMenu && !bulkCtxMenu) || isEditing;
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    if (selectedIds.size > 1 && selectedIds.has(entry.id)) {
-      setBulkCtxMenu({ x: e.clientX, y: e.clientY });
-    } else {
-      setCtxMenu({ x: e.clientX, y: e.clientY });
-    }
-  }, [selectedIds, entry.id]);
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      if (selectedIds.size > 1 && selectedIds.has(entry.id)) {
+        setBulkCtxMenu({ x: e.clientX, y: e.clientY });
+      } else {
+        setCtxMenu({ x: e.clientX, y: e.clientY });
+      }
+    },
+    [selectedIds, entry.id],
+  );
 
   // bulkCtxMenu表示時のみentriesを取得（全EntryCardの不要な再レンダーを回避）
   const selectedEntries = bulkCtxMenu
@@ -68,7 +71,7 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
   return (
     <div
       data-entry-id={entry.id}
-      className="flex flex-col relative p-0 my-[4px] rounded-sm"
+      className="relative my-[4px] flex flex-col rounded-sm p-0"
       onContextMenu={handleContextMenu}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -82,7 +85,7 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
       {/* 重要度グラデーション — 右から左へ薄くフェード */}
       {importanceColor && (
         <div
-          className="absolute inset-0 rounded-[inherit] pointer-events-none"
+          className="pointer-events-none absolute inset-0 rounded-[inherit]"
           style={{
             background: `linear-gradient(to left, ${importanceColor}, transparent 60%)`,
             opacity: hovered ? 0.1 : 0.06,
@@ -93,14 +96,14 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
 
       {/* 左縦線 — パネルアイデンティティ専用。選択時はアクセント強調 */}
       <div
-        className="absolute rounded-sm pointer-events-none"
+        className="pointer-events-none absolute rounded-sm"
         style={{
           left: entry.type === 'timeline' ? 'var(--tl-content-left)' : 4,
           top: -1,
           bottom: -1,
           width: selected ? 4 : 3,
           background: selected ? 'var(--accent)' : accent,
-          opacity: selected ? 0.9 : (hovered ? 0.6 : 0.45),
+          opacity: selected ? 0.9 : hovered ? 0.6 : 0.45,
           transition: 'opacity 0.12s, width 0.12s, background 0.12s',
         }}
       />
@@ -108,7 +111,7 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
       {/* タイムラインマーカー — ドット + 水平ティック (SVG) */}
       {entry.type === 'timeline' && !!entry.eventTime && !hideTime && (
         <svg
-          className="absolute pointer-events-none"
+          className="pointer-events-none absolute"
           width="14"
           height="5"
           viewBox="0 0 14 5"
@@ -123,7 +126,7 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
             cy="2.5"
             r="2.5"
             fill={selected ? 'var(--accent)' : 'var(--panel-timeline-accent)'}
-            opacity={selected ? 1 : (hovered ? 0.8 : 0.45)}
+            opacity={selected ? 1 : hovered ? 0.8 : 0.45}
           />
           <line
             x1="5"
@@ -132,7 +135,7 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
             y2="2.5"
             stroke={selected ? 'var(--accent)' : 'var(--panel-timeline-accent)'}
             strokeWidth="1"
-            opacity={selected ? 0.8 : (hovered ? 0.5 : 0.2)}
+            opacity={selected ? 0.8 : hovered ? 0.5 : 0.2}
           />
         </svg>
       )}
@@ -193,7 +196,6 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
           }}
         />
       )}
-
     </div>
   );
 }

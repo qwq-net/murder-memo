@@ -1,5 +1,5 @@
-import { act, renderHook } from '@testing-library/react';
 import type { GameSession } from '@/types/memo';
+import { act, renderHook } from '@testing-library/react';
 import { useSessionRenaming } from '../useSessionRenaming';
 
 function makeSession(overrides: Partial<GameSession> & { id: string; name: string }): GameSession {
@@ -59,9 +59,7 @@ describe('useSessionRenaming', () => {
       useSessionRenaming({ sessions, activeSessionId: 's1', renameSession }),
     );
     act(() => result.current.startRenaming());
-    act(() =>
-      result.current.handleKeyDown({ key: 'Escape' } as React.KeyboardEvent),
-    );
+    act(() => result.current.handleKeyDown({ key: 'Escape' } as React.KeyboardEvent));
 
     expect(result.current.isRenaming).toBe(false);
   });

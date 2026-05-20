@@ -1,6 +1,6 @@
+import { CharacterBadge } from '@/components/characters/characterBadge';
 import { useStore } from '@/store';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, MemoEntry } from '@/types/memo';
-import { CharacterBadge } from '@/components/characters/characterBadge';
 
 interface CharacterBadgeBarProps {
   entry: MemoEntry;
@@ -32,25 +32,29 @@ export function MinimalSlot({
 
   return (
     <span
-      style={revealed ? {
-        display: 'inline-flex',
-        maxWidth: 120,
-        marginRight: 1,
-        opacity: 1,
-        overflow: 'hidden',
-        transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out, margin 0.2s ease-out',
-      } : {
-        display: 'inline-flex',
-        maxWidth: 0,
-        minWidth: 0,
-        width: 0,
-        marginRight: 0,
-        padding: 0,
-        opacity: 0,
-        overflow: 'hidden',
-        flex: '0 0 0',
-        transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out, margin 0.2s ease-out',
-      }}
+      style={
+        revealed
+          ? {
+              display: 'inline-flex',
+              maxWidth: 120,
+              marginRight: 1,
+              opacity: 1,
+              overflow: 'hidden',
+              transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out, margin 0.2s ease-out',
+            }
+          : {
+              display: 'inline-flex',
+              maxWidth: 0,
+              minWidth: 0,
+              width: 0,
+              marginRight: 0,
+              padding: 0,
+              opacity: 0,
+              overflow: 'hidden',
+              flex: '0 0 0',
+              transition: 'max-width 0.2s ease-out, opacity 0.15s ease-out, margin 0.2s ease-out',
+            }
+      }
     >
       {children}
     </span>
@@ -66,7 +70,13 @@ export function MinimalSlot({
  *   - ミニマルモードでは gap が非表示要素に効かないよう gap: 0 にし、
  *     MinimalSlot 側で幅制御のみ行う
  */
-export function CharacterBadgeBar({ entry, format, visibility, isEntryHovered, inlineDetectedIds }: CharacterBadgeBarProps) {
+export function CharacterBadgeBar({
+  entry,
+  format,
+  visibility,
+  isEntryHovered,
+  inlineDetectedIds,
+}: CharacterBadgeBarProps) {
   const allCharacters = useStore((s) => s.characters);
   const toggleCharacterTag = useStore((s) => s.toggleCharacterTag);
 
@@ -85,10 +95,7 @@ export function CharacterBadgeBar({ entry, format, visibility, isEntryHovered, i
   // collapsed 判定: 手動タグ（characterTags）とインライン検出（inlineDetectedIds）の
   // 和集合で「実効アクティブ」を判定する。インライン表示済みキャラはバーから除外されているが、
   // 1件でも実効アクティブがあればバーを展開してタグ付け操作をしやすくする
-  const effectiveActiveIds = new Set([
-    ...entry.characterTags,
-    ...(inlineDetectedIds ?? []),
-  ]);
+  const effectiveActiveIds = new Set([...entry.characterTags, ...(inlineDetectedIds ?? [])]);
   const hasActive = allCharacters.some((c) => effectiveActiveIds.has(c.id));
   // ミニマル: 実効アクティブが0件かつ非ホバーなら高さを畳む（DOMは維持してアニメーション可能に）
   const collapsed = isMinimal && !isEntryHovered && !hasActive;
@@ -120,7 +127,9 @@ export function CharacterBadgeBar({ entry, format, visibility, isEntryHovered, i
             color={char.color}
             name={char.name}
             isActive={isActive}
-            onClick={(e) => { if (!e.shiftKey) toggleCharacterTag(entry.id, char.id); }}
+            onClick={(e) => {
+              if (!e.shiftKey) toggleCharacterTag(entry.id, char.id);
+            }}
             format={format}
           />
         );

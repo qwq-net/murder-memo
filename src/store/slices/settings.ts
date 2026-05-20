@@ -1,5 +1,5 @@
-import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
 import type { StoreState } from '@/store/index';
+import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
 
 export interface AppSettings {
   /** 入力欄の位置: 'top' | 'bottom' */
@@ -9,10 +9,13 @@ export interface AppSettings {
   /** テーマ: auto は OS 設定に追従 */
   theme: 'dark' | 'light' | 'auto';
   /** パネルごとのデフォルト関連人物マーカー表示設定 */
-  defaultCharacterDisplay: Record<PanelId, {
-    format: CharacterDisplayFormat;
-    visibility: CharacterDisplayVisibility;
-  }>;
+  defaultCharacterDisplay: Record<
+    PanelId,
+    {
+      format: CharacterDisplayFormat;
+      visibility: CharacterDisplayVisibility;
+    }
+  >;
   /** パネルの表示順 */
   panelOrder: [PanelId, PanelId, PanelId];
 }
@@ -35,7 +38,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'ja',
   theme: 'auto',
   defaultCharacterDisplay: {
-    free:     { format: 'full', visibility: 'off' },
+    free: { format: 'full', visibility: 'off' },
     timeline: { format: 'full', visibility: 'off' },
     personal: { format: 'full', visibility: 'off' },
   },

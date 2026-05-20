@@ -35,9 +35,7 @@ function buildSnippet(content: string, query: string): React.ReactNode[] {
     if (matchIdx > cursor) {
       nodes.push(slice.slice(cursor, matchIdx));
     }
-    nodes.push(
-      <mark key={matchIdx}>{slice.slice(matchIdx, matchIdx + query.length)}</mark>,
-    );
+    nodes.push(<mark key={matchIdx}>{slice.slice(matchIdx, matchIdx + query.length)}</mark>);
     cursor = matchIdx + query.length;
     matchIdx = sliceLower.indexOf(q, cursor);
   }
@@ -67,16 +65,16 @@ export const SearchResultItem = memo(function SearchResultItem({
 
   return (
     <button
-      className="flex items-start gap-2 w-full text-left px-3 py-2 cursor-pointer border-none bg-transparent transition-colors duration-100 hover:bg-bg-hover"
+      className="hover:bg-bg-hover flex w-full cursor-pointer items-start gap-2 border-none bg-transparent px-3 py-2 text-left transition-colors duration-100"
       onClick={() => onSelect(entry)}
     >
       {/* パネルアクセントバー */}
       <div
-        className="shrink-0 rounded-sm self-stretch"
+        className="shrink-0 self-stretch rounded-sm"
         style={{ width: 3, background: accent, opacity: 0.6 }}
       />
       {/* テキストスニペット */}
-      <span className="text-sm leading-[1.6] text-text-secondary whitespace-pre-wrap break-all min-w-0">
+      <span className="text-text-secondary min-w-0 text-sm leading-[1.6] break-all whitespace-pre-wrap">
         {snippet}
       </span>
     </button>

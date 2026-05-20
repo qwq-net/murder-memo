@@ -6,6 +6,9 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "serve_directly": true
-  }
+    // SPA fallback。`/app/{深いパス}` への直アクセスやリロード時は
+    // worker 側で `/app/index.html` を返す（worker/index.ts 参照）。
+    // その他の不明パスはこの設定により ASSETS が `/index.html`（LP）にフォールバックする。
+    "not_found_handling": "single-page-application",
+  },
 }

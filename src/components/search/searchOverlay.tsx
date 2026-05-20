@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { Search, X } from '@/components/icons';
+import { SearchResultItem } from '@/components/search/searchResultItem';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { navigateToEntry } from '@/lib/entryNavigation';
 import { useStore } from '@/store';
 import type { MemoEntry, PanelId } from '@/types/memo';
-import { Search, X } from '@/components/icons';
-import { SearchResultItem } from '@/components/search/searchResultItem';
 
 const PANEL_TITLES: Record<PanelId, string> = {
   free: 'フリーメモ',
@@ -141,21 +141,24 @@ export function SearchOverlay() {
         }}
       >
         {/* 入力欄 */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-border-subtle">
-          <Search size={15} className="shrink-0 text-text-muted" />
+        <div className="border-border-subtle flex items-center gap-2 border-b px-3 py-2">
+          <Search size={15} className="text-text-muted shrink-0" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="エントリを検索…"
             autoComplete="off"
-            className="flex-1 bg-transparent border-none outline-none text-sm text-text-primary placeholder:text-text-faint"
+            className="text-text-primary placeholder:text-text-faint flex-1 border-none bg-transparent text-sm outline-none"
             style={{ boxShadow: 'none' }}
           />
           {query && (
             <button
-              onClick={() => { setQuery(''); inputRef.current?.focus(); }}
-              className="shrink-0 flex items-center bg-transparent border-none text-text-muted cursor-pointer p-0.5 hover:text-text-primary transition-colors duration-100"
+              onClick={() => {
+                setQuery('');
+                inputRef.current?.focus();
+              }}
+              className="text-text-muted hover:text-text-primary flex shrink-0 cursor-pointer items-center border-none bg-transparent p-0.5 transition-colors duration-100"
               aria-label="クリア"
             >
               <X size={14} />
@@ -166,7 +169,7 @@ export function SearchOverlay() {
         {/* 結果エリア */}
         <div className="overflow-y-auto" style={{ maxHeight: 'min(60vh, 480px)' }}>
           {debouncedQuery && totalCount === 0 && (
-            <div className="px-3 py-6 text-center text-sm text-text-muted">
+            <div className="text-text-muted px-3 py-6 text-center text-sm">
               該当するエントリが見つかりません
             </div>
           )}
@@ -175,7 +178,7 @@ export function SearchOverlay() {
             <div key={group.panel}>
               {/* パネルグループヘッダー */}
               <div
-                className="flex items-center gap-2 px-3 py-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase sticky top-0 z-10"
+                className="sticky top-0 z-10 flex items-center gap-2 px-3 py-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase"
                 style={{
                   color: PANEL_ACCENT[group.panel],
                   background: 'var(--bg-elevated)',
@@ -192,9 +195,7 @@ export function SearchOverlay() {
                   }}
                 />
                 {PANEL_TITLES[group.panel]}
-                <span className="text-text-muted font-normal ml-1">
-                  {group.entries.length}件
-                </span>
+                <span className="text-text-muted ml-1 font-normal">{group.entries.length}件</span>
               </div>
 
               {/* エントリ一覧 */}
@@ -212,9 +213,7 @@ export function SearchOverlay() {
 
         {/* フッター: 結果カウント */}
         {debouncedQuery && totalCount > 0 && (
-          <div
-            className="px-3 py-1.5 text-[11px] text-text-muted border-t border-border-subtle"
-          >
+          <div className="text-text-muted border-border-subtle border-t px-3 py-1.5 text-[11px]">
             {totalCount}件の結果
             {totalCount >= MAX_RESULTS && '（上限）'}
           </div>

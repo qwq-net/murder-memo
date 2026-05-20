@@ -1,15 +1,20 @@
 import { nanoid } from 'nanoid';
 
 import { deleteRelation, getRelationsBySession, putRelation } from '@/lib/idb';
-import type { CharacterRelation } from '@/types/memo';
 import type { StoreState } from '@/store/index';
+import type { CharacterRelation } from '@/types/memo';
 
 export interface RelationsSlice {
   relations: CharacterRelation[];
 
   loadRelations: (sessionId: string) => Promise<void>;
-  addRelation: (partial: Omit<CharacterRelation, 'id' | 'sessionId' | 'sortOrder'>) => Promise<CharacterRelation>;
-  updateRelation: (id: string, patch: Partial<Pick<CharacterRelation, 'label' | 'color' | 'memo'>>) => Promise<void>;
+  addRelation: (
+    partial: Omit<CharacterRelation, 'id' | 'sessionId' | 'sortOrder'>,
+  ) => Promise<CharacterRelation>;
+  updateRelation: (
+    id: string,
+    patch: Partial<Pick<CharacterRelation, 'label' | 'color' | 'memo'>>,
+  ) => Promise<void>;
   removeRelation: (id: string) => Promise<void>;
 }
 

@@ -1,8 +1,8 @@
+import { GroupHeader } from '@/components/common/groupHeader';
+import { SortableEntryList } from '@/components/entries/sortableEntryList';
 import { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
 import type { MemoEntry, TimelineGroup } from '@/types/memo';
-import { GroupHeader } from '@/components/common/groupHeader';
-import { SortableEntryList } from '@/components/entries/sortableEntryList';
 
 // ─── グループセクション ──────────────────────────────────────────────────────
 
@@ -12,7 +12,10 @@ export interface TimelineGroupSectionProps {
   unknownEntries: MemoEntry[];
   onToggleCollapse: (id: string) => void;
   onRemove: (id: string) => Promise<void>;
-  onUpdate: (id: string, patch: Partial<Pick<TimelineGroup, 'label' | 'collapsed'>>) => Promise<void>;
+  onUpdate: (
+    id: string,
+    patch: Partial<Pick<TimelineGroup, 'label' | 'collapsed'>>,
+  ) => Promise<void>;
   onReorderEntries: (orderedIds: string[]) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -29,7 +32,8 @@ export function TimelineGroupSection({
   onMoveUp,
   onMoveDown,
 }: TimelineGroupSectionProps) {
-  const entryCount = hourGroups.reduce((sum, hg) => sum + hg.entries.length, 0) + unknownEntries.length;
+  const entryCount =
+    hourGroups.reduce((sum, hg) => sum + hg.entries.length, 0) + unknownEntries.length;
 
   const labelEditor = useGroupLabelEditor({
     initialLabel: group.label,
@@ -74,7 +78,8 @@ export function TimelineGroupSection({
             <div
               className="absolute top-0 h-2.5 w-full"
               style={{
-                backgroundImage: 'repeating-linear-gradient(to bottom, color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent) 0 2px, transparent 2px 4px)',
+                backgroundImage:
+                  'repeating-linear-gradient(to bottom, color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent) 0 2px, transparent 2px 4px)',
               }}
             />
             {/* 中央実線 */}
@@ -88,7 +93,8 @@ export function TimelineGroupSection({
             <div
               className="absolute bottom-0 h-2.5 w-full"
               style={{
-                backgroundImage: 'repeating-linear-gradient(to bottom, color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent) 0 2px, transparent 2px 4px)',
+                backgroundImage:
+                  'repeating-linear-gradient(to bottom, color-mix(in srgb, var(--panel-timeline-accent) 12%, transparent) 0 2px, transparent 2px 4px)',
               }}
             />
           </div>
@@ -110,16 +116,13 @@ export function TimelineGroupSection({
             {unknownEntries.length > 0 && (
               <div>
                 <HourDivider label="不明" />
-                <SortableEntryList
-                  entries={unknownEntries}
-                  onReorder={onReorderEntries}
-                />
+                <SortableEntryList entries={unknownEntries} onReorder={onReorderEntries} />
               </div>
             )}
 
             {/* 空の場合 */}
             {hourGroups.length === 0 && unknownEntries.length === 0 && (
-              <div className="px-3 py-3.5 text-sm text-text-faint text-center">
+              <div className="text-text-faint px-3 py-3.5 text-center text-sm">
                 メモを追加してください
               </div>
             )}
@@ -139,16 +142,16 @@ function HourDivider({ label, muted }: { label: string; muted?: boolean }) {
   return (
     <div className="flex items-center gap-2 pt-0.5 pr-2 pb-0 pl-0">
       {/* 左ライン — 縦線とクロスする */}
-      <span className="flex-1 h-px" style={{ background: lineColor }} />
+      <span className="h-px flex-1" style={{ background: lineColor }} />
       <span
-        className={`text-sm font-mono tracking-[0.06em] shrink-0 ${
+        className={`shrink-0 font-mono text-sm tracking-[0.06em] ${
           muted ? 'text-text-faint' : 'text-text-muted'
         }`}
       >
         {label}
       </span>
       {/* 右ライン */}
-      <span className="flex-1 h-px" style={{ background: lineColor }} />
+      <span className="h-px flex-1" style={{ background: lineColor }} />
     </div>
   );
 }

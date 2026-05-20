@@ -1,5 +1,5 @@
-import { renderHook } from '@testing-library/react';
 import type { Character } from '@/types/memo';
+import { renderHook } from '@testing-library/react';
 import { useFilteredCharacters } from '../useFilteredCharacters';
 
 // IndexedDB モック（ストアのインポート時に必要）

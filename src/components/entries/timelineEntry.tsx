@@ -5,11 +5,11 @@
  */
 import { useCallback, useRef, useState } from 'react';
 
+import { EntryContent } from '@/components/entries/entryContent';
+import { ImageEntry } from '@/components/entries/imageEntry';
 import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
-import { EntryContent } from '@/components/entries/entryContent';
-import { ImageEntry } from '@/components/entries/imageEntry';
 
 interface TimelineEntryProps {
   entry: MemoEntry;

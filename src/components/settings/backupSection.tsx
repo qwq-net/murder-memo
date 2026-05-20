@@ -1,12 +1,19 @@
 import { useCallback, useMemo, useRef } from 'react';
 
-import { EXPORT_WARN_BYTES, downloadJson, estimateExportSize, exportSession, formatBytes, importSession } from '@/lib/exportImport';
-import { copyToClipboard, formatSessionAsText } from '@/lib/textExport';
-import { useStore } from '@/store';
-import type { GameSession, PanelId } from '@/types/memo';
 import { ConfirmModal } from '@/components/common/confirmModal';
 import { PANEL_CARD_ACCENT, PANEL_ORDER_LABELS } from '@/components/settings/panelConstants';
 import { SectionHeader } from '@/components/settings/sectionHeader';
+import {
+  EXPORT_WARN_BYTES,
+  downloadJson,
+  estimateExportSize,
+  exportSession,
+  formatBytes,
+  importSession,
+} from '@/lib/exportImport';
+import { copyToClipboard, formatSessionAsText } from '@/lib/textExport';
+import { useStore } from '@/store';
+import type { GameSession, PanelId } from '@/types/memo';
 
 export function BackupSection({
   sessions,
@@ -67,58 +74,64 @@ export function BackupSection({
     }
   }, [activeSessionId, doExport, addToast, setExportSizeInfo, setShowExportConfirm]);
 
-  const handleImportBackup = useCallback(async (file: File) => {
-    const { setSessionReady } = useStore.getState();
-    // ファイル読み込み・IDB 書き込み・画像復元が完了するまで UI 操作を不能にする
-    // （途中状態でメモを編集してインポートデータと混ざるのを防ぐ）。
-    setSessionReady(false);
-    const { pause, resume, clear } = useStore.temporal.getState();
-    pause();
-    try {
-      const newSession = await importSession(file);
-      const { sessions: current } = useStore.getState();
-      // セッション切替を伴う setState。store/index.ts の subscribe フックが発火し、
-      // 切替先セッションのデータ再ロード + ローディング解除を担う。
-      useStore.setState({
-        sessions: [...current, newSession],
-        activeSessionId: newSession.id,
-      });
-      clear();
-      addToast(`「${newSession.name}」をインポートしました`, 'success');
-      setOpen(false);
-    } catch (e) {
-      addToast(e instanceof Error ? e.message : 'インポートに失敗しました', 'error');
-      // 失敗時は subscribe フックが発火しないため、ここでローディングを解除する必要がある
-      setSessionReady(true);
-    } finally {
-      resume();
-    }
-  }, [addToast, setOpen]);
+  const handleImportBackup = useCallback(
+    async (file: File) => {
+      const { setSessionReady } = useStore.getState();
+      // ファイル読み込み・IDB 書き込み・画像復元が完了するまで UI 操作を不能にする
+      // （途中状態でメモを編集してインポートデータと混ざるのを防ぐ）。
+      setSessionReady(false);
+      const { pause, resume, clear } = useStore.temporal.getState();
+      pause();
+      try {
+        const newSession = await importSession(file);
+        const { sessions: current } = useStore.getState();
+        // セッション切替を伴う setState。store/index.ts の subscribe フックが発火し、
+        // 切替先セッションのデータ再ロード + ローディング解除を担う。
+        useStore.setState({
+          sessions: [...current, newSession],
+          activeSessionId: newSession.id,
+        });
+        clear();
+        addToast(`「${newSession.name}」をインポートしました`, 'success');
+        setOpen(false);
+      } catch (e) {
+        addToast(e instanceof Error ? e.message : 'インポートに失敗しました', 'error');
+        // 失敗時は subscribe フックが発火しないため、ここでローディングを解除する必要がある
+        setSessionReady(true);
+      } finally {
+        resume();
+      }
+    },
+    [addToast, setOpen],
+  );
 
-  const handleTextExport = useCallback(async (panelFilter?: PanelId) => {
-    const { entries, characters, timelineGroups, memoGroups, settings: s } = useStore.getState();
-    const session = sessions.find((ss) => ss.id === activeSessionId);
-    if (!session) return;
-    const text = formatSessionAsText(
-      session.name,
-      entries,
-      characters,
-      timelineGroups,
-      memoGroups,
-      s.panelOrder,
-      panelFilter,
-    );
-    if (!text) {
-      addToast('エクスポートするメモがありません');
-      return;
-    }
-    const ok = await copyToClipboard(text);
-    if (ok) {
-      addToast('クリップボードにコピーしました', 'success');
-    } else {
-      addToast('コピーに失敗しました', 'error');
-    }
-  }, [sessions, activeSessionId, addToast]);
+  const handleTextExport = useCallback(
+    async (panelFilter?: PanelId) => {
+      const { entries, characters, timelineGroups, memoGroups, settings: s } = useStore.getState();
+      const session = sessions.find((ss) => ss.id === activeSessionId);
+      if (!session) return;
+      const text = formatSessionAsText(
+        session.name,
+        entries,
+        characters,
+        timelineGroups,
+        memoGroups,
+        s.panelOrder,
+        panelFilter,
+      );
+      if (!text) {
+        addToast('エクスポートするメモがありません');
+        return;
+      }
+      const ok = await copyToClipboard(text);
+      if (ok) {
+        addToast('クリップボードにコピーしました', 'success');
+      } else {
+        addToast('コピーに失敗しました', 'error');
+      }
+    },
+    [sessions, activeSessionId, addToast],
+  );
 
   return (
     <>
@@ -132,10 +145,7 @@ export function BackupSection({
           メモ内容を Markdown テキストとしてクリップボードにコピーします。
         </span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          <button
-            onClick={() => handleTextExport()}
-            className="btn-ghost btn-sm"
-          >
+          <button onClick={() => handleTextExport()} className="btn-ghost btn-sm">
             全パネル
           </button>
           {panelOrder.map((p) => (
@@ -158,7 +168,8 @@ export function BackupSection({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          現在のセッションのデータを JSON ファイルとしてエクスポート、またはファイルからインポートして復元します。
+          現在のセッションのデータを JSON
+          ファイルとしてエクスポート、またはファイルからインポートして復元します。
         </span>
 
         {/* 統計 */}
@@ -169,38 +180,46 @@ export function BackupSection({
         </div>
 
         {stats.imageCount > 100 && (
-          <div style={{
-            fontSize: 14,
-            color: 'var(--importance-medium)',
-            lineHeight: 1.6,
-            padding: '6px 10px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'color-mix(in srgb, var(--importance-medium) 10%, transparent)',
-            display: 'flex',
-            gap: 8,
-            alignItems: 'flex-start',
-          }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+          <div
+            style={{
+              fontSize: 14,
+              color: 'var(--importance-medium)',
+              lineHeight: 1.6,
+              padding: '6px 10px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'color-mix(in srgb, var(--importance-medium) 10%, transparent)',
+              display: 'flex',
+              gap: 8,
+              alignItems: 'flex-start',
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              style={{ flexShrink: 0, marginTop: 2 }}
+            >
               <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.3" />
-              <path d="M8 7v4M8 5.5v-.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path
+                d="M8 7v4M8 5.5v-.01"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
             </svg>
             <span>
-              画像が {stats.imageCount} 件あります。エクスポート時にファイルが大きくなったり、インポート時にデータが破損するおそれがあります。
+              画像が {stats.imageCount}{' '}
+              件あります。エクスポート時にファイルが大きくなったり、インポート時にデータが破損するおそれがあります。
             </span>
           </div>
         )}
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          <button
-            onClick={handleExportBackup}
-            className="btn-ghost btn-sm"
-          >
+          <button onClick={handleExportBackup} className="btn-ghost btn-sm">
             エクスポート
           </button>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="btn-ghost btn-sm"
-          >
+          <button onClick={() => fileInputRef.current?.click()} className="btn-ghost btn-sm">
             インポート
           </button>
           <input
@@ -223,11 +242,13 @@ export function BackupSection({
         onClose={() => setShowExportConfirm(false)}
         title="エクスポートファイルが大きくなります"
         confirmationLabel={exportSizeInfo}
-        actions={[{
-          label: 'エクスポートする',
-          requiresConfirmation: true,
-          onClick: doExport,
-        }]}
+        actions={[
+          {
+            label: 'エクスポートする',
+            requiresConfirmation: true,
+            onClick: doExport,
+          },
+        ]}
       />
     </>
   );

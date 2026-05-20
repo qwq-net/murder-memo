@@ -4,11 +4,11 @@
  */
 import { useMemo } from 'react';
 
+import { CharacterBadge } from '@/components/characters/characterBadge';
+import { X } from '@/components/icons';
 import { sortCharactersByRole } from '@/lib/characterSort';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
-import { CharacterBadge } from '@/components/characters/characterBadge';
-import { X } from '@/components/icons';
 
 interface CharacterFilterBarProps {
   panelId: PanelId;

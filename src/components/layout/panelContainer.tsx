@@ -1,8 +1,8 @@
 import { useCallback, useRef } from 'react';
 
+import { ResizeHandle } from '@/components/layout/resizeHandle';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
-import { ResizeHandle } from '@/components/layout/resizeHandle';
 
 interface PanelContainerProps {
   panels: {
@@ -41,12 +41,12 @@ export function PanelContainer({ panels }: PanelContainerProps) {
   );
 
   return (
-    <div ref={containerRef} className="flex flex-1 overflow-hidden h-full min-h-0">
+    <div ref={containerRef} className="flex h-full min-h-0 flex-1 overflow-hidden">
       {panels.flatMap((panel, i) => {
         const items: React.ReactNode[] = [
           <div
             key={panel.id}
-            className="h-full overflow-hidden flex flex-col"
+            className="flex h-full flex-col overflow-hidden"
             style={{ flex: `${sizes[i]} 1 0`, minWidth: 120 }}
           >
             {panel.node}

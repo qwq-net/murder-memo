@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 
+import { EntryContent } from '@/components/entries/entryContent';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
-import { EntryContent } from '@/components/entries/entryContent';
 
 interface TextEntryProps {
   entry: MemoEntry;

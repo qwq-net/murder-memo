@@ -1,26 +1,26 @@
+import { temporal } from 'zundo';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { temporal } from 'zundo';
 
 import { getEntriesBySession } from '@/lib/idb';
 import type { CharactersSlice } from '@/store/slices/characters';
 import { createCharactersSlice } from '@/store/slices/characters';
+import type { DeductionsSlice } from '@/store/slices/deductions';
+import { createDeductionsSlice } from '@/store/slices/deductions';
 import type { EntriesSlice } from '@/store/slices/entries';
 import { createEntriesSlice } from '@/store/slices/entries';
 import type { LinkKeywordsSlice } from '@/store/slices/linkKeywords';
 import { createLinkKeywordsSlice } from '@/store/slices/linkKeywords';
 import type { MemoGroupsSlice } from '@/store/slices/memoGroups';
 import { createMemoGroupsSlice } from '@/store/slices/memoGroups';
+import type { RelationsSlice } from '@/store/slices/relations';
+import { createRelationsSlice } from '@/store/slices/relations';
 import type { SessionsSlice } from '@/store/slices/sessions';
 import { createSessionsSlice } from '@/store/slices/sessions';
 import type { SettingsSlice } from '@/store/slices/settings';
 import { createSettingsSlice } from '@/store/slices/settings';
 import type { TimelineGroupsSlice } from '@/store/slices/timelineGroups';
 import { createTimelineGroupsSlice } from '@/store/slices/timelineGroups';
-import type { DeductionsSlice } from '@/store/slices/deductions';
-import { createDeductionsSlice } from '@/store/slices/deductions';
-import type { RelationsSlice } from '@/store/slices/relations';
-import { createRelationsSlice } from '@/store/slices/relations';
 import type { UiSlice } from '@/store/slices/ui';
 import { createUiSlice } from '@/store/slices/ui';
 
@@ -36,7 +36,10 @@ export type StoreState = SessionsSlice &
   UiSlice;
 
 /** Undo/Redo で追跡するデータ部分のみ抽出 */
-type TrackedState = Pick<StoreState, 'entries' | 'characters' | 'timelineGroups' | 'memoGroups' | 'deductions' | 'relations'>;
+type TrackedState = Pick<
+  StoreState,
+  'entries' | 'characters' | 'timelineGroups' | 'memoGroups' | 'deductions' | 'relations'
+>;
 
 export const useStore = create<StoreState>()(
   temporal(

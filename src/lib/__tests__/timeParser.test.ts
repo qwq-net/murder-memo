@@ -1,4 +1,10 @@
-import { autoCompleteTime, getHourKey, getHourLabel, normalizeTimeInput, parseEventTime } from '../timeParser';
+import {
+  autoCompleteTime,
+  getHourKey,
+  getHourLabel,
+  normalizeTimeInput,
+  parseEventTime,
+} from '../timeParser';
 
 describe('normalizeTimeInput', () => {
   it('全角数字を半角に変換する', () => {

@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { useStore } from '@/store';
-import type { LinkKeyword } from '@/types/memo';
 import { ConfirmModal } from '@/components/common/confirmModal';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { SearchLinkButton } from '@/components/common/searchLinkButton';
 import { Trash2, X } from '@/components/icons';
+import { useStore } from '@/store';
+import type { LinkKeyword } from '@/types/memo';
 
 /**
  * 登録済みリンクキーワード辞書の一覧モーダル。
@@ -136,11 +136,7 @@ export function LinkListModal() {
       <ConfirmModal
         open={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}
-        title={
-          pendingDelete
-            ? `「${pendingDelete.keyword}」を辞書から削除しますか？`
-            : ''
-        }
+        title={pendingDelete ? `「${pendingDelete.keyword}」を辞書から削除しますか？` : ''}
         actions={[
           {
             label: '削除',

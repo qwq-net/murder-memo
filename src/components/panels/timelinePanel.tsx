@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 
-import { useGroupSwap } from '@/hooks/useGroupSwap';
-import { groupEntriesByTimeline } from '@/lib/grouping';
-import { useStore } from '@/store';
 import { EmptyState } from '@/components/common/emptyState';
 import { EntryInput } from '@/components/entries/entryInput';
 import { TimelineGroupSection } from '@/components/panels/timelineGroupSection';
+import { useGroupSwap } from '@/hooks/useGroupSwap';
+import { groupEntriesByTimeline } from '@/lib/grouping';
+import { useStore } from '@/store';
 
 export function TimelinePanel() {
   const allEntries = useStore((s) => s.entries);
@@ -25,9 +25,8 @@ export function TimelinePanel() {
 
   // フィルター対象キャラクターの名前リスト（テキスト中の名前でも一致させるため）
   const filterCharNames = useMemo(
-    () => allCharacters
-      .filter((c) => filterIds.includes(c.id) && c.name.length > 0)
-      .map((c) => c.name),
+    () =>
+      allCharacters.filter((c) => filterIds.includes(c.id) && c.name.length > 0).map((c) => c.name),
     [allCharacters, filterIds],
   );
 
@@ -58,16 +57,19 @@ export function TimelinePanel() {
   return (
     <>
       {inputPosition === 'top' && entryInput}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[60px]">
+      <div className="flex-1 overflow-x-hidden overflow-y-auto pb-[60px]">
         {isFilteredEmpty ? (
-          <div className="py-6 px-5 text-center text-sm text-text-faint">
+          <div className="text-text-faint px-5 py-6 text-center text-sm">
             フィルター条件に一致するメモはありません
           </div>
         ) : isEmpty ? (
           <EmptyState
             accentColor="var(--panel-timeline-accent)"
             message="メモグループを追加してタイムラインを整理しよう"
-            onAddGroup={async (label) => { await addTimelineGroup(label); addToast('グループを追加しました'); }}
+            onAddGroup={async (label) => {
+              await addTimelineGroup(label);
+              addToast('グループを追加しました');
+            }}
           />
         ) : (
           groupedData.map(({ group, hourGroups, unknown }, i) => (
@@ -85,7 +87,6 @@ export function TimelinePanel() {
             />
           ))
         )}
-
       </div>
       {inputPosition === 'bottom' && entryInput}
     </>

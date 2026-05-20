@@ -57,19 +57,18 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
 
   const isSelected = useCallback((id: string) => selectedIds.has(id), [selectedIds]);
 
-  const value = useMemo<SelectionState>(() => ({
-    selectedIds,
-    handleSelect,
-    clearSelection,
-    isSelected,
-    hasSelection: selectedIds.size > 0,
-  }), [selectedIds, handleSelect, clearSelection, isSelected]);
-
-  return (
-    <SelectionContext.Provider value={value}>
-      {children}
-    </SelectionContext.Provider>
+  const value = useMemo<SelectionState>(
+    () => ({
+      selectedIds,
+      handleSelect,
+      clearSelection,
+      isSelected,
+      hasSelection: selectedIds.size > 0,
+    }),
+    [selectedIds, handleSelect, clearSelection, isSelected],
   );
+
+  return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

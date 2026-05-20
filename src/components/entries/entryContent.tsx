@@ -4,6 +4,8 @@
  */
 import { type RefObject, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 
+import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
+import { SearchLinkButton } from '@/components/common/searchLinkButton';
 import { useAutoRegisterLinkKeywords } from '@/hooks/useAutoRegisterLinkKeywords';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useCaretPosition } from '@/hooks/useCaretPosition';
@@ -11,8 +13,6 @@ import { useEntryDraft } from '@/hooks/useEntryDraft';
 import { detectInlineCharacterIds, parseCharacterText } from '@/lib/parseCharacterText';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
-import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
-import { SearchLinkButton } from '@/components/common/searchLinkButton';
 
 interface EntryContentProps {
   entry: MemoEntry;
@@ -69,18 +69,23 @@ export function EntryContent({
   const effectiveFormat = entry.characterDisplayFormat ?? panelDefault.format;
   const effectiveVisibility = entry.characterDisplayVisibility ?? panelDefault.visibility;
 
-  const { draft, setDraft, handleBlur: draftBlur, handleEscape: draftEscape, resetGuards } =
-    useEntryDraft({
-      entryId: entry.id,
-      currentValues: { content: entry.content },
-      isEditing,
-      onSave: (values) => {
-        const trimmed = values.content.trim();
-        // 確定時、本文中の `[キーワード]` を辞書に自動登録する
-        registerKeywords(trimmed);
-        onSave(trimmed);
-      },
-    });
+  const {
+    draft,
+    setDraft,
+    handleBlur: draftBlur,
+    handleEscape: draftEscape,
+    resetGuards,
+  } = useEntryDraft({
+    entryId: entry.id,
+    currentValues: { content: entry.content },
+    isEditing,
+    onSave: (values) => {
+      const trimmed = values.content.trim();
+      // 確定時、本文中の `[キーワード]` を辞書に自動登録する
+      registerKeywords(trimmed);
+      onSave(trimmed);
+    },
+  });
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { applyPendingCursor, captureFromMouseEvent } = useCaretPosition();
@@ -138,7 +143,7 @@ export function EntryContent({
     <div style={{ flex: 1, minWidth: 0 }}>
       {/* テキスト */}
       {isEditing ? (
-        <div className="pl-3.5 pr-2.5 pt-px pb-0">
+        <div className="pt-px pr-2.5 pb-0 pl-3.5">
           <textarea
             ref={inputRef}
             value={draft.content}
@@ -149,7 +154,7 @@ export function EntryContent({
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             rows={1}
-            className="w-full bg-transparent border-none outline-none text-text-primary font-sans text-sm leading-[1.2] p-0 m-0 resize-none overflow-hidden block"
+            className="text-text-primary m-0 block w-full resize-none overflow-hidden border-none bg-transparent p-0 font-sans text-sm leading-[1.2] outline-none"
           />
         </div>
       ) : (
@@ -159,7 +164,7 @@ export function EntryContent({
             captureFromMouseEvent(e, entry.content.length);
             setFocusedEntry(entry.id);
           }}
-          className="cursor-text pt-px pr-1 pb-0 pl-3.5 whitespace-pre-wrap break-words text-sm leading-[1.2]"
+          className="cursor-text pt-px pr-1 pb-0 pl-3.5 text-sm leading-[1.2] break-words whitespace-pre-wrap"
         >
           {!entry.content ? (
             <span className="text-text-faint">空のメモ</span>
@@ -170,16 +175,11 @@ export function EntryContent({
               }
               if (seg.type === 'search-link') {
                 // [キーワード] または辞書ワードをクリッカブルな検索ショートカットとして表示
-                return (
-                  <SearchLinkButton key={i} keyword={seg.keyword} onClick={openSearchWith} />
-                );
+                return <SearchLinkButton key={i} keyword={seg.keyword} onClick={openSearchWith} />;
               }
               // キャラクター名をインライン色付きテキストとして表示
               return (
-                <span
-                  key={i}
-                  style={{ color: seg.character.color, fontWeight: 600 }}
-                >
+                <span key={i} style={{ color: seg.character.color, fontWeight: 600 }}>
                   {seg.character.name}
                 </span>
               );
@@ -189,7 +189,7 @@ export function EntryContent({
       )}
 
       {/* 役職マーカー — テキストと同じ左右 padding で揃える */}
-      <div className="pl-3.5 pr-2.5 pb-0.5">
+      <div className="pr-2.5 pb-0.5 pl-3.5">
         <CharacterBadgeBar
           entry={entry}
           format={effectiveFormat}

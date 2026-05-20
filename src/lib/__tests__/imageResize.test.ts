@@ -17,16 +17,23 @@ beforeEach(() => {
   vi.stubGlobal('createImageBitmap', vi.fn());
 
   // OffscreenCanvas は `new` で呼ばれるため class でモックする
-  vi.stubGlobal('OffscreenCanvas', class {
-    width: number;
-    height: number;
-    constructor(w: number, h: number) {
-      this.width = w;
-      this.height = h;
-    }
-    getContext() { return mockCtx; }
-    convertToBlob(...args: unknown[]) { return mockConvertToBlob(...args); }
-  });
+  vi.stubGlobal(
+    'OffscreenCanvas',
+    class {
+      width: number;
+      height: number;
+      constructor(w: number, h: number) {
+        this.width = w;
+        this.height = h;
+      }
+      getContext() {
+        return mockCtx;
+      }
+      convertToBlob(...args: unknown[]) {
+        return mockConvertToBlob(...args);
+      }
+    },
+  );
 });
 
 describe('resizeImage', () => {

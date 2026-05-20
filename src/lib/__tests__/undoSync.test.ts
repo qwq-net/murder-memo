@@ -62,8 +62,12 @@ describe('syncStateToIdb', () => {
 
   it('clearSessionData → bulk put の順序で実行される', async () => {
     const callOrder: string[] = [];
-    mockClearSessionData.mockImplementation(async () => { callOrder.push('clear'); });
-    mockBulkPutEntries.mockImplementation(async () => { callOrder.push('entries'); });
+    mockClearSessionData.mockImplementation(async () => {
+      callOrder.push('clear');
+    });
+    mockBulkPutEntries.mockImplementation(async () => {
+      callOrder.push('entries');
+    });
 
     await syncStateToIdb(makeState());
     expect(callOrder[0]).toBe('clear');

@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 
+import { Plus } from '@/components/icons';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
-import { Plus } from '@/components/icons';
 
 interface GroupSelectorProps {
   panel: PanelId;
@@ -32,16 +32,18 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
 
   const groups = useMemo(() => {
     if (isTimeline) return timelineGroups;
-    if (isMemoPanel) return memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder);
+    if (isMemoPanel)
+      return memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder);
     return [];
   }, [isTimeline, isMemoPanel, timelineGroups, memoGroups, panel]);
 
   // selectedGroupId が現存するグループに含まれなければリセット
   const validSelectedId = groups.some((g) => g.id === selectedGroupId) ? selectedGroupId : '';
 
-  const effectiveGroupId = isTimeline && timelineGroups.length === 1 && !validSelectedId
-    ? timelineGroups[0].id
-    : validSelectedId;
+  const effectiveGroupId =
+    isTimeline && timelineGroups.length === 1 && !validSelectedId
+      ? timelineGroups[0].id
+      : validSelectedId;
 
   const handleAddGroup = useCallback(async () => {
     const label = newGroupLabel.trim();
@@ -56,29 +58,44 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
     addToast('グループを追加しました');
     setNewGroupLabel('');
     setIsAddingGroup(false);
-  }, [newGroupLabel, isTimeline, isMemoPanel, panel, addTimelineGroup, addMemoGroup, onGroupIdChange, addToast]);
+  }, [
+    newGroupLabel,
+    isTimeline,
+    isMemoPanel,
+    panel,
+    addTimelineGroup,
+    addMemoGroup,
+    onGroupIdChange,
+    addToast,
+  ]);
 
   return (
-    <div className="flex gap-1 items-center min-h-6">
+    <div className="flex min-h-6 items-center gap-1">
       {/* グループセレクタ */}
       <select
         value={effectiveGroupId}
         onChange={(e) => onGroupIdChange(e.target.value)}
         aria-label="追加先メモグループ"
-        className="flex-1 bg-bg-elevated border border-border-subtle rounded-sm text-text-secondary text-sm px-1.5 py-[3px] outline-none"
+        className="bg-bg-elevated border-border-subtle text-text-secondary flex-1 rounded-sm border px-1.5 py-[3px] text-sm outline-none"
       >
         {isTimeline ? (
           <>
-            <option value="">{groups.length === 0 ? 'メモグループなし' : 'メモグループを選択…'}</option>
+            <option value="">
+              {groups.length === 0 ? 'メモグループなし' : 'メモグループを選択…'}
+            </option>
             {groups.map((g) => (
-              <option key={g.id} value={g.id}>{g.label}</option>
+              <option key={g.id} value={g.id}>
+                {g.label}
+              </option>
             ))}
           </>
         ) : (
           <>
             <option value="">未分類</option>
             {groups.map((g) => (
-              <option key={g.id} value={g.id}>{g.label}</option>
+              <option key={g.id} value={g.id}>
+                {g.label}
+              </option>
             ))}
           </>
         )}
@@ -86,7 +103,7 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
 
       {/* グループ追加 */}
       {isAddingGroup ? (
-        <div className="flex gap-1 items-center">
+        <div className="flex items-center gap-1">
           <input
             autoFocus
             value={newGroupLabel}
@@ -106,12 +123,9 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
             }}
             placeholder={isTimeline ? '当日、前日 等' : 'メモグループ名'}
             aria-label="メモグループ名"
-            className="flex-1 min-w-[60px] bg-bg-base border border-border-default rounded-sm text-text-primary text-sm px-1.5 py-[3px] outline-none"
+            className="bg-bg-base border-border-default text-text-primary min-w-[60px] flex-1 rounded-sm border px-1.5 py-[3px] text-sm outline-none"
           />
-          <button
-            onClick={handleAddGroup}
-            className="btn-primary btn-sm text-sm"
-          >
+          <button onClick={handleAddGroup} className="btn-primary btn-sm text-sm">
             追加
           </button>
         </div>
@@ -119,7 +133,7 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
         <button
           onClick={() => setIsAddingGroup(true)}
           title="メモグループを追加"
-          className="flex items-center bg-transparent border border-dashed border-border-default rounded-sm text-text-muted text-sm px-2 py-[3px] cursor-pointer transition-[border-color,color] duration-150 whitespace-nowrap hover:border-border-strong hover:text-text-secondary"
+          className="border-border-default text-text-muted hover:border-border-strong hover:text-text-secondary flex cursor-pointer items-center rounded-sm border border-dashed bg-transparent px-2 py-[3px] text-sm whitespace-nowrap transition-[border-color,color] duration-150"
         >
           <Plus size={12} strokeWidth={2.5} className="mr-1" />
           メモグループ
@@ -128,4 +142,3 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
     </div>
   );
 }
-

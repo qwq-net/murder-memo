@@ -1,4 +1,12 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 // ─── 型定義 ─────────────────────────────────────────────────────────────────
 
@@ -223,7 +231,8 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       if (now - st.lastTime < THROTTLE_MS) return;
       st.lastTime = now;
 
-      const px = e.clientX, py = e.clientY;
+      const px = e.clientX,
+        py = e.clientY;
 
       // 安全ゾーン: サブメニュー内 or トリガー項目内 → 常に有効
       const inSubmenu = isInsideRect(px, py, st.rect);
@@ -328,19 +337,40 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
                 aria-haspopup="true"
                 aria-expanded={isOpen}
                 disabled={item.disabled}
-                onClick={(e) => { if (!item.disabled) toggleSubmenu(i, e.currentTarget); }}
-                onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = 'var(--bg-hover)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = isOpen ? 'var(--bg-active)' : 'none'; }}
+                onClick={(e) => {
+                  if (!item.disabled) toggleSubmenu(i, e.currentTarget);
+                }}
+                onMouseEnter={(e) => {
+                  if (!item.disabled) e.currentTarget.style.background = 'var(--bg-hover)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = isOpen ? 'var(--bg-active)' : 'none';
+                }}
                 style={{
-                  ...ITEM_STYLE, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  ...ITEM_STYLE,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                   background: isOpen ? 'var(--bg-active)' : 'none',
                   color: item.disabled ? 'var(--text-faint)' : 'var(--text-primary)',
                   cursor: item.disabled ? 'default' : 'pointer',
                 }}
               >
                 {item.label}
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>
-                  <path d="M2 1l3 3-3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  width="8"
+                  height="8"
+                  viewBox="0 0 8 8"
+                  fill="none"
+                  style={{ flexShrink: 0, opacity: 0.5 }}
+                >
+                  <path
+                    d="M2 1l3 3-3 3"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </button>
             );
@@ -350,14 +380,23 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
               key={i}
               role="menuitem"
               disabled={item.disabled}
-              onClick={() => { item.onClick(); onClose(); }}
+              onClick={() => {
+                item.onClick();
+                onClose();
+              }}
               onMouseEnter={(e) => {
                 if (!item.disabled) e.currentTarget.style.background = 'var(--bg-hover)';
               }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'none';
+              }}
               style={{
                 ...ITEM_STYLE,
-                color: item.disabled ? 'var(--text-faint)' : item.danger ? 'var(--danger)' : 'var(--text-primary)',
+                color: item.disabled
+                  ? 'var(--text-faint)'
+                  : item.danger
+                    ? 'var(--danger)'
+                    : 'var(--text-primary)',
                 cursor: item.disabled ? 'default' : 'pointer',
               }}
             >
@@ -369,7 +408,9 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 
       {openSubmenuItem && isSubmenu(openSubmenuItem) && (
         <SubMenu
-          ref={(el) => { submenuRef.current = el; }}
+          ref={(el) => {
+            submenuRef.current = el;
+          }}
           x={subPos.x}
           y={subPos.y}
           items={openSubmenuItem.submenu}
@@ -391,71 +432,84 @@ interface SubMenuProps {
   safeTriangleRef: React.RefObject<SafeTriangleState>;
 }
 
-const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(
-  function SubMenu({ x, y, items, onClose, safeTriangleRef }, ref) {
-    const localRef = useRef<HTMLDivElement>(null);
+const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(function SubMenu(
+  { x, y, items, onClose, safeTriangleRef },
+  ref,
+) {
+  const localRef = useRef<HTMLDivElement>(null);
 
-    // ref を外部にも公開
-    useImperativeHandle(ref, () => localRef.current!, []);
+  // ref を外部にも公開
+  useImperativeHandle(ref, () => localRef.current!, []);
 
-    // useLayoutEffect で位置補正 + Safe Triangle rect セット
-    // React StrictMode で何度呼ばれても正しく動く（DOM 操作は最小限、props の位置から毎回計算）
-    useLayoutEffect(() => {
-      const el = localRef.current;
-      if (!el) return;
+  // useLayoutEffect で位置補正 + Safe Triangle rect セット
+  // React StrictMode で何度呼ばれても正しく動く（DOM 操作は最小限、props の位置から毎回計算）
+  useLayoutEffect(() => {
+    const el = localRef.current;
+    if (!el) return;
 
-      // props の位置にリセット（StrictMode 対策）
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
+    // props の位置にリセット（StrictMode 対策）
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
 
-      const sub = el.getBoundingClientRect();
+    const sub = el.getBoundingClientRect();
 
-      // 下はみ出し補正
-      if (sub.bottom > window.innerHeight) {
-        el.style.top = `${Math.max(4, window.innerHeight - sub.height - 4)}px`;
-      }
+    // 下はみ出し補正
+    if (sub.bottom > window.innerHeight) {
+      el.style.top = `${Math.max(4, window.innerHeight - sub.height - 4)}px`;
+    }
 
-      // 確定位置で Safe Triangle をセット
-      const st = safeTriangleRef.current;
-      st.rect = el.getBoundingClientRect();
-      // direction は toggleSubmenu で事前セット済み（ここでは変更しない）
-      st.prev = null;
-      st.invalidCount = 0;
-    }, [x, y, safeTriangleRef]);
+    // 確定位置で Safe Triangle をセット
+    const st = safeTriangleRef.current;
+    st.rect = el.getBoundingClientRect();
+    // direction は toggleSubmenu で事前セット済み（ここでは変更しない）
+    st.prev = null;
+    st.invalidCount = 0;
+  }, [x, y, safeTriangleRef]);
 
-    return (
-      <div
-        ref={localRef}
-        role="menu"
-        style={{ ...MENU_STYLE, top: y, left: x, zIndex: 201, minWidth: SUBMENU_MIN_WIDTH }}
-      >
-        {items.map((item, i) => {
-          if (isSeparator(item)) return <div key={`sep-${i}`} style={SEPARATOR_STYLE} />;
-          if (isHeader(item)) return (
+  return (
+    <div
+      ref={localRef}
+      role="menu"
+      style={{ ...MENU_STYLE, top: y, left: x, zIndex: 201, minWidth: SUBMENU_MIN_WIDTH }}
+    >
+      {items.map((item, i) => {
+        if (isSeparator(item)) return <div key={`sep-${i}`} style={SEPARATOR_STYLE} />;
+        if (isHeader(item))
+          return (
             <div key={`hdr-${i}`} style={HEADER_STYLE}>
               {item.label}
             </div>
           );
-          if (isSubmenu(item)) return null;
-          return (
-            <button
-              key={i}
-              role="menuitem"
-              disabled={item.disabled}
-              onClick={() => { item.onClick(); onClose(); }}
-              onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = 'var(--bg-hover)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
-              style={{
-                ...ITEM_STYLE,
-                color: item.disabled ? 'var(--text-faint)' : item.danger ? 'var(--danger)' : 'var(--text-primary)',
-                cursor: item.disabled ? 'default' : 'pointer',
-              }}
-            >
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
-    );
-  },
-);
+        if (isSubmenu(item)) return null;
+        return (
+          <button
+            key={i}
+            role="menuitem"
+            disabled={item.disabled}
+            onClick={() => {
+              item.onClick();
+              onClose();
+            }}
+            onMouseEnter={(e) => {
+              if (!item.disabled) e.currentTarget.style.background = 'var(--bg-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'none';
+            }}
+            style={{
+              ...ITEM_STYLE,
+              color: item.disabled
+                ? 'var(--text-faint)'
+                : item.danger
+                  ? 'var(--danger)'
+                  : 'var(--text-primary)',
+              cursor: item.disabled ? 'default' : 'pointer',
+            }}
+          >
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+});

@@ -3,6 +3,7 @@
  * ラベル定数と各セクションのビルダー関数を集約。
  */
 
+import type { ContextMenuEntry } from '@/components/common/contextMenu';
 import type {
   Character,
   CharacterDisplayFormat,
@@ -12,7 +13,6 @@ import type {
   PanelId,
   TimelineGroup,
 } from '@/types/memo';
-import type { ContextMenuEntry } from '@/components/common/contextMenu';
 
 // ─── ラベル定数 ─────────────────────────────────────────────────────────────
 
@@ -51,11 +51,15 @@ export interface MenuContext {
   updateEntry: (id: string, patch: Partial<MemoEntry>) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
   addEntry: (
-    partial: Pick<MemoEntry, 'panel'> & Partial<Omit<MemoEntry, 'id' | 'createdAt' | 'updatedAt' | 'sortOrder'>>,
+    partial: Pick<MemoEntry, 'panel'> &
+      Partial<Omit<MemoEntry, 'id' | 'createdAt' | 'updatedAt' | 'sortOrder'>>,
   ) => Promise<MemoEntry>;
   toggleCharacterTag: (entryId: string, characterId: string) => Promise<void>;
   settings: {
-    defaultCharacterDisplay: Record<PanelId, { format: CharacterDisplayFormat; visibility: CharacterDisplayVisibility }>;
+    defaultCharacterDisplay: Record<
+      PanelId,
+      { format: CharacterDisplayFormat; visibility: CharacterDisplayVisibility }
+    >;
   };
   /** トースト通知 */
   addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
@@ -92,10 +96,7 @@ async function forEntries(
 
 // ─── 移動サブメニュー（パネル移動 + グループ移動を統合） ─────────────────────
 
-export function buildMoveSubmenu(
-  entries: MemoEntry[],
-  ctx: MenuContext,
-): ContextMenuEntry[] {
+export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): ContextMenuEntry[] {
   const isBulk = entries.length > 1;
   const commonPanel = entries.every((e) => e.panel === entries[0].panel) ? entries[0].panel : null;
   const panel = isBulk ? commonPanel : entries[0].panel;
@@ -111,7 +112,7 @@ export function buildMoveSubmenu(
   });
 
   for (const p of ['free', 'personal', 'timeline'] as PanelId[]) {
-    if (isBulk ? (commonPanel && p === commonPanel) : (p === entries[0].panel)) continue;
+    if (isBulk ? commonPanel && p === commonPanel : p === entries[0].panel) continue;
 
     if (p === 'timeline') {
       if (ctx.timelineGroups.length === 0) {
@@ -120,11 +121,19 @@ export function buildMoveSubmenu(
         sub.push({
           label: PANEL_LABELS[p],
           onClick: async () => {
-            await forEntries(entries, async (entry) => {
-              if (entry.panel === p) return;
-              await ctx.moveEntryToPanel(entry.id, p);
-              await ctx.updateEntry(entry.id, { timelineGroupId: ctx.timelineGroups[0].id, type: 'timeline' });
-            }, ctx, moveToast(p));
+            await forEntries(
+              entries,
+              async (entry) => {
+                if (entry.panel === p) return;
+                await ctx.moveEntryToPanel(entry.id, p);
+                await ctx.updateEntry(entry.id, {
+                  timelineGroupId: ctx.timelineGroups[0].id,
+                  type: 'timeline',
+                });
+              },
+              ctx,
+              moveToast(p),
+            );
           },
         });
       } else {
@@ -133,11 +142,16 @@ export function buildMoveSubmenu(
           sub.push({
             label: `${PANEL_LABELS[p]}: ${g.label}`,
             onClick: async () => {
-              await forEntries(entries, async (entry) => {
-                if (entry.panel === p) return;
-                await ctx.moveEntryToPanel(entry.id, p);
-                await ctx.updateEntry(entry.id, { timelineGroupId: g.id, type: 'timeline' });
-              }, ctx, moveToast(p));
+              await forEntries(
+                entries,
+                async (entry) => {
+                  if (entry.panel === p) return;
+                  await ctx.moveEntryToPanel(entry.id, p);
+                  await ctx.updateEntry(entry.id, { timelineGroupId: g.id, type: 'timeline' });
+                },
+                ctx,
+                moveToast(p),
+              );
             },
           });
         }
@@ -148,11 +162,16 @@ export function buildMoveSubmenu(
         sub.push({
           label: PANEL_LABELS[p],
           onClick: async () => {
-            await forEntries(entries, async (entry) => {
-              if (entry.panel === p) return;
-              await ctx.moveEntryToPanel(entry.id, p);
-              await ctx.updateEntry(entry.id, { groupId: undefined });
-            }, ctx, moveToast(p));
+            await forEntries(
+              entries,
+              async (entry) => {
+                if (entry.panel === p) return;
+                await ctx.moveEntryToPanel(entry.id, p);
+                await ctx.updateEntry(entry.id, { groupId: undefined });
+              },
+              ctx,
+              moveToast(p),
+            );
           },
         });
       } else {
@@ -160,22 +179,32 @@ export function buildMoveSubmenu(
         sub.push({
           label: `${PANEL_LABELS[p]}: 未分類`,
           onClick: async () => {
-            await forEntries(entries, async (entry) => {
-              if (entry.panel === p) return;
-              await ctx.moveEntryToPanel(entry.id, p);
-              await ctx.updateEntry(entry.id, { groupId: undefined });
-            }, ctx, moveToast(p));
+            await forEntries(
+              entries,
+              async (entry) => {
+                if (entry.panel === p) return;
+                await ctx.moveEntryToPanel(entry.id, p);
+                await ctx.updateEntry(entry.id, { groupId: undefined });
+              },
+              ctx,
+              moveToast(p),
+            );
           },
         });
         for (const g of panelGroups) {
           sub.push({
             label: `${PANEL_LABELS[p]}: ${g.label}`,
             onClick: async () => {
-              await forEntries(entries, async (entry) => {
-                if (entry.panel === p) return;
-                await ctx.moveEntryToPanel(entry.id, p);
-                await ctx.updateEntry(entry.id, { groupId: g.id });
-              }, ctx, moveToast(p));
+              await forEntries(
+                entries,
+                async (entry) => {
+                  if (entry.panel === p) return;
+                  await ctx.moveEntryToPanel(entry.id, p);
+                  await ctx.updateEntry(entry.id, { groupId: g.id });
+                },
+                ctx,
+                moveToast(p),
+              );
             },
           });
         }
@@ -208,9 +237,14 @@ export function buildMoveSubmenu(
         sub.push({
           label: '未分類',
           onClick: async () => {
-            await forEntries(entries, async (entry) => {
-              if (entry.groupId) await ctx.updateEntry(entry.id, { groupId: undefined });
-            }, ctx, groupToast('未分類'));
+            await forEntries(
+              entries,
+              async (entry) => {
+                if (entry.groupId) await ctx.updateEntry(entry.id, { groupId: undefined });
+              },
+              ctx,
+              groupToast('未分類'),
+            );
           },
         });
       }
@@ -220,9 +254,14 @@ export function buildMoveSubmenu(
         sub.push({
           label: g.label,
           onClick: async () => {
-            await forEntries(entries, async (entry) => {
-              if (entry.groupId !== g.id) await ctx.updateEntry(entry.id, { groupId: g.id });
-            }, ctx, groupToast(`「${g.label}」`));
+            await forEntries(
+              entries,
+              async (entry) => {
+                if (entry.groupId !== g.id) await ctx.updateEntry(entry.id, { groupId: g.id });
+              },
+              ctx,
+              groupToast(`「${g.label}」`),
+            );
           },
         });
       }
@@ -234,9 +273,15 @@ export function buildMoveSubmenu(
         sub.push({
           label: g.label,
           onClick: async () => {
-            await forEntries(entries, async (entry) => {
-              if (entry.timelineGroupId !== g.id) await ctx.updateEntry(entry.id, { timelineGroupId: g.id });
-            }, ctx, groupToast(`「${g.label}」`));
+            await forEntries(
+              entries,
+              async (entry) => {
+                if (entry.timelineGroupId !== g.id)
+                  await ctx.updateEntry(entry.id, { timelineGroupId: g.id });
+              },
+              ctx,
+              groupToast(`「${g.label}」`),
+            );
           },
         });
       }
@@ -253,10 +298,7 @@ export function buildMoveSubmenu(
 
 // ─── 重要度サブメニュー ──────────────────────────────────────────────────────
 
-export function buildImportanceSubmenu(
-  entries: MemoEntry[],
-  ctx: MenuContext,
-): ContextMenuEntry[] {
+export function buildImportanceSubmenu(entries: MemoEntry[], ctx: MenuContext): ContextMenuEntry[] {
   const isBulk = entries.length > 1;
 
   const sub: ContextMenuEntry[] = [];
@@ -266,12 +308,17 @@ export function buildImportanceSubmenu(
     sub.push({
       label,
       onClick: async () => {
-        await forEntries(entries, async (entry) => {
-          await ctx.updateEntry(entry.id, { importance: key as MemoEntry['importance'] });
-        }, ctx, {
-          singular: `重要度を「${label}」に設定しました`,
-          plural: (n) => `${n}件の重要度を「${label}」に設定しました`,
-        });
+        await forEntries(
+          entries,
+          async (entry) => {
+            await ctx.updateEntry(entry.id, { importance: key as MemoEntry['importance'] });
+          },
+          ctx,
+          {
+            singular: `重要度を「${label}」に設定しました`,
+            plural: (n) => `${n}件の重要度を「${label}」に設定しました`,
+          },
+        );
       },
     });
   }
@@ -284,12 +331,17 @@ export function buildImportanceSubmenu(
       disabled: !hasImportance,
       onClick: hasImportance
         ? async () => {
-            await forEntries(entries, async (entry) => {
-              if (entry.importance) await ctx.updateEntry(entry.id, { importance: undefined });
-            }, ctx, {
-              singular: '重要度を解除しました',
-              plural: (n) => `${n}件の重要度を解除しました`,
-            });
+            await forEntries(
+              entries,
+              async (entry) => {
+                if (entry.importance) await ctx.updateEntry(entry.id, { importance: undefined });
+              },
+              ctx,
+              {
+                singular: '重要度を解除しました',
+                plural: (n) => `${n}件の重要度を解除しました`,
+              },
+            );
           }
         : () => {},
     });
@@ -305,17 +357,16 @@ export function buildImportanceSubmenu(
 
 // ─── 役職表示サブメニュー（形式 + モード + リセットを統合） ───────────────────
 
-export function buildDisplaySubmenu(
-  entries: MemoEntry[],
-  ctx: MenuContext,
-): ContextMenuEntry[] {
+export function buildDisplaySubmenu(entries: MemoEntry[], ctx: MenuContext): ContextMenuEntry[] {
   const isBulk = entries.length > 1;
   const sub: ContextMenuEntry[] = [];
 
   // 形式
   {
     const panelDefault = !isBulk ? ctx.settings.defaultCharacterDisplay[entries[0].panel] : null;
-    const currentFormat = !isBulk ? (entries[0].characterDisplayFormat ?? panelDefault!.format) : null;
+    const currentFormat = !isBulk
+      ? (entries[0].characterDisplayFormat ?? panelDefault!.format)
+      : null;
 
     sub.push({ header: true as const, label: '表示形式' });
 
@@ -327,9 +378,13 @@ export function buildDisplaySubmenu(
         onClick: isCurrent
           ? () => {}
           : async () => {
-              await forEntries(entries, async (entry) => {
-                await ctx.updateEntry(entry.id, { characterDisplayFormat: fmt });
-              }, ctx);
+              await forEntries(
+                entries,
+                async (entry) => {
+                  await ctx.updateEntry(entry.id, { characterDisplayFormat: fmt });
+                },
+                ctx,
+              );
             },
       });
     }
@@ -338,7 +393,9 @@ export function buildDisplaySubmenu(
   // モード
   {
     const panelDefault = !isBulk ? ctx.settings.defaultCharacterDisplay[entries[0].panel] : null;
-    const currentVisibility = !isBulk ? (entries[0].characterDisplayVisibility ?? panelDefault!.visibility) : null;
+    const currentVisibility = !isBulk
+      ? (entries[0].characterDisplayVisibility ?? panelDefault!.visibility)
+      : null;
 
     sub.push({ separator: true as const });
     sub.push({ header: true as const, label: '表示モード' });
@@ -351,9 +408,13 @@ export function buildDisplaySubmenu(
         onClick: isCurrent
           ? () => {}
           : async () => {
-              await forEntries(entries, async (entry) => {
-                await ctx.updateEntry(entry.id, { characterDisplayVisibility: vis });
-              }, ctx);
+              await forEntries(
+                entries,
+                async (entry) => {
+                  await ctx.updateEntry(entry.id, { characterDisplayVisibility: vis });
+                },
+                ctx,
+              );
             },
       });
     }
@@ -370,14 +431,21 @@ export function buildDisplaySubmenu(
       disabled: !hasExplicit,
       onClick: hasExplicit
         ? async () => {
-            await forEntries(entries, async (entry) => {
-              if (entry.characterDisplayFormat != null || entry.characterDisplayVisibility != null) {
-                await ctx.updateEntry(entry.id, {
-                  characterDisplayFormat: undefined,
-                  characterDisplayVisibility: undefined,
-                });
-              }
-            }, ctx);
+            await forEntries(
+              entries,
+              async (entry) => {
+                if (
+                  entry.characterDisplayFormat != null ||
+                  entry.characterDisplayVisibility != null
+                ) {
+                  await ctx.updateEntry(entry.id, {
+                    characterDisplayFormat: undefined,
+                    characterDisplayVisibility: undefined,
+                  });
+                }
+              },
+              ctx,
+            );
           }
         : () => {},
     });
@@ -393,10 +461,7 @@ export function buildDisplaySubmenu(
 
 // ─── 役職マーカー追加サブメニュー ────────────────────────────────────────────
 
-export function buildTagSubmenu(
-  entries: MemoEntry[],
-  ctx: MenuContext,
-): ContextMenuEntry[] {
+export function buildTagSubmenu(entries: MemoEntry[], ctx: MenuContext): ContextMenuEntry[] {
   const characters = ctx.characters;
   if (characters.length === 0) return [];
 
@@ -435,23 +500,25 @@ export function buildTagSubmenu(
 
 // ─── 複製セクション ──────────────────────────────────────────────────────────
 
-export function buildDuplicateItems(
-  entries: MemoEntry[],
-  ctx: MenuContext,
-): ContextMenuEntry[] {
+export function buildDuplicateItems(entries: MemoEntry[], ctx: MenuContext): ContextMenuEntry[] {
   return [
     {
       label: entries.length > 1 ? `複製 (${entries.length}件)` : '複製',
       onClick: async () => {
-        await forEntries(entries, async (entry) => {
-          // 複製では元エントリの id / 各タイムスタンプ / sortOrder は破棄し、
-          // addEntry 側で採番させる（rest だけが残れば必要なフィールドはすべて含まれる）
-          const { id: _id, createdAt: _c, updatedAt: _u, sortOrder: _s, ...rest } = entry;
-          await ctx.addEntry({ ...rest });
-        }, ctx, {
-          singular: 'メモを複製しました',
-          plural: (n) => `${n}件のメモを複製しました`,
-        });
+        await forEntries(
+          entries,
+          async (entry) => {
+            // 複製では元エントリの id / 各タイムスタンプ / sortOrder は破棄し、
+            // addEntry 側で採番させる（rest だけが残れば必要なフィールドはすべて含まれる）
+            const { id: _id, createdAt: _c, updatedAt: _u, sortOrder: _s, ...rest } = entry;
+            await ctx.addEntry({ ...rest });
+          },
+          ctx,
+          {
+            singular: 'メモを複製しました',
+            plural: (n) => `${n}件のメモを複製しました`,
+          },
+        );
       },
     },
   ];
@@ -459,21 +526,23 @@ export function buildDuplicateItems(
 
 // ─── 削除セクション ──────────────────────────────────────────────────────────
 
-export function buildDeleteItems(
-  entries: MemoEntry[],
-  ctx: MenuContext,
-): ContextMenuEntry[] {
+export function buildDeleteItems(entries: MemoEntry[], ctx: MenuContext): ContextMenuEntry[] {
   return [
     {
       label: entries.length > 1 ? `削除 (${entries.length}件)` : '削除',
       danger: true,
       onClick: async () => {
-        await forEntries(entries, async (entry) => {
-          await ctx.deleteEntry(entry.id);
-        }, ctx, {
-          singular: 'メモを削除しました',
-          plural: (n) => `${n}件のメモを削除しました`,
-        });
+        await forEntries(
+          entries,
+          async (entry) => {
+            await ctx.deleteEntry(entry.id);
+          },
+          ctx,
+          {
+            singular: 'メモを削除しました',
+            plural: (n) => `${n}件のメモを削除しました`,
+          },
+        );
       },
     },
   ];

@@ -35,7 +35,6 @@ export interface MemoEntry {
   // 関連人物マーカー表示設定（未設定 = アプリ設定のデフォルトに従う）
   characterDisplayFormat?: CharacterDisplayFormat;
   characterDisplayVisibility?: CharacterDisplayVisibility;
-
 }
 
 // ─── Memo Group (自由メモ / 自分用メモ) ─────────────────────────────────────

@@ -5,17 +5,17 @@ import {
   bulkPutDeductions,
   bulkPutEntries,
   bulkPutLinkKeywords,
-  bulkPutRelations,
   bulkPutMemoGroups,
+  bulkPutRelations,
   bulkPutTimelineGroups,
   deleteSession,
   getCharactersBySession,
   getDeductionsBySession,
   getEntriesBySession,
-  getLinkKeywordsBySession,
-  getRelationsBySession,
   getImage,
+  getLinkKeywordsBySession,
   getMemoGroupsBySession,
+  getRelationsBySession,
   getTimelineGroupsBySession,
   putImage,
   putSession,
@@ -51,7 +51,9 @@ export function migrateToLatest(data: any): MurderMemoExport {
   while (current.version < EXPORT_VERSION) {
     const fn = migrations[current.version as number];
     if (!fn) {
-      throw new Error(`マイグレーション v${current.version} → v${current.version + 1} が未定義です`);
+      throw new Error(
+        `マイグレーション v${current.version} → v${current.version + 1} が未定義です`,
+      );
     }
     current = fn(current);
   }
@@ -63,7 +65,8 @@ export function migrateToLatest(data: any): MurderMemoExport {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateExport(data: any): data is MurderMemoExport {
   if (data == null || typeof data !== 'object') return false;
-  if (typeof data.version !== 'number' || data.version < 1 || data.version > EXPORT_VERSION) return false;
+  if (typeof data.version !== 'number' || data.version < 1 || data.version > EXPORT_VERSION)
+    return false;
   if (typeof data.exportedAt !== 'number') return false;
   if (data.session == null || typeof data.session.id !== 'string') return false;
   if (!Array.isArray(data.entries)) return false;
@@ -91,7 +94,9 @@ async function blobToBase64(blob: Blob): Promise<string> {
 }
 
 /** エクスポート前のサイズ推定。画像の合計バイト数を返す */
-export async function estimateExportSize(sessionId: string): Promise<{ imageCount: number; totalBytes: number }> {
+export async function estimateExportSize(
+  sessionId: string,
+): Promise<{ imageCount: number; totalBytes: number }> {
   const entries = await getEntriesBySession(sessionId);
   const seenKeys = new Set<string>();
   let totalBytes = 0;

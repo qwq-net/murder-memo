@@ -1,8 +1,5 @@
 import { useState } from 'react';
 
-import { useStore } from '@/store';
-import type { AppSettings } from '@/store/slices/settings';
-import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { X } from '@/components/icons';
 import { BackupSection } from '@/components/settings/backupSection';
@@ -11,6 +8,9 @@ import { PanelOrderEditor } from '@/components/settings/panelOrderEditor';
 import { SectionHeader } from '@/components/settings/sectionHeader';
 import { SessionManagementSection } from '@/components/settings/sessionManagementSection';
 import { SettingRow } from '@/components/settings/settingRow';
+import { useStore } from '@/store';
+import type { AppSettings } from '@/store/slices/settings';
+import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
 
 export function SettingsPanel() {
   const isOpen = useStore((s) => s.isSettingsOpen);
@@ -32,7 +32,10 @@ export function SettingsPanel() {
     updateSettings({ [key]: value });
   };
 
-  const updateMarker = (panel: PanelId, patch: Partial<{ format: CharacterDisplayFormat; visibility: CharacterDisplayVisibility }>) => {
+  const updateMarker = (
+    panel: PanelId,
+    patch: Partial<{ format: CharacterDisplayFormat; visibility: CharacterDisplayVisibility }>,
+  ) => {
     updateSettings({
       defaultCharacterDisplay: {
         ...settings.defaultCharacterDisplay,
@@ -42,16 +45,19 @@ export function SettingsPanel() {
   };
 
   // ConfirmModal が開いているときはモーダル背景クリックで閉じない
-  const hasSubModal = showClearConfirm || showDeleteConfirm || showResetAllConfirm || showExportConfirm;
+  const hasSubModal =
+    showClearConfirm || showDeleteConfirm || showResetAllConfirm || showExportConfirm;
 
   return (
     <>
-    <ModalFrame
-      open={isOpen}
-      onClose={() => { if (!hasSubModal) setOpen(false); }}
-      width={480}
-      ariaLabel="アプリ設定"
-    >
+      <ModalFrame
+        open={isOpen}
+        onClose={() => {
+          if (!hasSubModal) setOpen(false);
+        }}
+        width={480}
+        ariaLabel="アプリ設定"
+      >
         {/* header */}
         <div
           style={{
@@ -79,7 +85,6 @@ export function SettingsPanel() {
 
         {/* body */}
         <div style={{ padding: '2px 18px 18px' }}>
-
           {/* ── 一般 ── */}
           <SectionHeader>一般</SectionHeader>
 
@@ -135,11 +140,13 @@ export function SettingsPanel() {
           {/* ── 関連人物マーカー ── */}
           <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
             <SectionHeader
-              onReset={() => update('defaultCharacterDisplay', {
-                free:     { format: 'full', visibility: 'minimal' },
-                timeline: { format: 'full', visibility: 'minimal' },
-                personal: { format: 'full', visibility: 'off' },
-              })}
+              onReset={() =>
+                update('defaultCharacterDisplay', {
+                  free: { format: 'full', visibility: 'minimal' },
+                  timeline: { format: 'full', visibility: 'minimal' },
+                  personal: { format: 'full', visibility: 'off' },
+                })
+              }
               resetDisabled={
                 settings.defaultCharacterDisplay.free.format === 'full' &&
                 settings.defaultCharacterDisplay.free.visibility === 'minimal' &&
@@ -154,11 +161,11 @@ export function SettingsPanel() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {([
+            {[
               { panel: 'free' as PanelId, label: 'フリーメモ' },
               { panel: 'timeline' as PanelId, label: 'タイムライン' },
               { panel: 'personal' as PanelId, label: '自分用メモ' },
-            ]).map(({ panel, label }) => (
+            ].map(({ panel, label }) => (
               <MarkerCard
                 key={panel}
                 panel={panel}
@@ -196,7 +203,7 @@ export function SettingsPanel() {
             setShowResetAllConfirm={setShowResetAllConfirm}
           />
         </div>
-    </ModalFrame>
+      </ModalFrame>
     </>
   );
 }

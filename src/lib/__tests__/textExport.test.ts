@@ -74,7 +74,15 @@ describe('formatSessionAsText', () => {
       makeEntry({ id: 'e1', content: 'フリー', panel: 'free' }),
       makeEntry({ id: 'e2', content: '個人', panel: 'personal' }),
     ];
-    const result = formatSessionAsText('テスト', entries, [], [], [], [...defaultOrder], 'personal');
+    const result = formatSessionAsText(
+      'テスト',
+      entries,
+      [],
+      [],
+      [],
+      [...defaultOrder],
+      'personal',
+    );
     expect(result).toContain('個人');
     expect(result).not.toContain('フリー');
   });
@@ -142,8 +150,24 @@ describe('formatSessionAsText', () => {
   it('タイムラインは時刻順でソートされる', () => {
     const tlGroups = [makeTlGroup({ id: 'tg1', label: '当日' })];
     const entries = [
-      makeEntry({ id: 'e1', content: '後', panel: 'timeline', timelineGroupId: 'tg1', eventTime: '14:00', eventTimeSortKey: 840, sortOrder: 0 }),
-      makeEntry({ id: 'e2', content: '先', panel: 'timeline', timelineGroupId: 'tg1', eventTime: '09:00', eventTimeSortKey: 540, sortOrder: 1 }),
+      makeEntry({
+        id: 'e1',
+        content: '後',
+        panel: 'timeline',
+        timelineGroupId: 'tg1',
+        eventTime: '14:00',
+        eventTimeSortKey: 840,
+        sortOrder: 0,
+      }),
+      makeEntry({
+        id: 'e2',
+        content: '先',
+        panel: 'timeline',
+        timelineGroupId: 'tg1',
+        eventTime: '09:00',
+        eventTimeSortKey: 540,
+        sortOrder: 1,
+      }),
     ];
     const result = formatSessionAsText('テスト', entries, [], tlGroups, [], [...defaultOrder]);
     const lines = result.split('\n');
@@ -155,10 +179,7 @@ describe('formatSessionAsText', () => {
   // ─── キャラクタータグ ───────────────────────────────────────────
 
   it('キャラクタータグが末尾に表示される', () => {
-    const chars = [
-      makeChar({ id: 'c1', name: '医者' }),
-      makeChar({ id: 'c2', name: '執事' }),
-    ];
+    const chars = [makeChar({ id: 'c1', name: '医者' }), makeChar({ id: 'c2', name: '執事' })];
     const entries = [
       makeEntry({ id: 'e1', content: '目撃情報', panel: 'free', characterTags: ['c1', 'c2'] }),
     ];
@@ -212,7 +233,13 @@ describe('formatSessionAsText', () => {
 
   it('画像エントリはキャプション付きで出力される', () => {
     const entries = [
-      makeEntry({ id: 'e1', type: 'image', content: '証拠写真', panel: 'free', imageBlobKey: 'k1' }),
+      makeEntry({
+        id: 'e1',
+        type: 'image',
+        content: '証拠写真',
+        panel: 'free',
+        imageBlobKey: 'k1',
+      }),
     ];
     const result = formatSessionAsText('テスト', entries, [], [], [], [...defaultOrder]);
     expect(result).toContain('- [画像] 証拠写真');
@@ -233,7 +260,14 @@ describe('formatSessionAsText', () => {
       makeEntry({ id: 'e1', content: 'フリー', panel: 'free' }),
       makeEntry({ id: 'e2', content: '個人', panel: 'personal' }),
     ];
-    const result = formatSessionAsText('テスト', entries, [], [], [], ['personal', 'free', 'timeline']);
+    const result = formatSessionAsText(
+      'テスト',
+      entries,
+      [],
+      [],
+      [],
+      ['personal', 'free', 'timeline'],
+    );
     const freeIdx = result.indexOf('## フリーメモ');
     const personalIdx = result.indexOf('## 自分用メモ');
     expect(personalIdx).toBeLessThan(freeIdx);

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { useStore } from '@/store';
 import { X } from '@/components/icons';
+import { useStore } from '@/store';
 
 /** ラベルプリセット — 各テンプレにデフォルト色を定義 */
 const LABEL_PRESETS: { label: string; color: string }[] = [
@@ -27,10 +27,7 @@ export function RelationListView() {
   const removeRelation = useStore((s) => s.removeRelation);
   const addToast = useStore((s) => s.addToast);
 
-  const charMap = useMemo(
-    () => new Map(characters.map((c) => [c.id, c])),
-    [characters],
-  );
+  const charMap = useMemo(() => new Map(characters.map((c) => [c.id, c])), [characters]);
 
   // ── 追加フォーム ──
   const [fromId, setFromId] = useState('');
@@ -61,10 +58,13 @@ export function RelationListView() {
     addToast('関係を追加しました');
   }, [canAdd, fromId, toId, label, color, addRelation, addToast]);
 
-  const handleRemove = useCallback(async (id: string) => {
-    await removeRelation(id);
-    addToast('関係を削除しました');
-  }, [removeRelation, addToast]);
+  const handleRemove = useCallback(
+    async (id: string) => {
+      await removeRelation(id);
+      addToast('関係を削除しました');
+    },
+    [removeRelation, addToast],
+  );
 
   const charName = (id: string) => charMap.get(id)?.name ?? '？';
   const charColor = (id: string) => charMap.get(id)?.color ?? 'var(--text-muted)';
@@ -86,8 +86,18 @@ export function RelationListView() {
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: charColor(r.fromCharacterId), flexShrink: 0 }} />
-                <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{charName(r.fromCharacterId)}</span>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: charColor(r.fromCharacterId),
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>
+                  {charName(r.fromCharacterId)}
+                </span>
               </span>
               <span
                 style={{
@@ -102,8 +112,18 @@ export function RelationListView() {
                 {r.label}
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: charColor(r.toCharacterId), flexShrink: 0 }} />
-                <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{charName(r.toCharacterId)}</span>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: charColor(r.toCharacterId),
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>
+                  {charName(r.toCharacterId)}
+                </span>
               </span>
               <button
                 onClick={() => handleRemove(r.id)}
@@ -136,7 +156,14 @@ export function RelationListView() {
           borderTop: relations.length > 0 ? '1px solid var(--border-subtle)' : undefined,
         }}
       >
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'var(--text-muted)',
+            letterSpacing: '0.06em',
+          }}
+        >
           関係を追加
         </div>
 
@@ -149,7 +176,9 @@ export function RelationListView() {
           >
             <option value="">人物1</option>
             {characters.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
 
@@ -160,9 +189,13 @@ export function RelationListView() {
             style={{ flex: 1, minWidth: 80 }}
           >
             <option value="">人物2</option>
-            {characters.filter((c) => c.id !== fromId).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
+            {characters
+              .filter((c) => c.id !== fromId)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
           </select>
         </div>
 

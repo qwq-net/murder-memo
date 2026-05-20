@@ -2,13 +2,13 @@ import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 
 const PANEL_LABELS: Record<PanelId, string> = {
-  free:     'フリーメモ',
+  free: 'フリーメモ',
   personal: '自分用',
   timeline: 'タイムライン',
 };
 
 const PANEL_ACCENT: Record<PanelId, string> = {
-  free:     'var(--panel-free-accent)',
+  free: 'var(--panel-free-accent)',
   personal: 'var(--panel-personal-accent)',
   timeline: 'var(--panel-timeline-accent)',
 };

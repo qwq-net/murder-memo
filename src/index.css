@@ -4,31 +4,31 @@
 /* :root の CSS変数を Tailwind ユーティリティクラスとしても使えるようにマッピング */
 @theme {
   /* Surface */
-  --color-bg-base:       #0d0c0a;
-  --color-bg-surface:    #131210;
-  --color-bg-panel:      #161513;
-  --color-bg-elevated:   #1e1c19;
-  --color-bg-hover:      #252320;
-  --color-bg-active:     #2a2824;
+  --color-bg-base: #0d0c0a;
+  --color-bg-surface: #131210;
+  --color-bg-panel: #161513;
+  --color-bg-elevated: #1e1c19;
+  --color-bg-hover: #252320;
+  --color-bg-active: #2a2824;
 
   /* Borders */
-  --color-border-subtle:  #252320;
+  --color-border-subtle: #252320;
   --color-border-default: #302d28;
-  --color-border-strong:  #3d3a33;
+  --color-border-strong: #3d3a33;
 
   /* Text */
-  --color-text-primary:   #e8dfc8;
+  --color-text-primary: #e8dfc8;
   --color-text-secondary: #a89f8a;
-  --color-text-muted:     #6b6458;
-  --color-text-faint:     #3d3a33;
+  --color-text-muted: #6b6458;
+  --color-text-faint: #3d3a33;
 
   /* Accent — 琥珀の捜査灯 */
-  --color-accent:      #c8891a;
-  --color-accent-dim:  #8a5e10;
+  --color-accent: #c8891a;
+  --color-accent-dim: #8a5e10;
   --color-accent-glow: rgba(200, 137, 26, 0.15);
 
   /* パネルアイデンティティカラー */
-  --color-panel-free-accent:     #c8891a;
+  --color-panel-free-accent: #c8891a;
   --color-panel-personal-accent: #4a8fa8;
   --color-panel-timeline-accent: #7a6aa8;
 
@@ -36,16 +36,18 @@
   --color-settings-accent: #c45a2a;
 
   /* Functional */
-  --color-danger:  #b04040;
+  --color-danger: #b04040;
   --color-success: #4a8a50;
 
   /* 重要度 */
-  --color-importance-high:   #e05555;
+  --color-importance-high: #e05555;
   --color-importance-medium: #e0a030;
-  --color-importance-low:    #6bab6b;
+  --color-importance-low: #6bab6b;
 
   /* Typography */
-  --font-sans: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+  --font-sans:
+    'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans',
+    'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
   --font-mono: 'Cascadia Mono', 'Cascadia Code', Consolas, Menlo, Monaco, monospace;
 
   /* Border Radius */
@@ -58,47 +60,47 @@
 /* @theme で定義した --color-* を短縮名でエイリアス。値の二重管理を防止。 */
 :root {
   /* Surface */
-  --bg-base:       var(--color-bg-base);
-  --bg-surface:    var(--color-bg-surface);
-  --bg-panel:      var(--color-bg-panel);
-  --bg-elevated:   var(--color-bg-elevated);
-  --bg-hover:      var(--color-bg-hover);
-  --bg-active:     var(--color-bg-active);
+  --bg-base: var(--color-bg-base);
+  --bg-surface: var(--color-bg-surface);
+  --bg-panel: var(--color-bg-panel);
+  --bg-elevated: var(--color-bg-elevated);
+  --bg-hover: var(--color-bg-hover);
+  --bg-active: var(--color-bg-active);
 
   /* Borders */
-  --border-subtle:  var(--color-border-subtle);
+  --border-subtle: var(--color-border-subtle);
   --border-default: var(--color-border-default);
-  --border-strong:  var(--color-border-strong);
+  --border-strong: var(--color-border-strong);
 
   /* Text */
-  --text-primary:   var(--color-text-primary);
+  --text-primary: var(--color-text-primary);
   --text-secondary: var(--color-text-secondary);
-  --text-muted:     var(--color-text-muted);
-  --text-faint:     var(--color-text-faint);
+  --text-muted: var(--color-text-muted);
+  --text-faint: var(--color-text-faint);
 
   /* Accent — amber investigation light */
-  --accent:         var(--color-accent);
-  --accent-dim:     var(--color-accent-dim);
-  --accent-glow:    var(--color-accent-glow);
+  --accent: var(--color-accent);
+  --accent-dim: var(--color-accent-dim);
+  --accent-glow: var(--color-accent-glow);
 
   /* Panel identity colors */
-  --panel-free-accent:     var(--color-panel-free-accent);
+  --panel-free-accent: var(--color-panel-free-accent);
   --panel-personal-accent: var(--color-panel-personal-accent);
   --panel-timeline-accent: var(--color-panel-timeline-accent);
 
   /* Functional */
-  --danger:  var(--color-danger);
+  --danger: var(--color-danger);
   --success: var(--color-success);
 
   /* Importance — パネル色・選択色と重複しない専用パレット */
-  --importance-high:   var(--color-importance-high);
+  --importance-high: var(--color-importance-high);
   --importance-medium: var(--color-importance-medium);
-  --importance-low:    var(--color-importance-low);
+  --importance-low: var(--color-importance-low);
 
   /* Layout（レイアウト専用 — @theme には不要） */
-  --header-h:        44px;
-  --panel-header-h:  38px;
-  --resize-w:        5px;
+  --header-h: 44px;
+  --panel-header-h: 38px;
+  --resize-w: 5px;
 
   /* タイムラインエントリ — レイアウト座標 */
   --tl-entry-pad-left: 18px;
@@ -119,52 +121,52 @@
 /* ─── ライトテーマ ───────────────────────────────────────────────────────────── */
 /* @theme の --color-* と :root のエイリアス両方を上書きする。
    Tailwind ユーティリティ（bg-bg-base 等）は --color-* を参照するため両方必要。 */
-:root[data-theme="light"] {
+:root[data-theme='light'] {
   /* Surface */
-  --color-bg-base:       #f5f2ec;
-  --color-bg-surface:    #ece8e0;
-  --color-bg-panel:      #f0ece5;
-  --color-bg-elevated:   #ffffff;
-  --color-bg-hover:      #e2ddd4;
-  --color-bg-active:     #d8d2c8;
-  --bg-base:       #f5f2ec;
-  --bg-surface:    #ece8e0;
-  --bg-panel:      #f0ece5;
-  --bg-elevated:   #ffffff;
-  --bg-hover:      #e2ddd4;
-  --bg-active:     #d8d2c8;
+  --color-bg-base: #f5f2ec;
+  --color-bg-surface: #ece8e0;
+  --color-bg-panel: #f0ece5;
+  --color-bg-elevated: #ffffff;
+  --color-bg-hover: #e2ddd4;
+  --color-bg-active: #d8d2c8;
+  --bg-base: #f5f2ec;
+  --bg-surface: #ece8e0;
+  --bg-panel: #f0ece5;
+  --bg-elevated: #ffffff;
+  --bg-hover: #e2ddd4;
+  --bg-active: #d8d2c8;
 
   /* Borders */
-  --color-border-subtle:  #ddd8cf;
+  --color-border-subtle: #ddd8cf;
   --color-border-default: #c8c0b4;
-  --color-border-strong:  #a89f90;
-  --border-subtle:  #ddd8cf;
+  --color-border-strong: #a89f90;
+  --border-subtle: #ddd8cf;
   --border-default: #c8c0b4;
-  --border-strong:  #a89f90;
+  --border-strong: #a89f90;
 
   /* Text — WCAG AA 4.5:1 コントラスト比を bg-panel (#f0ece5) 基準で確保 */
-  --color-text-primary:   #1c1a16; /* 15.8:1 */
+  --color-text-primary: #1c1a16; /* 15.8:1 */
   --color-text-secondary: #504838; /* 7.2:1 */
-  --color-text-muted:     #6b6050; /* 4.8:1 */
-  --color-text-faint:     #a89a88; /* 2.5:1 — 装飾用 */
-  --text-primary:   #1c1a16;
+  --color-text-muted: #6b6050; /* 4.8:1 */
+  --color-text-faint: #a89a88; /* 2.5:1 — 装飾用 */
+  --text-primary: #1c1a16;
   --text-secondary: #504838;
-  --text-muted:     #6b6050;
-  --text-faint:     #a89a88;
+  --text-muted: #6b6050;
+  --text-faint: #a89a88;
 
   /* Accent — ブランドカラー維持。ライト背景でもコントラスト確保 */
-  --color-accent:      #b07818;
-  --color-accent-dim:  #c89a40;
+  --color-accent: #b07818;
+  --color-accent-dim: #c89a40;
   --color-accent-glow: rgba(176, 120, 24, 0.18);
-  --accent:         #b07818;
-  --accent-dim:     #c89a40;
-  --accent-glow:    rgba(176, 120, 24, 0.18);
+  --accent: #b07818;
+  --accent-dim: #c89a40;
+  --accent-glow: rgba(176, 120, 24, 0.18);
 
   /* パネルアイデンティティカラー — ライト背景でのコントラスト調整 */
-  --color-panel-free-accent:     #a06810;
+  --color-panel-free-accent: #a06810;
   --color-panel-personal-accent: #2e7a94;
   --color-panel-timeline-accent: #5c4e94;
-  --panel-free-accent:     #a06810;
+  --panel-free-accent: #a06810;
   --panel-personal-accent: #2e7a94;
   --panel-timeline-accent: #5c4e94;
 
@@ -172,18 +174,18 @@
   --color-settings-accent: #c45a2a;
 
   /* Functional */
-  --color-danger:  #c43030;
+  --color-danger: #c43030;
   --color-success: #2e7a38;
-  --danger:  #c43030;
+  --danger: #c43030;
   --success: #2e7a38;
 
   /* 重要度 — ライト背景で視認性確保 */
-  --color-importance-high:   #d04040;
+  --color-importance-high: #d04040;
   --color-importance-medium: #c08820;
-  --color-importance-low:    #4a9050;
-  --importance-high:   #d04040;
+  --color-importance-low: #4a9050;
+  --importance-high: #d04040;
   --importance-medium: #c08820;
-  --importance-low:    #4a9050;
+  --importance-low: #4a9050;
 
   /* テーマ依存の共通変数 */
   --header-btn-border: rgba(0, 0, 0, 0.12);
@@ -197,7 +199,12 @@
 /* Tailwind CSS 4 の preflight が box-sizing/margin/padding をリセット済み。
    ここでは追加のリセットのみ行う。 */
 
-html, body, #root { height: 100%; overflow: hidden; }
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
 
 body {
   background: var(--bg-base);
@@ -213,19 +220,34 @@ body {
 }
 
 /* 入力要素・編集中テキストのみ選択可能 */
-input, textarea, [contenteditable="true"] {
+input,
+textarea,
+[contenteditable='true'] {
   user-select: text;
   -webkit-user-select: text;
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
 
 /* ─── Selection ─────────────────────────────────────────────────────────────── */
-::selection { background: var(--accent-glow); color: var(--text-primary); }
+::selection {
+  background: var(--accent-glow);
+  color: var(--text-primary);
+}
 
 /* ─── Focus ─────────────────────────────────────────────────────────────────── */
 /* 入力要素とボタンのみ focus-visible を適用。DnDソータブル要素には適用しない */
@@ -251,7 +273,9 @@ button:focus-visible {
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
   letter-spacing: 0.02em;
   &:hover {
     color: var(--text-primary);
@@ -315,7 +339,9 @@ button:focus-visible {
   border-radius: var(--radius-sm);
   color: var(--danger);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   &:hover {
     background: var(--danger);
     color: #fff;
@@ -374,18 +400,36 @@ button:focus-visible {
 
 /* ─── トーストアニメーション ────────────────────────────────────────────────── */
 @keyframes toast-in {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes toast-out {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-8px); }
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 /* ─── 検索オーバーレイ ──────────────────────────────────────────────────────── */
 @keyframes search-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* 検索ハイライト */
@@ -399,10 +443,18 @@ mark {
 /* 検索結果クリック時のエントリハイライト */
 /* 1s フェードイン → 2.5s 維持 → 0.5s フェードアウト = 計4s */
 @keyframes entry-flash {
-  0%    { background-color: transparent; }
-  25%   { background-color: rgba(200, 137, 26, 0.15); }
-  87.5% { background-color: rgba(200, 137, 26, 0.15); }
-  100%  { background-color: transparent; }
+  0% {
+    background-color: transparent;
+  }
+  25% {
+    background-color: rgba(200, 137, 26, 0.15);
+  }
+  87.5% {
+    background-color: rgba(200, 137, 26, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 .entry-flash {
   animation: entry-flash 1.5s ease-in-out;

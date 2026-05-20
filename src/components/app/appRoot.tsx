@@ -1,12 +1,21 @@
 import { useEffect } from 'react';
 
-import { AppShell } from '@/components/layout/appShell';
 import { SelectionProvider } from '@/components/entries/selectionContext';
+import { AppShell } from '@/components/layout/appShell';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { APP_VERSION } from '@/lib/version';
 import { useStore } from '@/store';
 
-export default function App() {
+/**
+ * メモアプリ本体のルートコンポーネント。
+ *
+ * `src/pages/app/index.tsx` から `<ClientOnly>` + `lazy(() => import(...))` 経由で
+ * 動的読み込みされる。これにより SSG 時にこのモジュールは評価されず、
+ * IndexedDB / Zustand / @dnd-kit などの依存は LP / Guide のバンドルから完全に分離される。
+ *
+ * 旧 `src/app.tsx` の中身を移植したもの。
+ */
+export default function AppRoot() {
   const initSessions = useStore((s) => s.initSessions);
   const lastSeenVersion = useStore((s) => s.lastSeenVersion);
   const setWelcomeOpen = useStore((s) => s.setWelcomeOpen);

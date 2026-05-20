@@ -33,9 +33,7 @@ function formatEntry(entry: MemoEntry, charMap: Map<string, string>): string {
   const text = parts.join(' ');
 
   // キャラクタータグ
-  const tags = entry.characterTags
-    .map((id) => charMap.get(id))
-    .filter(Boolean);
+  const tags = entry.characterTags.map((id) => charMap.get(id)).filter(Boolean);
 
   if (tags.length > 0) {
     return `- ${text} [${tags.join(', ')}]`;

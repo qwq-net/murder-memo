@@ -6,15 +6,18 @@ import {
   getTimelineGroupsBySession,
   putTimelineGroup,
 } from '@/lib/idb';
-import type { TimelineGroup } from '@/types/memo';
 import type { StoreState } from '@/store/index';
+import type { TimelineGroup } from '@/types/memo';
 
 export interface TimelineGroupsSlice {
   timelineGroups: TimelineGroup[];
 
   loadTimelineGroups: (sessionId: string) => Promise<void>;
   addTimelineGroup: (label: string) => Promise<TimelineGroup>;
-  updateTimelineGroup: (id: string, patch: Partial<Pick<TimelineGroup, 'label' | 'collapsed'>>) => Promise<void>;
+  updateTimelineGroup: (
+    id: string,
+    patch: Partial<Pick<TimelineGroup, 'label' | 'collapsed'>>,
+  ) => Promise<void>;
   removeTimelineGroup: (id: string) => Promise<void>;
   reorderTimelineGroups: (orderedIds: string[]) => Promise<void>;
   toggleTimelineGroupCollapse: (id: string) => void;

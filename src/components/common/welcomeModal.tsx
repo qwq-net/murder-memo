@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 
-import { APP_VERSION } from '@/lib/version';
-import { useStore } from '@/store';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { X } from '@/components/icons';
+import { APP_VERSION } from '@/lib/version';
+import { useStore } from '@/store';
 
 export function WelcomeModal() {
   const isOpen = useStore((s) => s.isWelcomeOpen);
@@ -16,12 +16,7 @@ export function WelcomeModal() {
   }, [setLastSeenVersion, setOpen]);
 
   return (
-    <ModalFrame
-      open={isOpen}
-      onClose={handleClose}
-      width={520}
-      ariaLabel="マダめもくんへようこそ"
-    >
+    <ModalFrame open={isOpen} onClose={handleClose} width={520} ariaLabel="マダめもくんへようこそ">
       {/* ヘッダー */}
       <div
         style={{

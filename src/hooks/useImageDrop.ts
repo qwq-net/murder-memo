@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
+import { useCallback, useRef, useState } from 'react';
 
 import { putImage } from '@/lib/idb';
 import { resizeImage } from '@/lib/imageResize';
@@ -34,7 +34,13 @@ export function useImageDrop(panel: PanelId) {
         // タイムラインでは type: 'timeline' にして TimelineEntry で表示（時刻は不明扱い）
         extra.type = 'timeline';
       }
-      addEntry({ content: '', panel, type: extra.type ?? 'image', imageBlobKey: blobKey, ...extra });
+      addEntry({
+        content: '',
+        panel,
+        type: extra.type ?? 'image',
+        imageBlobKey: blobKey,
+        ...extra,
+      });
       addToast('画像を追加しました');
     },
     [addEntry, addToast, panel],

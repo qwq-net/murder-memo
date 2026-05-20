@@ -1,3 +1,4 @@
+import type { DragEndEvent, DragStartEvent, DropAnimation } from '@dnd-kit/core';
 import {
   DndContext,
   DragOverlay,
@@ -8,7 +9,6 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent, DropAnimation } from '@dnd-kit/core';
 import {
   SortableContext,
   arrayMove,
@@ -19,9 +19,9 @@ import {
 import { memo, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import type { MemoEntry } from '@/types/memo';
 import { EntryCard } from '@/components/entries/entryCard';
 import { useSelection } from '@/components/entries/selectionContext';
+import type { MemoEntry } from '@/types/memo';
 
 interface SortableEntryListProps {
   entries: MemoEntry[];
@@ -36,9 +36,13 @@ const dropAnimation: DropAnimation = {
   }),
 };
 
-export function SortableEntryList({ entries, onReorder, hideTimeDuplicates }: SortableEntryListProps) {
+export function SortableEntryList({
+  entries,
+  onReorder,
+  hideTimeDuplicates,
+}: SortableEntryListProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const activeEntry = activeId ? entries.find((e) => e.id === activeId) ?? null : null;
+  const activeEntry = activeId ? (entries.find((e) => e.id === activeId) ?? null) : null;
   const { clearSelection } = useSelection();
 
   const allIds = useMemo(() => entries.map((e) => e.id), [entries]);
@@ -85,7 +89,10 @@ export function SortableEntryList({ entries, onReorder, hideTimeDuplicates }: So
       {createPortal(
         <DragOverlay dropAnimation={dropAnimation}>
           {activeEntry && (
-            <div className="bg-bg-elevated rounded-sm opacity-95" style={{ boxShadow: '0 4px 16px var(--shadow-drag)' }}>
+            <div
+              className="bg-bg-elevated rounded-sm opacity-95"
+              style={{ boxShadow: '0 4px 16px var(--shadow-drag)' }}
+            >
               <EntryCard entry={activeEntry} />
             </div>
           )}
@@ -96,7 +103,15 @@ export function SortableEntryList({ entries, onReorder, hideTimeDuplicates }: So
   );
 }
 
-const SortableEntryCard = memo(function SortableEntryCard({ entry, allIds, hideTime }: { entry: MemoEntry; allIds: string[]; hideTime?: boolean }) {
+const SortableEntryCard = memo(function SortableEntryCard({
+  entry,
+  allIds,
+  hideTime,
+}: {
+  entry: MemoEntry;
+  allIds: string[];
+  hideTime?: boolean;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: entry.id,
   });

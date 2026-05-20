@@ -36,16 +36,13 @@ export function useSessionRenaming({
     setIsRenaming(false);
   }, [renameValue, activeSessionId, renameSession]);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        (e.target as HTMLInputElement).blur();
-      } else if (e.key === 'Escape') {
-        setIsRenaming(false);
-      }
-    },
-    [],
-  );
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      (e.target as HTMLInputElement).blur();
+    } else if (e.key === 'Escape') {
+      setIsRenaming(false);
+    }
+  }, []);
 
   return {
     isRenaming,

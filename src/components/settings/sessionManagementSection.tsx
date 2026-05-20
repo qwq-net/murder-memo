@@ -1,10 +1,10 @@
 import { useCallback } from 'react';
 
+import { ConfirmModal } from '@/components/common/confirmModal';
+import { SectionHeader } from '@/components/settings/sectionHeader';
 import { destroyDatabase } from '@/lib/idb';
 import { useStore } from '@/store';
 import type { GameSession } from '@/types/memo';
-import { ConfirmModal } from '@/components/common/confirmModal';
-import { SectionHeader } from '@/components/settings/sectionHeader';
 
 export function SessionManagementSection({
   sessions,
@@ -107,10 +107,12 @@ export function SessionManagementSection({
               <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
                 サンプルシナリオは削除できません
               </span>
-            ) : sessions.length <= 1 && (
-              <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
-                最後のセッションは削除できません
-              </span>
+            ) : (
+              sessions.length <= 1 && (
+                <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
+                  最後のセッションは削除できません
+                </span>
+              )
             )}
           </div>
         </div>
@@ -126,10 +128,7 @@ export function SessionManagementSection({
           すべてのセッション・設定・保存データを完全に削除し、アプリを初期状態に戻します。
         </span>
         <div>
-          <button
-            onClick={() => setShowResetAllConfirm(true)}
-            className="btn-danger btn-lg"
-          >
+          <button onClick={() => setShowResetAllConfirm(true)} className="btn-danger btn-lg">
             完全リセット
           </button>
         </div>
@@ -140,12 +139,14 @@ export function SessionManagementSection({
         onClose={() => setShowClearConfirm(false)}
         title="現在のセッションを初期化しますか？"
         confirmationLabel="すべてのメモ・登場人物・画像データが削除されることを理解しました"
-        actions={[{
-          label: '初期化する',
-          color: 'var(--danger)',
-          requiresConfirmation: true,
-          onClick: handleClearSession,
-        }]}
+        actions={[
+          {
+            label: '初期化する',
+            color: 'var(--danger)',
+            requiresConfirmation: true,
+            onClick: handleClearSession,
+          },
+        ]}
       />
 
       <ConfirmModal
@@ -153,12 +154,14 @@ export function SessionManagementSection({
         onClose={() => setShowDeleteConfirm(false)}
         title="現在のセッションを削除しますか？"
         confirmationLabel="セッションとそのすべてのデータが完全に削除されることを理解しました"
-        actions={[{
-          label: '削除する',
-          color: 'var(--danger)',
-          requiresConfirmation: true,
-          onClick: handleDeleteSession,
-        }]}
+        actions={[
+          {
+            label: '削除する',
+            color: 'var(--danger)',
+            requiresConfirmation: true,
+            onClick: handleDeleteSession,
+          },
+        ]}
       />
 
       <ConfirmModal
@@ -166,12 +169,14 @@ export function SessionManagementSection({
         onClose={() => setShowResetAllConfirm(false)}
         title="アプリを完全にリセットしますか？"
         confirmationLabel="すべてのセッション・メモ・登場人物・設定・画像データが完全に削除されることを理解しました"
-        actions={[{
-          label: '完全リセット',
-          color: 'var(--danger)',
-          requiresConfirmation: true,
-          onClick: handleResetAll,
-        }]}
+        actions={[
+          {
+            label: '完全リセット',
+            color: 'var(--danger)',
+            requiresConfirmation: true,
+            onClick: handleResetAll,
+          },
+        ]}
       />
     </>
   );

@@ -1,15 +1,16 @@
 import { nanoid } from 'nanoid';
 
 import { bulkPutEntries, deleteEntry, deleteImage, putEntry } from '@/lib/idb';
-import type { MemoEntry, MemoEntryType, PanelId } from '@/types/memo';
 import type { StoreState } from '@/store/index';
+import type { MemoEntry, MemoEntryType, PanelId } from '@/types/memo';
 
 export interface EntriesSlice {
   entries: MemoEntry[];
 
   loadEntries: (entries: MemoEntry[]) => void;
   addEntry: (
-    partial: Pick<MemoEntry, 'panel'> & Partial<Omit<MemoEntry, 'id' | 'createdAt' | 'updatedAt' | 'sortOrder'>>,
+    partial: Pick<MemoEntry, 'panel'> &
+      Partial<Omit<MemoEntry, 'id' | 'createdAt' | 'updatedAt' | 'sortOrder'>>,
   ) => Promise<MemoEntry>;
   updateEntry: (id: string, patch: Partial<MemoEntry>) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;

@@ -13,7 +13,11 @@ interface UseGroupLabelEditorParams {
  * グループラベル編集のステート管理を共通化するフック。
  * MemoGroupSection と TimelineGroupSection で利用。
  */
-export function useGroupLabelEditor({ initialLabel, onSave, toastMessage }: UseGroupLabelEditorParams) {
+export function useGroupLabelEditor({
+  initialLabel,
+  onSave,
+  toastMessage,
+}: UseGroupLabelEditorParams) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftLabel, setDraftLabel] = useState(initialLabel);
 

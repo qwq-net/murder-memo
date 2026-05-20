@@ -6,8 +6,8 @@ import {
   getLinkKeywordsBySession,
   putLinkKeyword,
 } from '@/lib/idb';
-import type { LinkKeyword } from '@/types/memo';
 import type { StoreState } from '@/store/index';
+import type { LinkKeyword } from '@/types/memo';
 
 export interface LinkKeywordsSlice {
   linkKeywords: LinkKeyword[];

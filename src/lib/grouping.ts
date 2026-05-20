@@ -35,9 +35,7 @@ export function groupEntriesByMemoGroup(
     group,
     entries: entries.filter((e) => e.groupId === group.id),
   }));
-  const uncategorized = entries.filter(
-    (e) => !e.groupId || !groupIds.has(e.groupId),
-  );
+  const uncategorized = entries.filter((e) => !e.groupId || !groupIds.has(e.groupId));
   return { grouped, uncategorized };
 }
 
@@ -67,7 +65,11 @@ export function groupEntriesByTimeline(
       if (existing) {
         existing.entries.push(entry);
       } else {
-        const hg: HourGroup = { hour, label: getHourLabel(entry.eventTimeSortKey!), entries: [entry] };
+        const hg: HourGroup = {
+          hour,
+          label: getHourLabel(entry.eventTimeSortKey!),
+          entries: [entry],
+        };
         hourMap.set(hour, hg);
         hourGroups.push(hg);
       }

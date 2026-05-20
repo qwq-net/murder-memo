@@ -98,12 +98,7 @@ export function ModalFrame({
   if (!open) return null;
 
   const content = (
-    <div
-      ref={overlayRef}
-      onClick={handleOverlayClick}
-      className="modal-overlay"
-      style={{ zIndex }}
-    >
+    <div ref={overlayRef} onClick={handleOverlayClick} className="modal-overlay" style={{ zIndex }}>
       <div
         ref={dialogRef}
         role={role}

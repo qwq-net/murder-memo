@@ -36,7 +36,7 @@ export function ResizeHandle({ onDelta }: ResizeHandleProps) {
   return (
     <div
       onMouseDown={onMouseDown}
-      className="shrink-0 cursor-col-resize relative z-10 transition-colors duration-150 bg-border-subtle hover:bg-accent-dim"
+      className="bg-border-subtle hover:bg-accent-dim relative z-10 shrink-0 cursor-col-resize transition-colors duration-150"
       style={{ width: 'var(--resize-w)' }}
     />
   );

@@ -1,5 +1,5 @@
-import type { PanelId, PanelLayoutConfig } from '@/types/memo';
 import type { StoreState } from '@/store/index';
+import type { PanelId, PanelLayoutConfig } from '@/types/memo';
 
 const EMPTY_FILTER: Record<PanelId, string[]> = { free: [], personal: [], timeline: [] };
 
@@ -93,8 +93,7 @@ export const createUiSlice = (
   isRelationDiagramOpen: false,
   isLinkListOpen: false,
 
-  setLayout: (patch) =>
-    set((s) => ({ layout: { ...s.layout, ...patch } })),
+  setLayout: (patch) => set((s) => ({ layout: { ...s.layout, ...patch } })),
 
   setActivePanel: (panel) => set(() => ({ activePanel: panel })),
 
@@ -125,16 +124,14 @@ export const createUiSlice = (
   clearCharacterFilter: (panel) =>
     set((s) => ({ characterFilter: { ...s.characterFilter, [panel]: [] } })),
 
-  clearAllCharacterFilters: () =>
-    set(() => ({ characterFilter: { ...EMPTY_FILTER } })),
+  clearAllCharacterFilters: () => set(() => ({ characterFilter: { ...EMPTY_FILTER } })),
 
   addToast: (message, type = 'info') =>
     set((s) => ({
       toasts: [...s.toasts, { id: String(++toastId), message, type }],
     })),
 
-  removeToast: (id) =>
-    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
   setWelcomeOpen: (open) => set(() => ({ isWelcomeOpen: open })),
 

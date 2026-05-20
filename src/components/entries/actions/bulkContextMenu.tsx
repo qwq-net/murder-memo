@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 
-import type { MemoEntry } from '@/types/memo';
 import type { ContextMenuEntry } from '@/components/common/contextMenu';
 import { ContextMenu } from '@/components/common/contextMenu';
 import {
@@ -12,6 +11,7 @@ import {
   buildTagSubmenu,
 } from '@/components/entries/actions/menuItems';
 import { useMenuContext } from '@/hooks/useMenuContext';
+import type { MemoEntry } from '@/types/memo';
 
 interface BulkContextMenuProps {
   entries: MemoEntry[];

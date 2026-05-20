@@ -22,17 +22,17 @@ npm run preview    # ビルドプレビュー
 
 `src/store/index.ts` に9つのスライスを結合:
 
-| スライス | 責務 |
-|---------|------|
-| sessions | セッション CRUD、アクティブセッション管理 |
-| entries | メモエントリの追加・更新・削除・並び替え |
-| characters | キャラクター管理 |
-| timeline-groups | タイムライングループ管理 |
-| memo-groups | 自由メモ / 個人メモのグループ管理 |
-| deductions | 人物推理メモ（犯人投票・疑惑度） |
-| relations | 相関図の関係線管理 |
-| settings | アプリ設定（パネル順、表示形式等） |
-| ui | モーダル表示状態、アクティブパネル |
+| スライス        | 責務                                      |
+| --------------- | ----------------------------------------- |
+| sessions        | セッション CRUD、アクティブセッション管理 |
+| entries         | メモエントリの追加・更新・削除・並び替え  |
+| characters      | キャラクター管理                          |
+| timeline-groups | タイムライングループ管理                  |
+| memo-groups     | 自由メモ / 個人メモのグループ管理         |
+| deductions      | 人物推理メモ（犯人投票・疑惑度）          |
+| relations       | 相関図の関係線管理                        |
+| settings        | アプリ設定（パネル順、表示形式等）        |
+| ui              | モーダル表示状態、アクティブパネル        |
 
 セッション切替時に `subscribeWithSelector` で自動リロードされる。
 
@@ -53,24 +53,24 @@ App → SelectionProvider → AppShell
 
 ### カスタム Hooks（`src/hooks/`）
 
-| フック | 用途 |
-|-------|------|
-| useAutoResizeTextarea | textarea の高さ自動調整 |
-| useCaretPosition | テキストカーソル位置の取得・復元 |
-| useClipboardPaste | クリップボード画像ペースト検知 |
-| useDeleteWithConfirmation | 確認ダイアログ付き削除ロジック |
-| useEntryDraft | エントリの下書き状態管理（blur / Escape） |
-| useEscapeKey | ESC キー監視 |
-| useFilteredCharacters | PL / NPC ロール別キャラクター分割 |
-| useGroupLabelEditor | グループラベル編集 + トースト |
-| useGroupSwap | 隣接グループ入れ替え |
-| useImageBlob | IndexedDB 画像ロード + URL 管理 |
-| useLocalStorage | localStorage 永続化 |
-| useMenuContext | メニューコンテキスト管理 |
-| useResponsive | レスポンシブブレイクポイント判定 |
-| useSessionRenaming | セッション名変更 UI 状態 |
-| useTimeInput | タイムライン時刻入力の状態管理（値・バリデーション・自動補完） |
-| useUndoRedo | Ctrl+Z / Ctrl+Shift+Z での Undo/Redo |
+| フック                    | 用途                                                           |
+| ------------------------- | -------------------------------------------------------------- |
+| useAutoResizeTextarea     | textarea の高さ自動調整                                        |
+| useCaretPosition          | テキストカーソル位置の取得・復元                               |
+| useClipboardPaste         | クリップボード画像ペースト検知                                 |
+| useDeleteWithConfirmation | 確認ダイアログ付き削除ロジック                                 |
+| useEntryDraft             | エントリの下書き状態管理（blur / Escape）                      |
+| useEscapeKey              | ESC キー監視                                                   |
+| useFilteredCharacters     | PL / NPC ロール別キャラクター分割                              |
+| useGroupLabelEditor       | グループラベル編集 + トースト                                  |
+| useGroupSwap              | 隣接グループ入れ替え                                           |
+| useImageBlob              | IndexedDB 画像ロード + URL 管理                                |
+| useLocalStorage           | localStorage 永続化                                            |
+| useMenuContext            | メニューコンテキスト管理                                       |
+| useResponsive             | レスポンシブブレイクポイント判定                               |
+| useSessionRenaming        | セッション名変更 UI 状態                                       |
+| useTimeInput              | タイムライン時刻入力の状態管理（値・バリデーション・自動補完） |
+| useUndoRedo               | Ctrl+Z / Ctrl+Shift+Z での Undo/Redo                           |
 
 ### 共通コンポーネント（`src/components/common/`）
 
@@ -151,16 +151,16 @@ SVG アイコンは `icons/index.tsx` に集約。`size` と `className` props �
 
 IndexedDB（`murder-memo` データベース、スキーマバージョン 5）:
 
-| ストア | インデックス |
-|-------|------------|
-| entries | by-session, by-panel |
-| characters | by-session |
-| timeline-groups | by-session |
-| memo-groups | by-session |
-| deductions | by-session |
-| relations | by-session |
-| sessions | — |
-| images | — |
+| ストア          | インデックス         |
+| --------------- | -------------------- |
+| entries         | by-session, by-panel |
+| characters      | by-session           |
+| timeline-groups | by-session           |
+| memo-groups     | by-session           |
+| deductions      | by-session           |
+| relations       | by-session           |
+| sessions        | —                    |
+| images          | —                    |
 
 ## デプロイ
 

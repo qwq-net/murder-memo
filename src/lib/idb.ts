@@ -1,5 +1,5 @@
-import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
+import { openDB } from 'idb';
 
 import type {
   Character,
@@ -274,10 +274,7 @@ export async function deleteEntry(id: string): Promise<void> {
   await db.delete('entries', id);
 }
 
-export async function bulkPutEntries(
-  entries: MemoEntry[],
-  sessionId: string,
-): Promise<void> {
+export async function bulkPutEntries(entries: MemoEntry[], sessionId: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction('entries', 'readwrite');
   await Promise.all(
@@ -295,7 +292,8 @@ export async function getCharactersBySession(sessionId: string): Promise<Charact
   return rows.map(({ sessionId, ...c }) => ({
     role: 'pl' as const,
     showInEntries: true,
-    ...(c as Omit<Character, 'role' | 'showInEntries'> & Partial<Pick<Character, 'role' | 'showInEntries'>>),
+    ...(c as Omit<Character, 'role' | 'showInEntries'> &
+      Partial<Pick<Character, 'role' | 'showInEntries'>>),
   }));
 }
 
@@ -309,10 +307,7 @@ export async function deleteCharacter(id: string): Promise<void> {
   await db.delete('characters', id);
 }
 
-export async function bulkPutCharacters(
-  chars: Character[],
-  sessionId: string,
-): Promise<void> {
+export async function bulkPutCharacters(chars: Character[], sessionId: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction('characters', 'readwrite');
   await Promise.all(chars.map((c) => tx.store.put({ ...c, sessionId })));
@@ -321,9 +316,7 @@ export async function bulkPutCharacters(
 
 // ─── タイムライングループ ────────────────────────────────────────────────────
 
-export async function getTimelineGroupsBySession(
-  sessionId: string,
-): Promise<TimelineGroup[]> {
+export async function getTimelineGroupsBySession(sessionId: string): Promise<TimelineGroup[]> {
   const db = await getDb();
   return db.getAllFromIndex('timeline-groups', 'by-session', sessionId);
 }
@@ -338,9 +331,7 @@ export async function deleteTimelineGroup(id: string): Promise<void> {
   await db.delete('timeline-groups', id);
 }
 
-export async function bulkPutTimelineGroups(
-  groups: TimelineGroup[],
-): Promise<void> {
+export async function bulkPutTimelineGroups(groups: TimelineGroup[]): Promise<void> {
   const db = await getDb();
   const tx = db.transaction('timeline-groups', 'readwrite');
   await Promise.all(groups.map((g) => tx.store.put(g)));
@@ -349,9 +340,7 @@ export async function bulkPutTimelineGroups(
 
 // ─── メモグループ ───────────────────────────────────────────────────────────
 
-export async function getMemoGroupsBySession(
-  sessionId: string,
-): Promise<MemoGroup[]> {
+export async function getMemoGroupsBySession(sessionId: string): Promise<MemoGroup[]> {
   const db = await getDb();
   return db.getAllFromIndex('memo-groups', 'by-session', sessionId);
 }
@@ -393,9 +382,7 @@ export async function deleteImage(key: string): Promise<void> {
 
 // ─── 推理メモ ─────────────────────────────────────────────────────────────
 
-export async function getDeductionsBySession(
-  sessionId: string,
-): Promise<CharacterDeduction[]> {
+export async function getDeductionsBySession(sessionId: string): Promise<CharacterDeduction[]> {
   const db = await getDb();
   return db.getAllFromIndex('deductions', 'by-session', sessionId);
 }
@@ -419,9 +406,7 @@ export async function bulkPutDeductions(deductions: CharacterDeduction[]): Promi
 
 // ─── 相関図 ───────────────────────────────────────────────────────────────
 
-export async function getRelationsBySession(
-  sessionId: string,
-): Promise<CharacterRelation[]> {
+export async function getRelationsBySession(sessionId: string): Promise<CharacterRelation[]> {
   const db = await getDb();
   return db.getAllFromIndex('relations', 'by-session', sessionId);
 }
@@ -445,9 +430,7 @@ export async function bulkPutRelations(relations: CharacterRelation[]): Promise<
 
 // ─── リンクキーワード辞書 ─────────────────────────────────────────────────
 
-export async function getLinkKeywordsBySession(
-  sessionId: string,
-): Promise<LinkKeyword[]> {
+export async function getLinkKeywordsBySession(sessionId: string): Promise<LinkKeyword[]> {
   const db = await getDb();
   const rows = await db.getAllFromIndex('link-keywords', 'by-session', sessionId);
   // sessionId フィールドはアプリ層に露出させない
@@ -455,10 +438,7 @@ export async function getLinkKeywordsBySession(
   return rows.map(({ sessionId, ...kw }) => kw);
 }
 
-export async function putLinkKeyword(
-  keyword: LinkKeyword,
-  sessionId: string,
-): Promise<void> {
+export async function putLinkKeyword(keyword: LinkKeyword, sessionId: string): Promise<void> {
   const db = await getDb();
   await db.put('link-keywords', { ...keyword, sessionId });
 }

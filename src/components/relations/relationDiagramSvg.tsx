@@ -39,7 +39,12 @@ export function RelationDiagramSvg() {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   // ドラッグ位置情報は ref（追従計算用、再レンダー不要）
-  const dragRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    startPanX: number;
+    startPanY: number;
+  } | null>(null);
   // カーソル表示用にドラッグ中フラグは state で持つ（render で参照するため）
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,26 +57,39 @@ export function RelationDiagramSvg() {
   // ホイールズーム
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    setZoom((prev) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP))));
+    setZoom((prev) =>
+      Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP))),
+    );
   }, []);
 
   // ドラッグパン
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (e.button !== 0) return;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    dragRef.current = { startX: e.clientX, startY: e.clientY, startPanX: pan.x, startPanY: pan.y };
-    setIsDragging(true);
-  }, [pan]);
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.button !== 0) return;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      dragRef.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        startPanX: pan.x,
+        startPanY: pan.y,
+      };
+      setIsDragging(true);
+    },
+    [pan],
+  );
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const scale = WORLD_SIZE / zoom / rect.width;
-    setPan({
-      x: dragRef.current.startPanX + (e.clientX - dragRef.current.startX) * scale,
-      y: dragRef.current.startPanY + (e.clientY - dragRef.current.startY) * scale,
-    });
-  }, [zoom]);
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragRef.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const scale = WORLD_SIZE / zoom / rect.width;
+      setPan({
+        x: dragRef.current.startPanX + (e.clientX - dragRef.current.startX) * scale,
+        y: dragRef.current.startPanY + (e.clientY - dragRef.current.startY) * scale,
+      });
+    },
+    [zoom],
+  );
 
   const handlePointerUp = useCallback(() => {
     dragRef.current = null;
@@ -94,7 +112,9 @@ export function RelationDiagramSvg() {
         >
           −
         </button>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 36, textAlign: 'center' }}>
+        <span
+          style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 36, textAlign: 'center' }}
+        >
           {Math.round(zoom * 100)}%
         </span>
         <button
@@ -172,13 +192,7 @@ export function RelationDiagramSvg() {
             if (!pos) return null;
             return (
               <g key={c.id}>
-                <circle
-                  cx={pos.x}
-                  cy={pos.y}
-                  r={NODE_R}
-                  fill={c.color}
-                  opacity={0.85}
-                />
+                <circle cx={pos.x} cy={pos.y} r={NODE_R} fill={c.color} opacity={0.85} />
                 <text
                   x={pos.x}
                   y={pos.y + NODE_R + 14}

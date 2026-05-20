@@ -44,7 +44,9 @@ export function RadioGroup<T extends string>({
             onClick={() => onChange(opt.value)}
             style={{
               flex: stretch ? 1 : undefined,
-              background: active ? 'color-mix(in srgb, var(--color-settings-accent) 15%, transparent)' : 'transparent',
+              background: active
+                ? 'color-mix(in srgb, var(--color-settings-accent) 15%, transparent)'
+                : 'transparent',
               border: 'none',
               borderLeft: i > 0 ? '1px solid var(--border-default)' : 'none',
               color: opt.disabled

@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
 
-import { useStore } from '@/store';
-import type { MemoEntry } from '@/types/memo';
 import type { ContextMenuEntry } from '@/components/common/contextMenu';
 import { ContextMenu } from '@/components/common/contextMenu';
 import {
@@ -13,6 +11,8 @@ import {
   buildTagSubmenu,
 } from '@/components/entries/actions/menuItems';
 import { useMenuContext } from '@/hooks/useMenuContext';
+import { useStore } from '@/store';
+import type { MemoEntry } from '@/types/memo';
 
 interface EntryContextMenuProps {
   entry: MemoEntry;

@@ -53,19 +53,14 @@ describe('groupEntriesByMemoGroup', () => {
 
   it('groupId なしのエントリは未分類に入る', () => {
     const groups = [makeGroup({ id: 'g1' })];
-    const entries = [
-      makeEntry({ id: 'e1' }),
-      makeEntry({ id: 'e2', groupId: undefined }),
-    ];
+    const entries = [makeEntry({ id: 'e1' }), makeEntry({ id: 'e2', groupId: undefined })];
     const result = groupEntriesByMemoGroup(entries, groups);
     expect(result.uncategorized).toHaveLength(2);
   });
 
   it('存在しないグループを指す groupId は未分類に入る', () => {
     const groups = [makeGroup({ id: 'g1' })];
-    const entries = [
-      makeEntry({ id: 'e1', groupId: 'deleted-group' }),
-    ];
+    const entries = [makeEntry({ id: 'e1', groupId: 'deleted-group' })];
     const result = groupEntriesByMemoGroup(entries, groups);
     expect(result.uncategorized).toHaveLength(1);
     expect(result.grouped[0].entries).toHaveLength(0);

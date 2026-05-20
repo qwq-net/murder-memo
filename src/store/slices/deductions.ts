@@ -1,14 +1,17 @@
 import { nanoid } from 'nanoid';
 
 import { deleteDeduction, getDeductionsBySession, putDeduction } from '@/lib/idb';
-import type { CharacterDeduction } from '@/types/memo';
 import type { StoreState } from '@/store/index';
+import type { CharacterDeduction } from '@/types/memo';
 
 export interface DeductionsSlice {
   deductions: CharacterDeduction[];
 
   loadDeductions: (sessionId: string) => Promise<void>;
-  upsertDeduction: (characterId: string, patch: Partial<Pick<CharacterDeduction, 'suspicionLevel' | 'memo'>>) => Promise<void>;
+  upsertDeduction: (
+    characterId: string,
+    patch: Partial<Pick<CharacterDeduction, 'suspicionLevel' | 'memo'>>,
+  ) => Promise<void>;
   removeDeduction: (characterId: string) => Promise<void>;
 }
 

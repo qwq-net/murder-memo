@@ -1,0 +1,19 @@
+# ビルド成果物 / 依存
+node_modules
+dist
+dist-ssr
+.vite-react-ssg-temp
+
+# パッケージマネージャ
+package-lock.json
+
+# 自動生成 / バイナリ
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.webp
+*.woff
+*.woff2

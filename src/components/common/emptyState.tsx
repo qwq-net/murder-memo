@@ -22,14 +22,49 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
   }, [label, onAddGroup]);
 
   return (
-    <div className="flex flex-col items-center gap-3 py-10 px-5 text-center text-sm text-text-faint leading-8">
+    <div className="text-text-faint flex flex-col items-center gap-3 px-5 py-10 text-center text-sm leading-8">
       {/* アイコン */}
       <svg width="28" height="28" viewBox="0 0 28 28" fill="none" className="opacity-40">
         <rect x="4" y="2" width="20" height="24" rx="3" stroke={accentColor} strokeWidth="1.2" />
-        <line x1="9" y1="8" x2="19" y2="8" stroke={accentColor} strokeWidth="1" strokeLinecap="round" />
-        <line x1="9" y1="12" x2="16" y2="12" stroke={accentColor} strokeWidth="1" strokeLinecap="round" opacity="0.5" />
-        <line x1="9" y1="16" x2="18" y2="16" stroke={accentColor} strokeWidth="1" strokeLinecap="round" opacity="0.5" />
-        <line x1="9" y1="20" x2="14" y2="20" stroke={accentColor} strokeWidth="1" strokeLinecap="round" opacity="0.3" />
+        <line
+          x1="9"
+          y1="8"
+          x2="19"
+          y2="8"
+          stroke={accentColor}
+          strokeWidth="1"
+          strokeLinecap="round"
+        />
+        <line
+          x1="9"
+          y1="12"
+          x2="16"
+          y2="12"
+          stroke={accentColor}
+          strokeWidth="1"
+          strokeLinecap="round"
+          opacity="0.5"
+        />
+        <line
+          x1="9"
+          y1="16"
+          x2="18"
+          y2="16"
+          stroke={accentColor}
+          strokeWidth="1"
+          strokeLinecap="round"
+          opacity="0.5"
+        />
+        <line
+          x1="9"
+          y1="20"
+          x2="14"
+          y2="20"
+          stroke={accentColor}
+          strokeWidth="1"
+          strokeLinecap="round"
+          opacity="0.3"
+        />
       </svg>
 
       <span>{message}</span>
@@ -43,7 +78,10 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
             onChange={(e) => setLabel(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSubmit();
-              else if (e.key === 'Escape') { setIsAdding(false); setLabel(''); }
+              else if (e.key === 'Escape') {
+                setIsAdding(false);
+                setLabel('');
+              }
             }}
             placeholder="メモグループ名"
             className="input-base"
@@ -65,7 +103,7 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
       ) : (
         <button
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-1 text-sm cursor-pointer transition-[border-color,background] duration-150"
+          className="flex cursor-pointer items-center gap-1 text-sm transition-[border-color,background] duration-150"
           style={{
             background: 'none',
             border: `1px solid ${accentColor}55`,
@@ -73,8 +111,14 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
             color: accentColor,
             padding: '5px 12px',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = accentColor; e.currentTarget.style.background = `${accentColor}15`; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = `${accentColor}55`; e.currentTarget.style.background = 'none'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = accentColor;
+            e.currentTarget.style.background = `${accentColor}15`;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = `${accentColor}55`;
+            e.currentTarget.style.background = 'none';
+          }}
         >
           <Plus size={14} strokeWidth={2.5} />
           メモグループを作成

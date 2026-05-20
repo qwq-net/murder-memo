@@ -47,33 +47,28 @@ export function ConfirmModal({
   }
 
   return (
-    <ModalFrame
-      open={open}
-      onClose={onClose}
-      ariaLabel={title}
-      role="alertdialog"
-      zIndex={100}
-    >
+    <ModalFrame open={open} onClose={onClose} ariaLabel={title} role="alertdialog" zIndex={100}>
       <div
         aria-describedby={confirmationLabel ? 'confirm-modal-desc' : undefined}
         className="flex flex-col gap-4 p-5"
         style={{ minWidth: 300, maxWidth: 400 }}
       >
         {/* タイトル */}
-        <div className="text-sm font-semibold leading-normal text-text-primary">
-          {title}
-        </div>
+        <div className="text-text-primary text-sm leading-normal font-semibold">{title}</div>
 
         {/* トグル確認 */}
         {confirmationLabel && (
           <label
             id="confirm-modal-desc"
-            className="flex items-start gap-2 cursor-pointer leading-relaxed select-none transition-colors"
-            style={{ color: confirmed ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: 14 }}
+            className="flex cursor-pointer items-start gap-2 leading-relaxed transition-colors select-none"
+            style={{
+              color: confirmed ? 'var(--text-secondary)' : 'var(--text-muted)',
+              fontSize: 14,
+            }}
           >
             {/* トグル */}
             <span
-              className="relative inline-block shrink-0 mt-px transition-colors duration-200"
+              className="relative mt-px inline-block shrink-0 transition-colors duration-200"
               style={{
                 width: 32,
                 height: 18,
@@ -86,11 +81,11 @@ export function ConfirmModal({
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
                 aria-label={confirmationLabel}
-                className="absolute opacity-0 w-full h-full cursor-pointer m-0"
+                className="absolute m-0 h-full w-full cursor-pointer opacity-0"
               />
               <span
                 aria-hidden="true"
-                className="absolute rounded-full pointer-events-none transition-[left] duration-200"
+                className="pointer-events-none absolute rounded-full transition-[left] duration-200"
                 style={{
                   top: 2,
                   left: confirmed ? 16 : 2,

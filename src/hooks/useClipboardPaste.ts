@@ -1,5 +1,5 @@
-import { useCallback, useEffect } from 'react';
 import { nanoid } from 'nanoid';
+import { useCallback, useEffect } from 'react';
 
 import { putImage } from '@/lib/idb';
 import { resizeImage } from '@/lib/imageResize';
@@ -9,10 +9,7 @@ import { resizeImage } from '@/lib/imageResize';
  * FreeMemoPanel の画像ペースト処理を分離。
  * 画像は最大 1200×1200px にリサイズしてから保存する。
  */
-export function useClipboardPaste(
-  onImagePaste: (blobKey: string) => void,
-  enabled = true,
-) {
+export function useClipboardPaste(onImagePaste: (blobKey: string) => void, enabled = true) {
   const handlePaste = useCallback(
     async (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;

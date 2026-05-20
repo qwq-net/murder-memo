@@ -1,5 +1,5 @@
-import { RadioGroup } from '@/components/common/radioGroup';
 import type { RadioOption } from '@/components/common/radioGroup';
+import { RadioGroup } from '@/components/common/radioGroup';
 
 export function SettingRow<T extends string>({
   label,

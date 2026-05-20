@@ -22,8 +22,8 @@ import {
   putSession,
 } from '@/lib/idb';
 import { APP_VERSION } from '@/lib/version';
-import type { GameSession } from '@/types/memo';
 import type { StoreState } from '@/store/index';
+import type { GameSession } from '@/types/memo';
 
 export interface SessionsSlice {
   sessions: GameSession[];
@@ -92,13 +92,7 @@ export const createSessionsSlice = (
 
           // 初期セッションのデータをロードし、ストアに一括投入する。
           // subscriber の二重 IO を防ぐため、ここでデータを直接セットする。
-          let entries,
-            characters,
-            timelineGroups,
-            memoGroups,
-            deductions,
-            relations,
-            linkKeywords;
+          let entries, characters, timelineGroups, memoGroups, deductions, relations, linkKeywords;
 
           if (demoData && demoData.session.id === initialId) {
             // デモデータ作成直後: メモリ上のデータをそのまま使う（IDB 再読込不要）

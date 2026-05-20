@@ -1,9 +1,9 @@
 import { type ReactNode } from 'react';
 
-import { useImageDrop } from '@/hooks/useImageDrop';
-import type { PanelId } from '@/types/memo';
 import { DropOverlay } from '@/components/common/dropOverlay';
 import { ImagePickerContext } from '@/components/layout/imagePickerContext';
+import { useImageDrop } from '@/hooks/useImageDrop';
+import type { PanelId } from '@/types/memo';
 
 interface PanelProps {
   panelId: PanelId;
@@ -13,18 +13,27 @@ interface PanelProps {
 }
 
 const PANEL_ACCENT: Record<PanelId, string> = {
-  free:     'var(--panel-free-accent)',
+  free: 'var(--panel-free-accent)',
   personal: 'var(--panel-personal-accent)',
   timeline: 'var(--panel-timeline-accent)',
 };
 
 export function Panel({ panelId, title, actions, children }: PanelProps) {
   const accent = PANEL_ACCENT[panelId];
-  const { isDragOver, fileInputRef, handleFileChange, handleDragEnter, handleDragLeave, handleDragOver, handleDrop, openFilePicker } = useImageDrop(panelId);
+  const {
+    isDragOver,
+    fileInputRef,
+    handleFileChange,
+    handleDragEnter,
+    handleDragLeave,
+    handleDragOver,
+    handleDrop,
+    openFilePicker,
+  } = useImageDrop(panelId);
 
   return (
     <div
-      className="flex flex-col h-full bg-bg-panel overflow-hidden relative"
+      className="bg-bg-panel relative flex h-full flex-col overflow-hidden"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -32,7 +41,7 @@ export function Panel({ panelId, title, actions, children }: PanelProps) {
     >
       {/* パネルヘッダー */}
       <div
-        className="flex items-center justify-between gap-2 px-3 border-b border-border-subtle bg-bg-surface select-none"
+        className="border-border-subtle bg-bg-surface flex items-center justify-between gap-2 border-b px-3 select-none"
         style={{ height: 'var(--panel-header-h)', minHeight: 'var(--panel-header-h)' }}
       >
         <div className="flex items-center gap-2">
@@ -40,22 +49,14 @@ export function Panel({ panelId, title, actions, children }: PanelProps) {
             className="shrink-0"
             style={{ width: 3, height: 14, borderRadius: 'var(--radius-sm)', background: accent }}
           />
-          <span className="text-sm font-medium text-text-secondary tracking-wide">
-            {title}
-          </span>
+          <span className="text-text-secondary text-sm font-medium tracking-wide">{title}</span>
         </div>
-        {actions && (
-          <div className="flex items-center gap-1">
-            {actions}
-          </div>
-        )}
+        {actions && <div className="flex items-center gap-1">{actions}</div>}
       </div>
 
       {/* コンテンツ */}
       <ImagePickerContext.Provider value={openFilePicker}>
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {children}
-        </div>
+        <div className="flex flex-1 flex-col overflow-hidden">{children}</div>
       </ImagePickerContext.Provider>
 
       {/* 隠しファイル入力 */}
