@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import Pages from 'vite-plugin-pages';
+import { VitePWA } from 'vite-plugin-pwa';
 // vite-react-ssg は vite の UserConfig に ssgOptions を declare module で追加する。
 // この型拡張を取り込むため副作用なし import を残す。
 import type {} from 'vite-react-ssg';
@@ -24,6 +25,54 @@ export default defineConfig({
     Pages({
       dirs: 'src/pages',
       extensions: ['tsx'],
+    }),
+    // PWA 対応:
+    // - Service Worker を生成して `navigator.serviceWorker.register` を自動注入
+    // - Web App Manifest を生成（既存パス `/site.webmanifest` を踏襲）
+    // - インストール条件を満たすため purpose は "any maskable" を併記
+    // - SSG プリレンダされる `/`, `/guide`, `/app` の HTML / アセットを precache 対象に含める
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      manifestFilename: 'site.webmanifest',
+      includeAssets: ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png'],
+      manifest: {
+        name: 'マダめもくん',
+        short_name: 'マダめも',
+        id: '/app',
+        start_url: '/app',
+        scope: '/',
+        display: 'standalone',
+        theme_color: '#0d0c0a',
+        background_color: '#0d0c0a',
+        icons: [
+          {
+            src: '/web-app-manifest-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+          {
+            src: '/web-app-manifest-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,json}'],
+        // IndexedDB に保存される画像が大きくなりうるので precache のサイズ上限を緩める
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      },
+      // dev サーバーで manifest / SW を確認したい時のみ有効化する。
+      // 環境変数 VITE_PWA_DEV=1 で `npm run dev` 時も PWA を動かせる。
+      // 常時有効化するとキャッシュ起因の挙動変化で開発体験が悪化するため、デフォルトは無効。
+      devOptions: {
+        enabled: process.env.VITE_PWA_DEV === '1',
+        type: 'module',
+        navigateFallback: '/app/index.html',
+      },
     }),
   ],
   resolve: {
