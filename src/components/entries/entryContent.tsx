@@ -5,12 +5,12 @@
 import { type RefObject, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
-import { SearchLinkButton } from '@/components/common/searchLinkButton';
+import { EntryContentView } from '@/components/entries/entryContentView';
 import { useAutoRegisterLinkKeywords } from '@/hooks/useAutoRegisterLinkKeywords';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useCaretPosition } from '@/hooks/useCaretPosition';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
-import { detectInlineCharacterIds, parseCharacterText } from '@/lib/parseCharacterText';
+import { detectInlineCharacterIds } from '@/lib/parseCharacterText';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
 
@@ -50,12 +50,6 @@ export function EntryContent({
   const visibleCharacters = useMemo(
     () => allCharacters.filter((c) => c.showInEntries),
     [allCharacters],
-  );
-
-  // 閲覧モード用: テキスト → セグメント列（キャラ名 / プレーンテキスト / 検索リンク）
-  const segments = useMemo(
-    () => parseCharacterText(entry.content, visibleCharacters, linkKeywords),
-    [entry.content, visibleCharacters, linkKeywords],
   );
 
   // バッジバーから重複排除するためにインライン検出済み ID を渡す。
@@ -166,25 +160,12 @@ export function EntryContent({
           }}
           className="cursor-text pt-px pr-1 pb-0 pl-3.5 text-sm leading-[1.2] break-words whitespace-pre-wrap"
         >
-          {!entry.content ? (
-            <span className="text-text-faint">空のメモ</span>
-          ) : (
-            segments.map((seg, i) => {
-              if (seg.type === 'text') {
-                return <span key={i}>{seg.content}</span>;
-              }
-              if (seg.type === 'search-link') {
-                // [キーワード] または辞書ワードをクリッカブルな検索ショートカットとして表示
-                return <SearchLinkButton key={i} keyword={seg.keyword} onClick={openSearchWith} />;
-              }
-              // キャラクター名をインライン色付きテキストとして表示
-              return (
-                <span key={i} style={{ color: seg.character.color, fontWeight: 600 }}>
-                  {seg.character.name}
-                </span>
-              );
-            })
-          )}
+          <EntryContentView
+            entry={entry}
+            visibleCharacters={visibleCharacters}
+            linkKeywords={linkKeywords}
+            onSearchClick={openSearchWith}
+          />
         </div>
       )}
 

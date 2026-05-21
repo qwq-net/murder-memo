@@ -5,6 +5,16 @@ import { X } from '@/components/icons';
 import { APP_VERSION } from '@/lib/version';
 import { useStore } from '@/store';
 
+/**
+ * 初回起動 / バージョン変更時に表示するウェルカムモーダル。
+ *
+ * 機能紹介や操作説明は `/guide` ページに移したため、ここでは「概要 3 行 + 導線」に絞る:
+ *   - サンプルシナリオが入っている旨
+ *   - 使い方ガイドへの誘導（別タブで開く）
+ *   - 閉じるボタン
+ *
+ * バージョンアップ時の通知としての役割は維持（`lastSeenVersion !== APP_VERSION` で表示）。
+ */
 export function WelcomeModal() {
   const isOpen = useStore((s) => s.isWelcomeOpen);
   const setOpen = useStore((s) => s.setWelcomeOpen);
@@ -16,7 +26,7 @@ export function WelcomeModal() {
   }, [setLastSeenVersion, setOpen]);
 
   return (
-    <ModalFrame open={isOpen} onClose={handleClose} width={520} ariaLabel="マダめもくんへようこそ">
+    <ModalFrame open={isOpen} onClose={handleClose} width={480} ariaLabel="マダめもくんへようこそ">
       {/* ヘッダー */}
       <div
         style={{
@@ -37,7 +47,7 @@ export function WelcomeModal() {
               letterSpacing: '0.06em',
             }}
           >
-            マダめもくんへようこそ！
+            マダめもくんへようこそ
           </span>
         </div>
         <button onClick={handleClose} className="modal-close-btn" aria-label="閉じる">
@@ -51,89 +61,40 @@ export function WelcomeModal() {
           padding: '16px 20px 20px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 18,
+          gap: 14,
         }}
       >
-        {/* アプリ概要 */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h3>※ 現在はPCでの利用を前提としており、βバージョンです。</h3>
-          <h3
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--accent)',
-              letterSpacing: '0.04em',
-              margin: 0,
-            }}
-          >
-            マダめもくんとは？
-          </h3>
-          <p
-            style={{
-              fontSize: 14,
-              color: 'var(--text-secondary)',
-              lineHeight: 1.7,
-              margin: 0,
-            }}
-          >
-            マーダーミステリーのプレイ中に使える、メモ特化のWebアプリです。
-            タイムライン・フリーメモ・自分用メモの3つのパネルで情報を整理し、
-            推理をスムーズに進められます。
-          </p>
-        </section>
-
-        {/* サンプルシナリオ */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h3
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--accent)',
-              letterSpacing: '0.04em',
-              margin: 0,
-            }}
-          >
-            サンプルシナリオを用意しました
-          </h3>
-          <p
-            style={{
-              fontSize: 14,
-              color: 'var(--text-secondary)',
-              lineHeight: 1.7,
-              margin: 0,
-            }}
-          >
-            すでにサンプルデータが入った状態で表示されています。
-            メモの追加・編集・並び替え・削除など、まずは自由に触って操作感を確かめてみてください。
-            実際のプレイ時は、ヘッダーの「+」ボタンから新しいセッションを作成して始められます。
-          </p>
-        </section>
-
-        {/* 設定の案内 */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h3
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--accent)',
-              letterSpacing: '0.04em',
-              margin: 0,
-            }}
-          >
-            カスタマイズ
-          </h3>
-          <p
-            style={{
-              fontSize: 14,
-              color: 'var(--text-secondary)',
-              lineHeight: 1.7,
-              margin: 0,
-            }}
-          >
-            ヘッダー右上の「アプリ設定」から、入力欄の位置・パネルの並び順・
-            関連人物マーカーの表示形式など、お好みに合わせて調整できます。
-          </p>
-        </section>
+        <p
+          style={{
+            fontSize: 14,
+            color: 'var(--text-secondary)',
+            lineHeight: 1.8,
+            margin: 0,
+          }}
+        >
+          マダめもくんは、マーダーミステリーのプレイ中に使うメモアプリです。
+        </p>
+        <p
+          style={{
+            fontSize: 14,
+            color: 'var(--text-secondary)',
+            lineHeight: 1.8,
+            margin: 0,
+          }}
+        >
+          サンプルシナリオがすでに入っているので、まずは触って操作感を確かめてみてください。
+          実際のプレイ時はヘッダーの「+」ボタンから新しいセッションを作成できます。
+        </p>
+        <p
+          style={{
+            fontSize: 13,
+            color: 'var(--text-muted)',
+            lineHeight: 1.8,
+            margin: 0,
+          }}
+        >
+          ※ 現在は PC での利用を前提とした β バージョンです
+        </p>
 
         {/* バージョン表示 */}
         <div
@@ -147,14 +108,28 @@ export function WelcomeModal() {
           v{APP_VERSION}
         </div>
 
-        {/* 閉じるボタン */}
-        <button
-          onClick={handleClose}
-          className="btn-primary btn-lg"
-          style={{ alignSelf: 'center', minWidth: 160 }}
+        {/* アクションボタン */}
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+          }}
         >
-          はじめる
-        </button>
+          <a
+            href="/guide"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-ghost btn-md"
+            style={{ minWidth: 140, textDecoration: 'none', textAlign: 'center' }}
+          >
+            使い方ガイドを開く
+          </a>
+          <button onClick={handleClose} className="btn-primary btn-md" style={{ minWidth: 140 }}>
+            はじめる
+          </button>
+        </div>
       </div>
     </ModalFrame>
   );

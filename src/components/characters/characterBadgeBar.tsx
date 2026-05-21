@@ -1,4 +1,6 @@
-import { CharacterBadge } from '@/components/characters/characterBadge';
+import { useMemo } from 'react';
+
+import { CharacterBadgeBarView } from '@/components/characters/characterBadgeBarView';
 import { useStore } from '@/store';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, MemoEntry } from '@/types/memo';
 
@@ -15,6 +17,8 @@ interface CharacterBadgeBarProps {
  * ミニマルモード用ラッパー。非選択バッジを max-width + opacity で
  * 滑り込むようにアニメーション表示する。
  * 非表示時は幅・マージンともに 0 にして余白を生まない。
+ *
+ * NOTE: `CharacterBadgeBarView` から re-import される（store 依存ゼロ）。
  */
 export function MinimalSlot({
   revealed,
@@ -62,13 +66,14 @@ export function MinimalSlot({
 }
 
 /**
- * エントリに紐づくキャラクターバッジ一覧。
+ * エントリに紐づくキャラクターバッジ一覧（store 連携版）。
+ *
+ * store からキャラ一覧 / トグル関数を取得し、`CharacterBadgeBarView` に流す薄いラッパー。
+ * 並べ替え（PL→NPC / sortOrder）とインライン検出済みキャラの除外もここで行う。
  *
  * レイアウトの責務分担:
- *   - 外側の padding（テキストとの左揃え）は親コンポーネント（EntryContent）が担当
- *   - このコンポーネントはバッジ間の間隔のみ管理（CSS gap）
- *   - ミニマルモードでは gap が非表示要素に効かないよう gap: 0 にし、
- *     MinimalSlot 側で幅制御のみ行う
+ *   - 外側の padding（テキストとの左揃え）は親（EntryContent）が担当
+ *   - このコンポーネントはバッジ間の間隔のみ View 経由で管理
  */
 export function CharacterBadgeBar({
   entry,
@@ -80,70 +85,34 @@ export function CharacterBadgeBar({
   const allCharacters = useStore((s) => s.characters);
   const toggleCharacterTag = useStore((s) => s.toggleCharacterTag);
 
-  // showInEntries が true かつインライン未表示のキャラのみ。プレイヤー → NPC の順、その中で行動順（sortOrder）
-  const characters = allCharacters
-    .filter((c) => c.showInEntries && !inlineDetectedIds?.includes(c.id))
-    .sort((a, b) => {
-      if (a.role !== b.role) return a.role === 'pl' ? -1 : 1;
-      return a.sortOrder - b.sortOrder;
-    });
+  // showInEntries が true かつインライン未表示のキャラのみ。PL→NPC、その中で行動順（sortOrder）
+  const characters = useMemo(
+    () =>
+      allCharacters
+        .filter((c) => c.showInEntries && !inlineDetectedIds?.includes(c.id))
+        .sort((a, b) => {
+          if (a.role !== b.role) return a.role === 'pl' ? -1 : 1;
+          return a.sortOrder - b.sortOrder;
+        }),
+    [allCharacters, inlineDetectedIds],
+  );
 
-  if (characters.length === 0) return null;
-  if (visibility === 'off') return null;
-
-  const isMinimal = visibility === 'minimal';
-  // collapsed 判定: 手動タグ（characterTags）とインライン検出（inlineDetectedIds）の
-  // 和集合で「実効アクティブ」を判定する。インライン表示済みキャラはバーから除外されているが、
-  // 1件でも実効アクティブがあればバーを展開してタグ付け操作をしやすくする
-  const effectiveActiveIds = new Set([...entry.characterTags, ...(inlineDetectedIds ?? [])]);
-  const hasActive = allCharacters.some((c) => effectiveActiveIds.has(c.id));
-  // ミニマル: 実効アクティブが0件かつ非ホバーなら高さを畳む（DOMは維持してアニメーション可能に）
-  const collapsed = isMinimal && !isEntryHovered && !hasActive;
+  // 実効アクティブ判定（手動タグ + インライン検出の和集合）
+  const activeCharacterIds = useMemo(() => new Set(entry.characterTags), [entry.characterTags]);
+  const hasEffectiveActive = useMemo(() => {
+    const effective = new Set([...entry.characterTags, ...(inlineDetectedIds ?? [])]);
+    return allCharacters.some((c) => effective.has(c.id));
+  }, [allCharacters, entry.characterTags, inlineDetectedIds]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        // ミニマルモードでは gap が非表示(width:0)要素にも効くため 0 にする
-        // 通常モードは gap で均等スペーシング（折り返し時も2行目先頭にズレなし）
-        columnGap: isMinimal ? 0 : 1,
-        rowGap: isMinimal ? 0 : 1,
-        alignItems: 'center',
-        flexShrink: 0,
-        flexWrap: 'wrap',
-        // 外側 padding は親（EntryContent）に委譲。ここでは上下余白のみ
-        padding: 0,
-        opacity: collapsed ? 0 : 1,
-        height: collapsed ? 0 : 'auto',
-        transition: 'opacity 0.15s ease-out',
-      }}
-    >
-      {characters.map((char) => {
-        const isActive = entry.characterTags.includes(char.id);
-        const revealed = isEntryHovered || isActive;
-        const badge = (
-          <CharacterBadge
-            key={char.id}
-            color={char.color}
-            name={char.name}
-            isActive={isActive}
-            onClick={(e) => {
-              if (!e.shiftKey) toggleCharacterTag(entry.id, char.id);
-            }}
-            format={format}
-          />
-        );
-
-        if (isMinimal) {
-          return (
-            <MinimalSlot key={char.id} revealed={revealed} isActive={isActive}>
-              {badge}
-            </MinimalSlot>
-          );
-        }
-
-        return badge;
-      })}
-    </div>
+    <CharacterBadgeBarView
+      characters={characters}
+      activeCharacterIds={activeCharacterIds}
+      onToggle={(id) => toggleCharacterTag(entry.id, id)}
+      format={format}
+      visibility={visibility}
+      isEntryHovered={isEntryHovered}
+      hasEffectiveActive={hasEffectiveActive}
+    />
   );
 }
