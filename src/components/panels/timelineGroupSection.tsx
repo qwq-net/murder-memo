@@ -1,5 +1,6 @@
 import { GroupHeader } from '@/components/common/groupHeader';
 import { SortableEntryList } from '@/components/entries/sortableEntryList';
+import { HourDividerView } from '@/components/panels/hourDividerView';
 import { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
 import type { MemoEntry, TimelineGroup } from '@/types/memo';
@@ -103,7 +104,7 @@ export function TimelineGroupSection({
             {/* 時間帯グループ — 同一時間帯内でDnDソート可能 */}
             {hourGroups.map((hg) => (
               <div key={hg.hour}>
-                <HourDivider label={hg.label} />
+                <HourDividerView label={hg.label} />
                 <SortableEntryList
                   entries={hg.entries}
                   onReorder={onReorderEntries}
@@ -115,7 +116,7 @@ export function TimelineGroupSection({
             {/* 不明グループ — DnDで並び替え可能 */}
             {unknownEntries.length > 0 && (
               <div>
-                <HourDivider label="不明" />
+                <HourDividerView label="不明" />
                 <SortableEntryList entries={unknownEntries} onReorder={onReorderEntries} />
               </div>
             )}
@@ -134,24 +135,3 @@ export function TimelineGroupSection({
 }
 
 /** 時間帯の区切りライン ―――― 9:00 ―――――――― */
-function HourDivider({ label, muted }: { label: string; muted?: boolean }) {
-  const lineColor = muted
-    ? 'color-mix(in srgb, var(--border-subtle) 40%, transparent)'
-    : 'color-mix(in srgb, var(--panel-timeline-accent) 15%, transparent)';
-
-  return (
-    <div className="flex items-center gap-2 pt-0.5 pr-2 pb-0 pl-0">
-      {/* 左ライン — 縦線とクロスする */}
-      <span className="h-px flex-1" style={{ background: lineColor }} />
-      <span
-        className={`shrink-0 font-mono text-sm tracking-[0.06em] ${
-          muted ? 'text-text-faint' : 'text-text-muted'
-        }`}
-      >
-        {label}
-      </span>
-      {/* 右ライン */}
-      <span className="h-px flex-1" style={{ background: lineColor }} />
-    </div>
-  );
-}

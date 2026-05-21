@@ -29,9 +29,10 @@ export function PreviewFrame({ children, label = 'プレビュー' }: PreviewFra
         style={{
           padding: '6px 12px',
           borderBottom: '1px solid var(--border-subtle)',
-          fontSize: 11,
-          color: 'var(--text-faint)',
-          letterSpacing: '0.08em',
+          fontSize: 12,
+          fontWeight: 600,
+          color: 'var(--text-muted)',
+          letterSpacing: '0.06em',
           background: 'var(--bg-base)',
         }}
       >

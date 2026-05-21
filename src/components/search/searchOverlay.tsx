@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Search, X } from '@/components/icons';
+import { SearchOverlayShellView } from '@/components/search/searchOverlayShellView';
 import { SearchResultItem } from '@/components/search/searchResultItem';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { navigateToEntry } from '@/lib/entryNavigation';
@@ -124,56 +124,27 @@ export function SearchOverlay() {
         onClick={close}
       />
 
-      {/* 検索パレット */}
+      {/* 検索パレット — 位置決め (fixed) のみここで指定し、中身は SearchOverlayShellView に委譲 */}
       <div
-        className="fixed z-[60] flex flex-col"
+        className="fixed z-[60]"
         style={{
           top: 'var(--header-h)',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: 'min(520px, calc(100vw - 24px))',
-          maxHeight: 'calc(100vh - var(--header-h) - 24px)',
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: '0 8px 32px var(--shadow-menu)',
           animation: 'search-in 0.15s ease-out',
         }}
       >
-        {/* 入力欄 */}
-        <div className="border-border-subtle flex items-center gap-2 border-b px-3 py-2">
-          <Search size={15} className="text-text-muted shrink-0" />
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="エントリを検索…"
-            autoComplete="off"
-            className="text-text-primary placeholder:text-text-faint flex-1 border-none bg-transparent text-sm outline-none"
-            style={{ boxShadow: 'none' }}
-          />
-          {query && (
-            <button
-              onClick={() => {
-                setQuery('');
-                inputRef.current?.focus();
-              }}
-              className="text-text-muted hover:text-text-primary flex shrink-0 cursor-pointer items-center border-none bg-transparent p-0.5 transition-colors duration-100"
-              aria-label="クリア"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* 結果エリア */}
-        <div className="overflow-y-auto" style={{ maxHeight: 'min(60vh, 480px)' }}>
-          {debouncedQuery && totalCount === 0 && (
-            <div className="text-text-muted px-3 py-6 text-center text-sm">
-              該当するエントリが見つかりません
-            </div>
-          )}
-
+        <SearchOverlayShellView
+          query={query}
+          onQueryChange={(next) => {
+            setQuery(next);
+            if (next === '') inputRef.current?.focus();
+          }}
+          inputRef={inputRef}
+          totalCount={debouncedQuery ? totalCount : undefined}
+          maxReached={totalCount >= MAX_RESULTS}
+          showEmpty={!!debouncedQuery && totalCount === 0}
+        >
           {grouped.map((group) => (
             <div key={group.panel}>
               {/* パネルグループヘッダー */}
@@ -209,15 +180,7 @@ export function SearchOverlay() {
               ))}
             </div>
           ))}
-        </div>
-
-        {/* フッター: 結果カウント */}
-        {debouncedQuery && totalCount > 0 && (
-          <div className="text-text-muted border-border-subtle border-t px-3 py-1.5 text-[11px]">
-            {totalCount}件の結果
-            {totalCount >= MAX_RESULTS && '（上限）'}
-          </div>
-        )}
+        </SearchOverlayShellView>
       </div>
     </>,
     document.body,

@@ -2,12 +2,12 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
 import { ImageLightbox } from '@/components/common/imageLightbox';
-import { SearchLinkButton } from '@/components/common/searchLinkButton';
+import { ImageEntryView } from '@/components/entries/imageEntryView';
 import { useAutoRegisterLinkKeywords } from '@/hooks/useAutoRegisterLinkKeywords';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
 import { useImageBlob } from '@/hooks/useImageBlob';
-import { detectInlineCharacterIds, parseCharacterText } from '@/lib/parseCharacterText';
+import { detectInlineCharacterIds } from '@/lib/parseCharacterText';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
 
@@ -19,6 +19,13 @@ interface ImageEntryProps {
   isHovered: boolean;
 }
 
+/**
+ * 画像エントリの店長ラッパー。
+ *
+ * - 閲覧モード: `ImageEntryView` に委譲（純粋表示）
+ * - 編集モード: ここで textarea + draft 管理 + Lightbox 制御を行う
+ * - サムネイル URL は `useImageBlob` で IDB から取得し、両モードで使う
+ */
 export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   const src = useImageBlob(entry.imageBlobKey);
   const updateEntry = useStore((s) => s.updateEntry);
@@ -28,6 +35,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   const settings = useStore((s) => s.settings);
   const allCharacters = useStore((s) => s.characters);
   const linkKeywords = useStore((s) => s.linkKeywords);
+  const toggleCharacterTag = useStore((s) => s.toggleCharacterTag);
   const registerKeywords = useAutoRegisterLinkKeywords();
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -41,12 +49,6 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
   const visibleCharacters = useMemo(
     () => allCharacters.filter((c) => c.showInEntries),
     [allCharacters],
-  );
-
-  // 閲覧モード用: キャプションテキスト → セグメント列
-  const segments = useMemo(
-    () => parseCharacterText(entry.content, visibleCharacters, linkKeywords),
-    [entry.content, visibleCharacters, linkKeywords],
   );
 
   // バッジバーから重複排除するためにインライン検出済み ID を渡す。
@@ -114,30 +116,27 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
     [draftEscape],
   );
 
-  return (
-    <div style={{ flex: 1, minWidth: 0 }}>
-      {/* サムネイル + キャプション */}
-      <div className="flex items-start gap-2 pt-px pr-2.5 pb-0 pl-3.5">
-        {/* サムネイル画像 */}
-        {src ? (
-          <img
-            src={src}
-            alt=""
-            onClick={() => setLightboxOpen(true)}
-            className="border-border-subtle block shrink-0 cursor-pointer rounded-sm border object-cover"
-            style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
-          />
-        ) : (
-          <div
-            className="border-border-subtle text-text-faint flex shrink-0 items-center justify-center rounded-sm border text-[10px]"
-            style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
-          >
-            …
-          </div>
-        )}
-
-        {/* キャプション */}
-        {isEditing ? (
+  // 編集モードのときは textarea + 編集用 DOM をここで描画する
+  if (isEditing) {
+    return (
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="flex items-start gap-2 pt-px pr-2.5 pb-0 pl-3.5">
+          {src ? (
+            <img
+              src={src}
+              alt=""
+              onClick={() => setLightboxOpen(true)}
+              className="border-border-subtle block shrink-0 cursor-pointer rounded-sm border object-cover"
+              style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
+            />
+          ) : (
+            <div
+              className="border-border-subtle text-text-faint flex shrink-0 items-center justify-center rounded-sm border text-[10px]"
+              style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
+            >
+              …
+            </div>
+          )}
           <textarea
             ref={inputRef}
             value={draft.content}
@@ -152,51 +151,44 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
             className="text-text-primary m-0 block w-full resize-none overflow-hidden border-none bg-transparent p-0 font-sans text-sm leading-[1.2] outline-none"
             style={{ minHeight: THUMB_HEIGHT }}
           />
-        ) : (
-          <div
-            onClick={(e) => {
-              if (e.shiftKey) return;
-              setFocusedEntry(entry.id);
-            }}
-            className="min-w-0 flex-1 cursor-text pt-px text-sm leading-[1.2] break-words whitespace-pre-wrap"
-            style={{ minHeight: THUMB_HEIGHT }}
-          >
-            {!entry.content ? (
-              <span className="text-text-faint">キャプションを入力</span>
-            ) : (
-              segments.map((seg, i) => {
-                if (seg.type === 'text') {
-                  return <span key={i}>{seg.content}</span>;
-                }
-                if (seg.type === 'search-link') {
-                  return (
-                    <SearchLinkButton key={i} keyword={seg.keyword} onClick={openSearchWith} />
-                  );
-                }
-                // キャラクター名をインライン色付きテキストとして表示
-                return (
-                  <span key={i} style={{ color: seg.character.color, fontWeight: 600 }}>
-                    {seg.character.name}
-                  </span>
-                );
-              })
-            )}
-          </div>
+        </div>
+        <div className="pr-2.5 pb-0.5 pl-3.5">
+          <CharacterBadgeBar
+            entry={entry}
+            format={effectiveFormat}
+            visibility={effectiveVisibility}
+            isEntryHovered={isHovered || isEditing}
+            inlineDetectedIds={inlineDetectedIds}
+          />
+        </div>
+        {src && (
+          <ImageLightbox src={src} open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
         )}
       </div>
+    );
+  }
 
-      {/* 役職マーカー */}
-      <div className="pr-2.5 pb-0.5 pl-3.5">
-        <CharacterBadgeBar
-          entry={entry}
-          format={effectiveFormat}
-          visibility={effectiveVisibility}
-          isEntryHovered={isHovered || isEditing}
-          inlineDetectedIds={inlineDetectedIds}
-        />
-      </div>
-
-      {/* ライトボックス */}
+  // 閲覧モードは ImageEntryView に委譲
+  return (
+    <div
+      onClick={(e) => {
+        if (e.shiftKey) return;
+        setFocusedEntry(entry.id);
+      }}
+      style={{ flex: 1, minWidth: 0 }}
+    >
+      <ImageEntryView
+        entry={entry}
+        visibleCharacters={visibleCharacters}
+        linkKeywords={linkKeywords}
+        imageSrc={src ?? undefined}
+        format={effectiveFormat}
+        visibility={effectiveVisibility}
+        isHovered={isHovered || isEditing}
+        onLightboxOpen={() => setLightboxOpen(true)}
+        onSearchClick={openSearchWith}
+        onCharacterToggle={(charId) => toggleCharacterTag(entry.id, charId)}
+      />
       {src && (
         <ImageLightbox src={src} open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
       )}

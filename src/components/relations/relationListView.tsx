@@ -1,24 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { X } from '@/components/icons';
+import {
+  RELATION_LABEL_PRESETS,
+  getRelationPresetColor,
+} from '@/components/relations/relationLabelPresets';
+import { RelationListItemView } from '@/components/relations/relationListItemView';
 import { useStore } from '@/store';
-
-/** ラベルプリセット — 各テンプレにデフォルト色を定義 */
-const LABEL_PRESETS: { label: string; color: string }[] = [
-  { label: '友人', color: '#3498db' },
-  { label: '恋人', color: '#e91e8c' },
-  { label: '家族', color: '#2ecc71' },
-  { label: '上司部下', color: '#8e44ad' },
-  { label: '敵対', color: '#e74c3c' },
-  { label: '協力者', color: '#27ae60' },
-  { label: '知人', color: '#95a5a6' },
-  { label: '不明', color: '#7f8c8d' },
-];
-
-/** プリセットからラベル名でデフォルト色を取得 */
-function getPresetColor(label: string): string | undefined {
-  return LABEL_PRESETS.find((p) => p.label === label)?.color;
-}
 
 export function RelationListView() {
   const characters = useStore((s) => s.characters);
@@ -75,73 +62,15 @@ export function RelationListView() {
       {relations.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {relations.map((r) => (
-            <div
+            <RelationListItemView
               key={r.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '6px 0',
-                borderBottom: '1px solid var(--border-subtle)',
-              }}
-            >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: charColor(r.fromCharacterId),
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>
-                  {charName(r.fromCharacterId)}
-                </span>
-              </span>
-              <span
-                style={{
-                  fontSize: 12,
-                  color: r.color || 'var(--text-muted)',
-                  padding: '1px 6px',
-                  background: 'var(--bg-active)',
-                  borderRadius: 'var(--radius-sm)',
-                  borderLeft: `3px solid ${r.color || 'var(--border-strong)'}`,
-                }}
-              >
-                {r.label}
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: charColor(r.toCharacterId),
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>
-                  {charName(r.toCharacterId)}
-                </span>
-              </span>
-              <button
-                onClick={() => handleRemove(r.id)}
-                title="関係を削除"
-                style={{
-                  marginLeft: 'auto',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  padding: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <X size={14} />
-              </button>
-            </div>
+              relation={r}
+              fromName={charName(r.fromCharacterId)}
+              fromColor={charColor(r.fromCharacterId)}
+              toName={charName(r.toCharacterId)}
+              toColor={charColor(r.toCharacterId)}
+              onRemove={handleRemove}
+            />
           ))}
         </div>
       )}
@@ -206,7 +135,7 @@ export function RelationListView() {
             onChange={(e) => {
               setLabel(e.target.value);
               // プリセットに一致する場合はデフォルト色を適用
-              const preset = getPresetColor(e.target.value);
+              const preset = getRelationPresetColor(e.target.value);
               if (preset) setColor(preset);
             }}
             onKeyDown={(e) => {
@@ -244,7 +173,7 @@ export function RelationListView() {
 
         {/* プリセットチップ */}
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {LABEL_PRESETS.map((p) => (
+          {RELATION_LABEL_PRESETS.map((p) => (
             <button
               key={p.label}
               onClick={() => handlePresetClick(p)}

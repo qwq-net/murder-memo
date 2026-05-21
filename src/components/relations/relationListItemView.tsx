@@ -1,0 +1,97 @@
+import { X } from '@/components/icons';
+import type { CharacterRelation } from '@/types/memo';
+
+interface RelationListItemViewProps {
+  /** 表示する関係 */
+  relation: CharacterRelation;
+  /** from 側のキャラ名（解決済み。見つからない場合は '？' などを呼び出し側で渡す） */
+  fromName: string;
+  /** from 側のキャラ色 */
+  fromColor: string;
+  /** to 側のキャラ名 */
+  toName: string;
+  /** to 側のキャラ色 */
+  toColor: string;
+  /** 削除ハンドラ。Guide では noop で渡せる */
+  onRemove?: (relationId: string) => void;
+}
+
+/**
+ * 相関図のリスト 1 行（from + ラベル + to + 削除）の純粋表示版。
+ *
+ * - `useStore` には触れず、props で全データを受ける
+ * - キャラ名・色の解決は呼び出し側の責務（charMap などから lookup して渡す）
+ */
+export function RelationListItemView({
+  relation,
+  fromName,
+  fromColor,
+  toName,
+  toColor,
+  onRemove,
+}: RelationListItemViewProps) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '6px 0',
+        borderBottom: '1px solid var(--border-subtle)',
+      }}
+    >
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: fromColor,
+            flexShrink: 0,
+          }}
+        />
+        <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{fromName}</span>
+      </span>
+      <span
+        style={{
+          fontSize: 12,
+          color: relation.color || 'var(--text-muted)',
+          padding: '1px 6px',
+          background: 'var(--bg-active)',
+          borderRadius: 'var(--radius-sm)',
+          borderLeft: `3px solid ${relation.color || 'var(--border-strong)'}`,
+        }}
+      >
+        {relation.label}
+      </span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: toColor,
+            flexShrink: 0,
+          }}
+        />
+        <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{toName}</span>
+      </span>
+      <button
+        onClick={() => onRemove?.(relation.id)}
+        title="関係を削除"
+        style={{
+          marginLeft: 'auto',
+          background: 'none',
+          border: 'none',
+          color: 'var(--text-muted)',
+          cursor: 'pointer',
+          padding: 2,
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}

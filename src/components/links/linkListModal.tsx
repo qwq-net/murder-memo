@@ -2,8 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { ConfirmModal } from '@/components/common/confirmModal';
 import { ModalFrame } from '@/components/common/modalFrame';
-import { SearchLinkButton } from '@/components/common/searchLinkButton';
-import { Trash2, X } from '@/components/icons';
+import { X } from '@/components/icons';
+import { LinkListItemView } from '@/components/links/linkListItemView';
 import { useStore } from '@/store';
 import type { LinkKeyword } from '@/types/memo';
 
@@ -91,41 +91,12 @@ export function LinkListModal() {
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {sorted.map((kw) => (
-                <li
+                <LinkListItemView
                   key={kw.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '8px 0',
-                    borderBottom: '1px solid var(--border-subtle)',
-                  }}
-                >
-                  {/* キーワード（クリックで検索） */}
-                  <SearchLinkButton
-                    keyword={kw.keyword}
-                    onClick={handleClickKeyword}
-                    stopPropagation={false}
-                    variant="block"
-                  />
-
-                  {/* 削除ボタン */}
-                  <button
-                    onClick={() => setPendingDelete(kw)}
-                    aria-label={`「${kw.keyword}」を削除`}
-                    title="削除"
-                    className="btn-ghost btn-sm"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 6,
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </li>
+                  keyword={kw.keyword}
+                  onClick={handleClickKeyword}
+                  onRemove={() => setPendingDelete(kw)}
+                />
               ))}
             </ul>
           )}

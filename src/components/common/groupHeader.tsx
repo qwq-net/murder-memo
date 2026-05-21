@@ -1,7 +1,5 @@
-import { useState } from 'react';
-
 import { ConfirmModal } from '@/components/common/confirmModal';
-import { ArrowDown, ArrowUp, ChevronDown, SquarePen, X } from '@/components/icons';
+import { GroupHeaderView } from '@/components/common/groupHeaderView';
 import type { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import type { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
 
@@ -30,8 +28,10 @@ interface GroupHeaderProps {
 }
 
 /**
- * グループヘッダーの共通コンポーネント。
- * MemoGroupSection と TimelineGroupSection で共用する。
+ * グループヘッダーの店長ラッパー。
+ *
+ * `MemoGroupSection` と `TimelineGroupSection` で共用する。表示は `GroupHeaderView` に委譲し、
+ * ここでは hook の戻り値（編集状態 / 削除確認）と `ConfirmModal` を組み合わせる責務だけを持つ。
  */
 export function GroupHeader({
   label,
@@ -44,147 +44,23 @@ export function GroupHeader({
   onMoveDown,
   deleteModal,
 }: GroupHeaderProps) {
-  const [headerHovered, setHeaderHovered] = useState(false);
-
   return (
     <>
-      <div
-        onMouseEnter={() => setHeaderHovered(true)}
-        onMouseLeave={() => setHeaderHovered(false)}
-        onClick={labelEditor.isEditing ? undefined : onToggle}
-        className="flex cursor-pointer items-center gap-2 px-2.5 py-[7px] select-none"
-        style={{
-          background: `color-mix(in srgb, ${accentColor} 5%, transparent)`,
-          borderBottom: `1px solid color-mix(in srgb, ${accentColor} 12%, transparent)`,
-        }}
-      >
-        {/* 折りたたみ矢印 */}
-        <span
-          className="flex shrink-0 items-center transition-transform duration-150"
-          style={{
-            color: accentColor,
-            transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-          }}
-        >
-          <ChevronDown size={12} />
-        </span>
-
-        {/* ラベル */}
-        {labelEditor.isEditing ? (
-          <input
-            autoFocus
-            value={labelEditor.draftLabel}
-            onChange={(e) => labelEditor.setDraftLabel(e.target.value)}
-            onBlur={labelEditor.saveLabel}
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={labelEditor.handleKeyDown}
-            aria-label="グループ名を編集"
-            className="bg-bg-base flex-1 rounded-sm px-1.5 py-px text-sm font-semibold outline-none"
-            style={{
-              border: `1px solid ${accentColor}`,
-              color: accentColor,
-            }}
-          />
-        ) : (
-          <span
-            className="flex-1 text-sm font-semibold tracking-[0.06em]"
-            style={{ color: accentColor }}
-          >
-            {label}
-          </span>
-        )}
-
-        {/* 並び替え矢印 — ホバー時表示 */}
-        {!labelEditor.isEditing && (onMoveUp || onMoveDown) && (
-          <span
-            className="flex items-center gap-px"
-            style={{ opacity: headerHovered ? 0.8 : 0, transition: 'opacity 0.15s' }}
-          >
-            <button
-              disabled={!onMoveUp}
-              onClick={(e) => {
-                e.stopPropagation();
-                onMoveUp?.();
-              }}
-              aria-label={`${label}を上に移動`}
-              className="flex cursor-pointer items-center border-none bg-transparent p-0 transition-colors duration-150"
-              style={{ color: 'var(--text-faint)', opacity: onMoveUp ? 1 : 0.3 }}
-              onMouseEnter={(e) => {
-                if (onMoveUp) e.currentTarget.style.color = accentColor;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--text-faint)';
-              }}
-            >
-              <ArrowUp size={14} />
-            </button>
-            <button
-              disabled={!onMoveDown}
-              onClick={(e) => {
-                e.stopPropagation();
-                onMoveDown?.();
-              }}
-              aria-label={`${label}を下に移動`}
-              className="flex cursor-pointer items-center border-none bg-transparent p-0 transition-colors duration-150"
-              style={{ color: 'var(--text-faint)', opacity: onMoveDown ? 1 : 0.3 }}
-              onMouseEnter={(e) => {
-                if (onMoveDown) e.currentTarget.style.color = accentColor;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--text-faint)';
-              }}
-            >
-              <ArrowDown size={14} />
-            </button>
-          </span>
-        )}
-
-        {/* 編集ボタン — ホバー時表示 */}
-        {!labelEditor.isEditing && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              labelEditor.startEditing();
-            }}
-            title="グループ名を変更"
-            aria-label={`${label}の名前を変更`}
-            className="text-text-faint flex cursor-pointer items-center border-none bg-transparent px-0.5 transition-[color,opacity] duration-150"
-            style={{
-              opacity: headerHovered ? 0.8 : 0,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = accentColor;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-faint)';
-            }}
-          >
-            <SquarePen size={14} />
-          </button>
-        )}
-
-        {/* 削除ボタン — ホバー時表示 */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            deleteConfirm.requestDelete();
-          }}
-          title="グループを削除"
-          aria-label={`${label}を削除`}
-          className="text-text-faint flex cursor-pointer items-center border-none bg-transparent px-0.5 transition-[color,opacity] duration-150"
-          style={{
-            opacity: headerHovered ? 1 : 0,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = 'var(--danger)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--text-faint)';
-          }}
-        >
-          <X size={14} />
-        </button>
-      </div>
+      <GroupHeaderView
+        label={label}
+        collapsed={collapsed}
+        accentColor={accentColor}
+        onToggle={onToggle}
+        isEditing={labelEditor.isEditing}
+        draftLabel={labelEditor.draftLabel}
+        onDraftChange={labelEditor.setDraftLabel}
+        onSave={labelEditor.saveLabel}
+        onStartEditing={labelEditor.startEditing}
+        onLabelKeyDown={labelEditor.handleKeyDown}
+        onMoveUp={onMoveUp}
+        onMoveDown={onMoveDown}
+        onRequestDelete={deleteConfirm.requestDelete}
+      />
 
       {/* 削除確認モーダル */}
       <ConfirmModal

@@ -1,50 +1,14 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { ModalFrame } from '@/components/common/modalFrame';
+import { DeductionRowView, type SuspicionLevel } from '@/components/deductions/deductionRowView';
 import { X } from '@/components/icons';
-import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useStore } from '@/store';
 
-/** 星の色 — suspicionLevel に対応 */
-const STAR_COLORS = [
-  'var(--text-faint)', // 0: 未設定
-  'var(--importance-low)', // 1
-  'var(--importance-medium)', // 2
-  'var(--importance-high)', // 3
-] as const;
-
-function StarRating({
-  value,
-  onChange,
-}: {
-  value: 0 | 1 | 2 | 3;
-  onChange: (v: 0 | 1 | 2 | 3) => void;
-}) {
-  return (
-    <div style={{ display: 'flex', gap: 2 }}>
-      {([1, 2, 3] as const).map((level) => (
-        <button
-          key={level}
-          onClick={() => onChange(value === level ? 0 : level)}
-          title={value === level ? '解除' : `怪しさ ${level}`}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px',
-            fontSize: 16,
-            lineHeight: 1,
-            color: level <= value ? STAR_COLORS[value] : 'var(--text-faint)',
-            transition: 'color 0.12s',
-          }}
-        >
-          ★
-        </button>
-      ))}
-    </div>
-  );
-}
-
+/**
+ * キャラクター 1 行分。store から該当キャラの推理メモを取得し、
+ * `DeductionRowView` に値・ハンドラを流す薄ラッパー。
+ */
 function DeductionRow({
   characterId,
   characterName,
@@ -56,72 +20,33 @@ function DeductionRow({
 }) {
   const deductions = useStore((s) => s.deductions);
   const upsertDeduction = useStore((s) => s.upsertDeduction);
-  const { resize } = useAutoResizeTextarea();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const deduction = useMemo(
     () => deductions.find((d) => d.characterId === characterId),
     [deductions, characterId],
   );
 
-  const suspicionLevel = deduction?.suspicionLevel ?? 0;
+  const suspicionLevel: SuspicionLevel = (deduction?.suspicionLevel as SuspicionLevel) ?? 0;
   const memo = deduction?.memo ?? '';
 
-  const handleStarChange = useCallback(
-    (level: 0 | 1 | 2 | 3) => {
-      upsertDeduction(characterId, { suspicionLevel: level });
-    },
+  const handleLevelChange = useCallback(
+    (level: SuspicionLevel) => upsertDeduction(characterId, { suspicionLevel: level }),
+    [characterId, upsertDeduction],
+  );
+  const handleMemoChange = useCallback(
+    (next: string) => upsertDeduction(characterId, { memo: next }),
     [characterId, upsertDeduction],
   );
 
-  const handleMemoBlur = useCallback(() => {
-    const trimmed = textareaRef.current?.value.trim() ?? '';
-    if (trimmed !== memo) {
-      upsertDeduction(characterId, { memo: trimmed });
-    }
-  }, [characterId, memo, upsertDeduction]);
-
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-        padding: '8px 0',
-        borderBottom: '1px solid var(--border-subtle)',
-      }}
-    >
-      {/* キャラクター名 + 星 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: characterColor,
-            flexShrink: 0,
-          }}
-        />
-        <span style={{ fontSize: 14, color: 'var(--text-primary)', flex: 1 }}>{characterName}</span>
-        <StarRating value={suspicionLevel} onChange={handleStarChange} />
-      </div>
-
-      {/* メモ */}
-      <textarea
-        ref={textareaRef}
-        defaultValue={memo}
-        onBlur={handleMemoBlur}
-        onChange={(e) => resize(e.target)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-            e.preventDefault();
-            e.currentTarget.blur();
-          }
-        }}
-        rows={1}
-        className="text-text-secondary ml-4 w-full resize-none overflow-hidden border-none bg-transparent p-0 text-sm leading-[1.4] outline-none"
-      />
-    </div>
+    <DeductionRowView
+      characterName={characterName}
+      characterColor={characterColor}
+      suspicionLevel={suspicionLevel}
+      memo={memo}
+      onChangeLevel={handleLevelChange}
+      onChangeMemo={handleMemoChange}
+    />
   );
 }
 

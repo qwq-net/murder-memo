@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { EntryInputView } from '@/components/entries/entryInputView';
 import { GroupSelector } from '@/components/entries/groupSelector';
 import { useImagePicker } from '@/components/layout/imagePickerContext';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
@@ -13,6 +14,12 @@ interface EntryInputProps {
   panel: PanelId;
 }
 
+/**
+ * 入力欄の店長ラッパー。
+ *
+ * - 値・バリデーション・送信ロジックをここで保持し、表示は `EntryInputView` に委譲する
+ * - グループセレクタは `GroupSelector`（store 連携版）を呼ぶ
+ */
 export function EntryInput({ panel }: EntryInputProps) {
   const addEntry = useStore((s) => s.addEntry);
   const timelineGroups = useStore((s) => s.timelineGroups);
@@ -112,129 +119,50 @@ export function EntryInput({ panel }: EntryInputProps) {
   const isTop = inputPosition === 'top';
 
   return (
-    <div
-      className={`bg-bg-surface flex shrink-0 flex-col gap-1 px-2.5 pt-1.5 pb-2 ${
-        isTop ? 'border-border-subtle border-b' : 'border-border-subtle border-t'
-      }`}
-    >
-      {/* グループセレクタ + 追加ボタン */}
-      <GroupSelector
-        panel={panel}
-        selectedGroupId={selectedGroupId}
-        onGroupIdChange={setSelectedGroupId}
-      />
-
-      {/* 入力行 */}
-      <div className="flex min-h-6 items-center gap-1">
-        {isTimeline && (
-          <input
-            ref={timeInput.timeRef}
-            value={timeInput.timeValue}
-            onChange={(e) => timeInput.handleChange(e.target.value)}
-            onKeyDown={(e) => {
+    <EntryInputView
+      isTimeline={isTimeline}
+      isTop={isTop}
+      disabled={disabled}
+      groupSelector={
+        <GroupSelector
+          panel={panel}
+          selectedGroupId={selectedGroupId}
+          onGroupIdChange={setSelectedGroupId}
+        />
+      }
+      value={value}
+      onValueChange={(next) => {
+        setValue(next);
+        setTextError(false);
+        if (inputRef.current) resizeInput(inputRef.current);
+      }}
+      onTextKeyDown={(e) => {
+        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+          e.preventDefault();
+          submit();
+        }
+      }}
+      placeholder={
+        disabled ? 'まずメモグループを追加してください' : 'メモを入力… (Shift+Enter で改行)'
+      }
+      textareaRef={inputRef}
+      textError={textError}
+      timeValue={isTimeline ? timeInput.timeValue : undefined}
+      onTimeChange={isTimeline ? (v) => timeInput.handleChange(v) : undefined}
+      onTimeKeyDown={
+        isTimeline
+          ? (e) => {
               if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
                 inputRef.current?.focus();
               }
-            }}
-            placeholder="--:--"
-            disabled={disabled}
-            aria-label="時刻"
-            aria-invalid={timeInput.timeError || undefined}
-            aria-describedby={timeInput.timeError ? 'entry-time-error' : undefined}
-            className="text-panel-timeline-accent focus:border-b-panel-timeline-accent w-11 shrink-0 border-0 border-b bg-transparent px-0.5 py-px text-center font-mono text-sm tracking-wide transition-[border-color] duration-150 outline-none"
-            style={{
-              borderBottomColor: timeInput.timeError ? 'var(--importance-high)' : undefined,
-              opacity: disabled ? 0.4 : undefined,
-            }}
-            onBlur={timeInput.handleBlur}
-          />
-        )}
-
-        <textarea
-          ref={inputRef}
-          value={value}
-          onChange={(e) => {
-            setValue(e.target.value);
-            setTextError(false);
-            resizeInput(e.target);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              submit();
             }
-          }}
-          placeholder={
-            disabled ? 'まずメモグループを追加してください' : 'メモを入力… (Shift+Enter で改行)'
-          }
-          disabled={disabled}
-          aria-invalid={textError || undefined}
-          aria-describedby={textError ? 'entry-text-error' : undefined}
-          rows={1}
-          className="text-text-primary min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent py-px font-sans text-sm leading-[1.2] outline-none"
-          style={{
-            borderBottom: textError ? '1px solid var(--importance-high)' : undefined,
-            opacity: disabled ? 0.4 : undefined,
-          }}
-        />
-
-        {/* 画像追加ボタン */}
-        {openImagePicker && (
-          <button
-            onClick={openImagePicker}
-            title="画像を追加"
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: 2,
-              display: 'flex',
-              alignItems: 'center',
-              flexShrink: 0,
-              transition: 'color 0.12s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-muted)';
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect
-                x="1.5"
-                y="1.5"
-                width="13"
-                height="13"
-                rx="2"
-                stroke="currentColor"
-                strokeWidth="1.2"
-              />
-              <circle cx="5.5" cy="5.5" r="1.5" stroke="currentColor" strokeWidth="1" />
-              <path
-                d="M1.5 11l3.5-3.5 2.5 2.5 2-2 5 5"
-                stroke="currentColor"
-                strokeWidth="1"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        )}
-      </div>
-
-      {/* スクリーンリーダー用エラーメッセージ */}
-      {timeInput.timeError && (
-        <span id="entry-time-error" className="sr-only">
-          時刻の形式が正しくありません
-        </span>
-      )}
-      {textError && (
-        <span id="entry-text-error" className="sr-only">
-          テキストを入力してください
-        </span>
-      )}
-    </div>
+          : undefined
+      }
+      onTimeBlur={isTimeline ? timeInput.handleBlur : undefined}
+      timeRef={isTimeline ? timeInput.timeRef : undefined}
+      timeError={isTimeline ? timeInput.timeError : undefined}
+      onImagePickerOpen={openImagePicker ?? undefined}
+    />
   );
 }

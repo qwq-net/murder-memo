@@ -25,6 +25,8 @@ export function Section({ title, caption, children, id }: SectionProps) {
       style={{
         padding: '40px 0',
         borderTop: '1px solid var(--border-subtle)',
+        // sticky な LpHeader (44px) + 余白の下に見出しが来るよう、アンカースクロール時のマージンを確保
+        scrollMarginTop: 'calc(var(--header-h) + 12px)',
       }}
     >
       <header
@@ -44,6 +46,10 @@ export function Section({ title, caption, children, id }: SectionProps) {
             color: 'var(--text-primary)',
             margin: 0,
             letterSpacing: '0.02em',
+            // セクションの開始を視覚的に明示する左縦ライン
+            paddingLeft: 12,
+            borderLeft: '3px solid var(--accent)',
+            lineHeight: 1.2,
           }}
         >
           {title}
@@ -52,7 +58,8 @@ export function Section({ title, caption, children, id }: SectionProps) {
           <span
             style={{
               fontSize: 12,
-              color: 'var(--text-faint)',
+              fontWeight: 500,
+              color: 'var(--text-muted)',
               letterSpacing: '0.06em',
             }}
           >

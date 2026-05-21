@@ -1,11 +1,10 @@
 /**
- * パネルヘッダーに表示するキャラクター絞り込みバー。
- * バッジをクリックしてトグル選択し、エントリを該当キャラで絞り込む。
+ * パネルヘッダーに表示するキャラクター絞り込みバー（store 連携版）。
+ * 表示は `CharacterFilterBarView` に委譲し、ここでは store から値・ハンドラを取得する。
  */
 import { useMemo } from 'react';
 
-import { CharacterBadge } from '@/components/characters/characterBadge';
-import { X } from '@/components/icons';
+import { CharacterFilterBarView } from '@/components/characters/characterFilterBarView';
 import { sortCharactersByRole } from '@/lib/characterSort';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
@@ -26,43 +25,12 @@ export function CharacterFilterBar({ panelId }: CharacterFilterBarProps) {
     [characters],
   );
 
-  if (visible.length === 0) return null;
-
-  const hasActiveFilter = filterIds.length > 0;
-
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-      {visible.map((char) => {
-        const active = filterIds.includes(char.id);
-        return (
-          <CharacterBadge
-            key={char.id}
-            color={char.color}
-            name={char.name}
-            isActive={active}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleCharacterFilter(panelId, char.id);
-            }}
-            format="badge"
-            ariaLabel={`${char.name}${active ? 'のフィルターを解除' : 'でフィルター'}`}
-          />
-        );
-      })}
-      {hasActiveFilter && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            clearCharacterFilter(panelId);
-          }}
-          className="btn-ghost btn-sm"
-          title="フィルターをクリア"
-          aria-label="キャラクターフィルターをクリア"
-          style={{ marginLeft: 2, padding: 2 }}
-        >
-          <X size={12} />
-        </button>
-      )}
-    </div>
+    <CharacterFilterBarView
+      characters={visible}
+      filterIds={filterIds}
+      onToggle={(charId) => toggleCharacterFilter(panelId, charId)}
+      onClear={() => clearCharacterFilter(panelId)}
+    />
   );
 }

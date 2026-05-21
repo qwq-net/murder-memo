@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
-import { Plus } from '@/components/icons';
+import { GroupSelectorView } from '@/components/entries/groupSelectorView';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 
@@ -13,9 +13,10 @@ interface GroupSelectorProps {
 }
 
 /**
- * エントリ入力フォームのグループセレクタ行。
- * グループ選択 + 新規グループ追加 UI を提供する。
- * 選択状態は親（EntryInput）が管理するため controlled component として動作する。
+ * エントリ入力フォームのグループセレクタ（store 連携版）。
+ *
+ * - store からグループ一覧 / 追加関数を取得し、`GroupSelectorView` に渡す
+ * - 既存の controlled component 仕様は維持（選択状態は親 `EntryInput` が管理）
  */
 export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: GroupSelectorProps) {
   const timelineGroups = useStore((s) => s.timelineGroups);
@@ -23,9 +24,6 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
   const addMemoGroup = useStore((s) => s.addMemoGroup);
   const addTimelineGroup = useStore((s) => s.addTimelineGroup);
   const addToast = useStore((s) => s.addToast);
-
-  const [newGroupLabel, setNewGroupLabel] = useState('');
-  const [isAddingGroup, setIsAddingGroup] = useState(false);
 
   const isTimeline = panel === 'timeline';
   const isMemoPanel = panel === 'free' || panel === 'personal';
@@ -45,100 +43,27 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
       ? timelineGroups[0].id
       : validSelectedId;
 
-  const handleAddGroup = useCallback(async () => {
-    const label = newGroupLabel.trim();
-    if (!label) return;
-    if (isTimeline) {
-      const group = await addTimelineGroup(label);
-      onGroupIdChange(group.id);
-    } else if (isMemoPanel) {
-      const group = await addMemoGroup(label, panel as 'free' | 'personal');
-      onGroupIdChange(group.id);
-    }
-    addToast('グループを追加しました');
-    setNewGroupLabel('');
-    setIsAddingGroup(false);
-  }, [
-    newGroupLabel,
-    isTimeline,
-    isMemoPanel,
-    panel,
-    addTimelineGroup,
-    addMemoGroup,
-    onGroupIdChange,
-    addToast,
-  ]);
+  const handleAddGroup = useCallback(
+    async (label: string) => {
+      if (isTimeline) {
+        const group = await addTimelineGroup(label);
+        onGroupIdChange(group.id);
+      } else if (isMemoPanel) {
+        const group = await addMemoGroup(label, panel as 'free' | 'personal');
+        onGroupIdChange(group.id);
+      }
+      addToast('グループを追加しました');
+    },
+    [isTimeline, isMemoPanel, panel, addTimelineGroup, addMemoGroup, onGroupIdChange, addToast],
+  );
 
   return (
-    <div className="flex min-h-6 items-center gap-1">
-      {/* グループセレクタ */}
-      <select
-        value={effectiveGroupId}
-        onChange={(e) => onGroupIdChange(e.target.value)}
-        aria-label="追加先メモグループ"
-        className="bg-bg-elevated border-border-subtle text-text-secondary flex-1 rounded-sm border px-1.5 py-[3px] text-sm outline-none"
-      >
-        {isTimeline ? (
-          <>
-            <option value="">
-              {groups.length === 0 ? 'メモグループなし' : 'メモグループを選択…'}
-            </option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.label}
-              </option>
-            ))}
-          </>
-        ) : (
-          <>
-            <option value="">未分類</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.label}
-              </option>
-            ))}
-          </>
-        )}
-      </select>
-
-      {/* グループ追加 */}
-      {isAddingGroup ? (
-        <div className="flex items-center gap-1">
-          <input
-            autoFocus
-            value={newGroupLabel}
-            onChange={(e) => setNewGroupLabel(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAddGroup();
-              if (e.key === 'Escape') {
-                setIsAddingGroup(false);
-                setNewGroupLabel('');
-              }
-            }}
-            onBlur={() => {
-              if (!newGroupLabel.trim()) {
-                setIsAddingGroup(false);
-                setNewGroupLabel('');
-              }
-            }}
-            placeholder={isTimeline ? '当日、前日 等' : 'メモグループ名'}
-            aria-label="メモグループ名"
-            className="bg-bg-base border-border-default text-text-primary min-w-[60px] flex-1 rounded-sm border px-1.5 py-[3px] text-sm outline-none"
-          />
-          <button onClick={handleAddGroup} className="btn-primary btn-sm text-sm">
-            追加
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={() => setIsAddingGroup(true)}
-          title="メモグループを追加"
-          className="border-border-default text-text-muted hover:border-border-strong hover:text-text-secondary flex cursor-pointer items-center rounded-sm border border-dashed bg-transparent px-2 py-[3px] text-sm whitespace-nowrap transition-[border-color,color] duration-150"
-        >
-          <Plus size={12} strokeWidth={2.5} className="mr-1" />
-          メモグループ
-        </button>
-      )}
-    </div>
+    <GroupSelectorView
+      isTimeline={isTimeline}
+      groups={groups.map((g) => ({ id: g.id, label: g.label }))}
+      selectedGroupId={effectiveGroupId}
+      onGroupIdChange={onGroupIdChange}
+      onAddGroup={handleAddGroup}
+    />
   );
 }

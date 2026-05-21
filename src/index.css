@@ -205,6 +205,11 @@ body,
   min-height: 100%;
 }
 
+/* LP / Guide のアンカーリンクをスムーズスクロールに（app-mode では overflow: hidden で無効化される） */
+html:not(.app-mode) {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--bg-base);
   color: var(--text-primary);
