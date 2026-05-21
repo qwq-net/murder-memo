@@ -136,6 +136,7 @@ export default function GuidePage() {
                 }}
               >
                 マダめもくんの各機能を、画面別 / 操作別にまとめたページです。
+                すでに使っている方は左の目次から目的の項目に飛んでください。
                 実際の操作感はアプリ内のサンプルシナリオでも確認できます。
               </p>
             </header>
@@ -153,12 +154,6 @@ export default function GuidePage() {
                 並び順はアプリ設定から変更できます。
               </Paragraph>
 
-              <SubFeature title="タイムライン">
-                <Paragraph>
-                  時刻つきで出来事や証言を並べるパネルです。証言の食い違いやアリバイの矛盾を見つけるための土台になります。
-                </Paragraph>
-              </SubFeature>
-
               <SubFeature title="フリーメモ">
                 <Paragraph>
                   事実・証拠・キーアイテムなど、卓内で共有したい情報をまとめるパネルです。
@@ -168,6 +163,12 @@ export default function GuidePage() {
               <SubFeature title="自分用メモ">
                 <Paragraph>
                   自分だけが見るメモを書くパネルです。仮説や疑念など、卓内で共有したくない情報を分けて管理します。
+                </Paragraph>
+              </SubFeature>
+
+              <SubFeature title="タイムライン">
+                <Paragraph>
+                  時刻つきで出来事や証言を並べるパネルです。証言の食い違いやアリバイの矛盾を見つけるための土台になります。
                 </Paragraph>
               </SubFeature>
             </Section>
@@ -247,14 +248,32 @@ export default function GuidePage() {
                 <KeyValueTable
                   rows={[
                     { key: 'クリック', value: '編集モードに入ります' },
-                    { key: 'Shift + クリック', value: '範囲選択 / 追加選択' },
+                    {
+                      key: 'Shift + クリック',
+                      value: '範囲選択 / 追加選択。選択済みのカードを Shift + クリックすると解除',
+                    },
                     { key: 'ドラッグ', value: '並び替え' },
                     {
                       key: '右クリック',
-                      value: 'コンテキストメニュー（複製 / 重要度 / タグ / 削除）',
+                      value: 'コンテキストメニュー（下記）',
                     },
                   ]}
                 />
+                <Paragraph>右クリックメニューでは以下の操作ができます。</Paragraph>
+                <SubList
+                  items={[
+                    '移動（別パネルへ / 同一パネル内のグループ間）',
+                    '重要度（高 / 中 / 低 / 解除）',
+                    '役職マーカー設定（表示形式・表示モードを上書き / デフォルトに戻す）',
+                    '役職マーカー追加（メモに登場人物を紐付け）',
+                    '時刻トグル（タイムラインのみ。時刻を不明にする / 時刻を設定）',
+                    '複製（同じ内容のメモを末尾に追加）',
+                    '削除',
+                  ]}
+                />
+                <Paragraph>
+                  複数のメモを選択した状態で右クリックすると、選択中のメモすべてに対する一括操作メニューが開きます。
+                </Paragraph>
               </SubFeature>
 
               <SubFeature title="重要度">
@@ -294,6 +313,11 @@ export default function GuidePage() {
                     { key: '130', keyAsCode: true, value: '→ 1:30' },
                   ]}
                 />
+                <Paragraph>
+                  時刻欄で <InlineCode>Enter</InlineCode>{' '}
+                  を押すと、本文の入力欄にフォーカスが移ります。時刻 → 本文 → 送信 の流れを
+                  キーボードだけで完結できます。
+                </Paragraph>
               </SubFeature>
 
               <SubFeature title="タイムラインマーカー">
@@ -387,6 +411,11 @@ export default function GuidePage() {
                 ヘッダーの「登場人物」から PL / NPC を登録できます。
                 登録した人物はメモにバッジで紐付けたり、相関図や人物推理メモで参照されます。
               </Paragraph>
+              <Paragraph>
+                PL は「プレイヤー」（実プレイヤーが演じるキャラクター）、NPC は
+                「ノンプレイヤーキャラクター」（GM 管理または既登場の関係者）の略です。
+                登録時にどちらの役割かを選びます。
+              </Paragraph>
 
               <SubFeature title="登録項目">
                 <SubList
@@ -432,7 +461,20 @@ export default function GuidePage() {
               <SubFeature title="パネル別デフォルトと個別上書き">
                 <Paragraph>
                   アプリ設定で、パネルごとに「デフォルトの表示形式 / 表示モード」を設定できます。
-                  個別のエントリでこの設定を上書きすることもできます（コンテキストメニューから）。
+                  個別のメモで、コンテキストメニューの「役職マーカー設定」から
+                  表示形式・表示モードの両方を上書きできます。
+                  「デフォルトに戻す」を選ぶと、そのメモだけパネル設定に従う状態に戻ります。
+                </Paragraph>
+              </SubFeature>
+
+              <SubFeature title="役職マーカー追加（メモへの紐付け）">
+                <Paragraph>
+                  メモを右クリック → 「役職マーカー追加」から、そのメモに登場人物を紐付けられます。
+                  紐付けるとカード端のバッジ列にその人物が現れます。
+                </Paragraph>
+                <Paragraph>
+                  紐付け先のパネルの表示モードが「オフ」になっている場合、
+                  紐付けても見えなくなってしまうのを避けるため、自動で「ミニマル」に切り替わります。
                 </Paragraph>
               </SubFeature>
 
@@ -670,17 +712,26 @@ export default function GuidePage() {
                     { key: 'セッション切替', value: '直近に開いていたセッションを自動復元します' },
                     { key: '新規作成（+）', value: '空のセッションを作成します' },
                     { key: '名前変更', value: 'セッション名をその場で編集できます' },
-                    {
-                      key: '削除',
-                      value: '複数セッションがある場合のみ可能（最後の 1 件は削除できません）',
-                    },
+                  ]}
+                />
+                <Paragraph>
+                  データの削除には粒度が異なる 3 つのコマンドが用意されています。
+                </Paragraph>
+                <KeyValueTable
+                  rows={[
                     {
                       key: '初期化',
-                      value: 'メモ / 登場人物 / 画像をクリア。セッション自体は残します',
+                      value:
+                        '現在のセッションのメモ / 登場人物 / グループ / 画像を消去。セッション自体は残ります',
+                    },
+                    {
+                      key: 'セッションを削除',
+                      value:
+                        '現在のセッションそのものを削除。他のセッションは残ります（最後の 1 件は削除できません）',
                     },
                     {
                       key: '完全リセット',
-                      value: '全セッション / 設定 / IndexedDB を初期化します',
+                      value: '全セッション / 設定 / IndexedDB を消去し、アプリを初期状態に戻します',
                     },
                   ]}
                 />
@@ -692,16 +743,20 @@ export default function GuidePage() {
                 </Paragraph>
                 <KeyValueTable
                   rows={[
+                    {
+                      key: '言語',
+                      value: '日本語のみ対応（English は未実装 / WIP）',
+                    },
                     { key: 'テーマ', value: 'auto（OS 設定追従）/ dark / light' },
                     {
                       key: 'パネル並び順',
-                      value: 'タイムライン / フリーメモ / 自分用メモを並び替え',
+                      value: 'フリーメモ / 自分用メモ / タイムラインを並び替え',
                     },
                     { key: '入力欄の位置', value: 'パネルの上 / 下を切り替え' },
                     {
                       key: '関連人物マーカー',
                       value:
-                        'パネル別に「表示形式（full/badge/text）× 表示モード（always/minimal/off）」のデフォルトを設定',
+                        'パネル別に「表示形式（フル / バッジ / テキスト）× 表示モード（常時 / ミニマル / オフ）」のデフォルトを設定',
                     },
                   ]}
                 />
