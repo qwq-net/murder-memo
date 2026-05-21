@@ -42,30 +42,69 @@ const REST = {
   },
 } as const;
 
-interface HeaderButtonProps {
-  onClick: () => void;
+type Variant = 'default' | 'settings';
+
+interface BaseProps {
   children: React.ReactNode;
-  variant?: 'default' | 'settings';
+  variant?: Variant;
+  title?: string;
 }
 
-export function HeaderButton({ onClick, children, variant = 'default' }: HeaderButtonProps) {
+interface ButtonProps extends BaseProps {
+  onClick: () => void;
+  href?: undefined;
+}
+
+interface LinkProps extends BaseProps {
+  href: string;
+  target?: string;
+  rel?: string;
+  onClick?: undefined;
+}
+
+type HeaderButtonProps = ButtonProps | LinkProps;
+
+/**
+ * ヘッダー右側の操作ボタン群と、ロゴ隣の使い方リンクで共通利用する小型ボタン。
+ *
+ * - `onClick` を渡せば `<button>` として描画
+ * - `href` を渡せば `<a>` として描画（target/rel を併用可）
+ * - スタイル（border / color / hover）は両者で完全に一致させる
+ */
+export function HeaderButton(props: HeaderButtonProps) {
+  const { children, variant = 'default', title } = props;
   const style = variant === 'settings' ? SETTINGS_STYLE : DEFAULT_STYLE;
   const hover = HOVER[variant];
   const rest = REST[variant];
 
+  const hoverHandlers = {
+    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
+      e.currentTarget.style.color = hover.color;
+      e.currentTarget.style.borderColor = hover.borderColor;
+    },
+    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
+      e.currentTarget.style.color = rest.color;
+      e.currentTarget.style.borderColor = rest.borderColor;
+    },
+  };
+
+  if (props.href !== undefined) {
+    return (
+      <a
+        href={props.href}
+        target={props.target}
+        rel={props.rel}
+        title={title}
+        style={{ ...style, textDecoration: 'none' }}
+        {...hoverHandlers}
+      >
+        {children}
+      </a>
+    );
+  }
+
   return (
-    <button
-      onClick={onClick}
-      style={style}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.color = hover.color;
-        e.currentTarget.style.borderColor = hover.borderColor;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.color = rest.color;
-        e.currentTarget.style.borderColor = rest.borderColor;
-      }}
-    >
+    <button onClick={props.onClick} title={title} style={style} {...hoverHandlers}>
       {children}
     </button>
   );

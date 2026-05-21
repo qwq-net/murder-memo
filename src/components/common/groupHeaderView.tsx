@@ -34,6 +34,12 @@ interface GroupHeaderViewProps {
    * Guide のプレビューで「ホバー状態の見た目」を見せるために使う。本体の通常利用では渡さない。
    */
   forceHover?: boolean;
+  /**
+   * 編集中 input への自動フォーカスを抑制する。Guide のプレビューで isEditing=true を見せると
+   * ページ読み込み時にフォーカスを奪ってスクロールが飛ぶため、その用途で false を渡す。
+   * 本体の通常利用では指定しない（デフォルトの true で挙動が変わらない）。
+   */
+  autoFocusInput?: boolean;
 }
 
 /**
@@ -59,6 +65,7 @@ export function GroupHeaderView({
   onMoveDown,
   onRequestDelete,
   forceHover = false,
+  autoFocusInput = true,
 }: GroupHeaderViewProps) {
   const [headerHovered, setHeaderHovered] = useState(false);
   // 呼び出し側で hover を強制している場合は state を無視する（Guide のプレビュー用）
@@ -89,7 +96,7 @@ export function GroupHeaderView({
       {/* ラベル */}
       {isEditing ? (
         <input
-          autoFocus
+          autoFocus={autoFocusInput}
           value={draftLabel}
           onChange={(e) => onDraftChange(e.target.value)}
           onBlur={onSave}

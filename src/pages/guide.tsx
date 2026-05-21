@@ -5,6 +5,7 @@ import { SubFeature } from '@/components/guide/parts/SubFeature';
 import { SubList } from '@/components/guide/parts/SubList';
 import { TableOfContents } from '@/components/guide/parts/TableOfContents';
 import { PreviewFrame } from '@/components/guide/PreviewFrame';
+import { ActionOrderStepperPreview } from '@/components/guide/previews/ActionOrderStepperPreview';
 import { BadgeFormatPreview } from '@/components/guide/previews/BadgeFormatPreview';
 import { BadgeVisibilityPreview } from '@/components/guide/previews/BadgeVisibilityPreview';
 import { CharacterFilterBarPreview } from '@/components/guide/previews/CharacterFilterBarPreview';
@@ -34,7 +35,7 @@ import { SITE_NAME, absoluteUrl } from '@/lib/siteMeta';
 
 const GUIDE_TITLE = '使い方ガイド｜マダめもくん';
 const GUIDE_DESCRIPTION =
-  'マダめもくんの使い方をまとめたページです。3 つのパネル、登場人物、相関図、検索、保存などの操作を順番に紹介します。';
+  'マダめもくんの使い方をまとめたページです。セッション作成から登場人物登録、メモ取り、推理、エクスポートまで一連の流れに沿って機能を紹介します。';
 
 const GUIDE_JSON_LD = {
   '@context': 'https://schema.org',
@@ -52,16 +53,20 @@ const GUIDE_JSON_LD = {
 
 /** 目次に並べるセクション一覧（id は各 Section の id と揃える） */
 const TOC_ITEMS = [
+  { id: 'intro', label: 'はじめに' },
+  { id: 'sessions', label: 'セッションを作る' },
+  { id: 'characters', label: '登場人物を登録する' },
   { id: 'panels', label: '3 つのパネル' },
   { id: 'entries', label: 'エントリの基本' },
-  { id: 'timeline', label: 'タイムライン固有' },
+  { id: 'timeline', label: 'タイムライン' },
   { id: 'image', label: '画像メモ' },
   { id: 'groups', label: 'グループ管理' },
-  { id: 'characters', label: '登場人物' },
+  { id: 'badges', label: '登場人物バッジ' },
+  { id: 'search-link', label: '検索とリンク' },
   { id: 'relations', label: '相関図' },
   { id: 'deduction', label: '人物推理メモ' },
-  { id: 'search-link', label: '検索とリンク' },
-  { id: 'operations', label: '操作・データ管理' },
+  { id: 'export', label: 'エクスポートとデータ管理' },
+  { id: 'reference', label: 'ショートカット・設定リファレンス' },
 ];
 
 /** useActiveSection に渡す ID 配列（モジュールスコープで安定参照にする） */
@@ -73,12 +78,8 @@ const TOC_IDS = TOC_ITEMS.map((item) => item.id);
  * SSG プリレンダ対象。LP と同じ `LpLayout` でヘッダー / フッターを統一する。
  * 文体は事実ベースで淡々と。装飾語禁止。
  *
- * 構成は [計画](https://memo.qwqb.net/) の `humble-tinkering-galaxy.md` に従う:
- *   フェーズ A: 骨格拡張（このコミット）— 10 セクション構造 + 既存 4 プレビューの再利用
- *   フェーズ B: 既存 View で作れる新規プレビュー追加
- *   フェーズ C: 追加 View 抽出（リファクタ）
- *   フェーズ D: 抽出 View を使った残りプレビュー実装
- *   フェーズ E: 仕上げ
+ * 構成は「利用フロー順」に再編：はじめに → セッション → 登場人物 → パネル → エントリ →
+ * （メモ取り系） → 推理系 → エクスポート → リファレンスの 14 セクション。
  *
  * NOTE: SSG 評価対象なので `@/store`, `@/lib/idb`, `@dnd-kit/*` 系の重量級 import は禁止。
  */
@@ -135,7 +136,7 @@ export default function GuidePage() {
                   margin: '12px 0 0',
                 }}
               >
-                マダめもくんの各機能を、画面別 / 操作別にまとめたページです。
+                マダめもくんを最初から最後まで通して使う流れに沿って、機能を紹介します。
                 すでに使っている方は左の目次から目的の項目に飛んでください。
                 実際の操作感はアプリ内のサンプルシナリオでも確認できます。
               </p>
@@ -146,7 +147,175 @@ export default function GuidePage() {
               <TableOfContents items={TOC_ITEMS} activeId={activeId} />
             </div>
 
-            {/* ── §1 3 つのパネル ─────────────────────────────────────── */}
+            {/* ── §1 はじめに ─────────────────────────────────────────── */}
+            <Section id="intro" title="はじめに">
+              <Paragraph>
+                マダめもくんは、マーダーミステリーをプレイ中にメモを取るためのアプリです。
+                証言・証拠・タイムライン・人物関係を整理しておくことで、最終議論や推理の土台になります。
+                データはすべて端末のブラウザに保存され、サーバーには送信されません。
+              </Paragraph>
+
+              <SubFeature title="このガイドで使う用語">
+                <KeyValueTable
+                  rows={[
+                    {
+                      key: 'エントリ / メモ',
+                      value:
+                        '各パネルの 1 行（カード）のこと。本ガイドでは文脈に応じて両方の呼称を使います',
+                    },
+                    {
+                      key: 'グループ',
+                      value: 'フリーメモ / 自分用メモを整理する分類単位',
+                    },
+                    {
+                      key: 'タイムライングループ',
+                      value: 'タイムラインの大分類（例：前日 / 当日）',
+                    },
+                    {
+                      key: 'PL / NPC',
+                      value:
+                        'PL = プレイヤー（参加者が演じるキャラ）、NPC = ノンプレイヤーキャラクター（GM 管理 / 既登場の関係者）',
+                    },
+                    {
+                      key: 'バッジ',
+                      value: 'メモの端に表示される登場人物の見た目（色丸・名前・テキスト形式）',
+                    },
+                    {
+                      key: '役職マーカー',
+                      value:
+                        'コンテキストメニュー上のラベル。「役職マーカー追加」でバッジの紐付け、「役職マーカー設定」で表示形式・モードを上書き',
+                    },
+                    {
+                      key: '関連人物マーカー',
+                      value: 'アプリ設定上のラベル。パネル別のバッジ表示形式・モードのデフォルト値',
+                    },
+                  ]}
+                />
+              </SubFeature>
+
+              <SubFeature title="サンプルシナリオで試す">
+                <Paragraph>
+                  初回起動時 / バージョン更新後の起動時には「ようこそ」モーダルが表示され、
+                  サンプルシナリオが入った状態でアプリが開きます。
+                  実際にプレイする前に、サンプルで操作感を確かめることをおすすめします。
+                </Paragraph>
+                <Paragraph>
+                  サンプルはアプリのバージョンが上がるごとに更新されるので、
+                  新機能を反映した状態で確認できます。「ようこそ」モーダルからは、このガイドを別タブで開くリンクも用意されています。
+                </Paragraph>
+                <Paragraph>
+                  自分のシナリオでプレイするには、ヘッダー左の「＋」から新規セッションを作成します。
+                </Paragraph>
+              </SubFeature>
+
+              <SubFeature title="このガイドの読み方">
+                <Paragraph>
+                  上から順に読めば、セッション作成 → 登場人物登録 → メモ取り → 推理 →
+                  エクスポートまでを一通り辿れる構成になっています。
+                  特定の操作を知りたいときは左の目次（モバイルでは本文上部）から該当セクションに直接ジャンプしてください。
+                </Paragraph>
+              </SubFeature>
+            </Section>
+
+            {/* ── §2 セッションを作る ─────────────────────────────────── */}
+            <Section id="sessions" title="セッションを作る">
+              <Paragraph>
+                セッションは、シナリオ単位で独立した作業領域です。シナリオごとにセッションを分けると、
+                登場人物・メモ・相関図・推理メモがそれぞれ独立して保管されます。
+              </Paragraph>
+
+              <SubFeature title="基本操作">
+                <KeyValueTable
+                  rows={[
+                    { key: 'セッション切替', value: '直近に開いていたセッションを自動復元します' },
+                    { key: '新規作成（＋）', value: '空のセッションを作成します' },
+                    { key: '名前変更', value: 'セッション名をその場で編集できます' },
+                  ]}
+                />
+              </SubFeature>
+
+              <SubFeature title="データの削除粒度">
+                <Paragraph>
+                  データを消す操作は、粒度の異なる 3 種類が用意されています。
+                </Paragraph>
+                <KeyValueTable
+                  rows={[
+                    {
+                      key: '初期化',
+                      value:
+                        '現在のセッションのメモ / 登場人物 / グループ / 画像を消去。セッション自体は残ります',
+                    },
+                    {
+                      key: 'セッションを削除',
+                      value:
+                        '現在のセッションそのものを削除。他のセッションは残ります（最後の 1 件は削除できません）',
+                    },
+                    {
+                      key: '完全リセット',
+                      value: '全セッション / 設定 / IndexedDB を消去し、アプリを初期状態に戻します',
+                    },
+                  ]}
+                />
+              </SubFeature>
+            </Section>
+
+            {/* ── §3 登場人物を登録する ──────────────────────────────── */}
+            <Section id="characters" title="登場人物を登録する">
+              <Paragraph>
+                ヘッダーの「登場人物」から、シナリオに出てくる PL / NPC を登録します。
+                登録した人物はメモにバッジで紐付けたり、相関図や人物推理メモで参照されます。
+              </Paragraph>
+
+              <SubFeature title="登録項目">
+                <SubList
+                  items={[
+                    '役割（PL / NPC）',
+                    '色（9 色パレットから選択。インライン色付けやバッジに使われる）',
+                    '行動順（PL / NPC それぞれの中での順序）',
+                    '表示制御（メモ内のバッジ列に出すかどうかを人物ごとに切替できる）',
+                  ]}
+                />
+              </SubFeature>
+
+              <SubFeature title="登場人物管理画面">
+                <Paragraph>
+                  ヘッダーの「登場人物」から開く管理画面の見た目です。色丸クリックで色パレットを
+                  開けます（プレビュー上の編集は保存されません）。
+                </Paragraph>
+                <PreviewFrame>
+                  <CharacterRowsPreview />
+                </PreviewFrame>
+              </SubFeature>
+
+              <SubFeature title="本文中のインライン色付け">
+                <Paragraph>
+                  メモ本文に登場人物の名前を書くと、自動でその人物の色で太字表示されます。
+                  同じ名前が複数いる場合は、長い名前から優先してマッチします。
+                </Paragraph>
+                <PreviewFrame>
+                  <InlineCharacterPreview />
+                </PreviewFrame>
+              </SubFeature>
+
+              <SubFeature title="ヘッダーの行動順ステッパー">
+                <Paragraph>
+                  ヘッダー右側には、登録した登場人物が「PL → セパレータ <InlineCode>|</InlineCode>{' '}
+                  → NPC」の順で 1 列に並びます。
+                  PL / NPC それぞれの中では「登場人物管理画面」で並べ替えた順序に従い、
+                  シナリオ進行中に手番や行動順を俯瞰するためのリファレンスとして使えます。
+                </Paragraph>
+                <Paragraph>
+                  並び順は登場人物管理画面でドラッグして変更できます。
+                  ステッパーの表示は登録済みの全人物が対象で、「メモに表示する」のオン
+                  / オフとは独立しています。
+                </Paragraph>
+                <PreviewFrame>
+                  <ActionOrderStepperPreview />
+                </PreviewFrame>
+              </SubFeature>
+            </Section>
+
+            {/* ── §4 3 つのパネル ─────────────────────────────────────── */}
             <Section id="panels" title="3 つのパネル">
               <Paragraph>
                 アプリ画面はデスクトップで横並び 3 列、モバイルではタブ切替で表示されます。
@@ -173,7 +342,7 @@ export default function GuidePage() {
               </SubFeature>
             </Section>
 
-            {/* ── §2 エントリの基本 ───────────────────────────────────── */}
+            {/* ── §5 エントリの基本 ───────────────────────────────────── */}
             <Section id="entries" title="エントリの基本">
               <Paragraph>
                 各パネルの 1
@@ -271,8 +440,29 @@ export default function GuidePage() {
                     '削除',
                   ]}
                 />
+              </SubFeature>
+
+              <SubFeature title="複数選択と一括操作">
                 <Paragraph>
-                  複数のメモを選択した状態で右クリックすると、選択中のメモすべてに対する一括操作メニューが開きます。
+                  Shift + クリックで複数のエントリをまとめて選択し、選択中のカードを右クリックすると
+                  「一括操作メニュー」が開きます。1 回の操作で選択中すべてを動かせます。
+                </Paragraph>
+                <KeyValueTable
+                  rows={[
+                    {
+                      key: 'Shift + クリック',
+                      value: '範囲選択 / 追加選択。既選択のカードを再度クリックすると解除',
+                    },
+                    {
+                      key: '選択中のカードを右クリック',
+                      value: '一括操作メニュー（件数付き）を開く',
+                    },
+                    { key: 'カード外をクリック', value: '選択を解除' },
+                  ]}
+                />
+                <Paragraph>
+                  一括メニューの項目は単体時とほぼ同じです（移動 / 重要度 / 役職マーカー設定 /
+                  役職マーカー追加 / 複製 / 削除）。
                 </Paragraph>
               </SubFeature>
 
@@ -287,8 +477,8 @@ export default function GuidePage() {
               </SubFeature>
             </Section>
 
-            {/* ── §3 タイムライン固有 ─────────────────────────────────── */}
-            <Section id="timeline" title="タイムライン固有">
+            {/* ── §6 タイムライン ─────────────────────────────────────── */}
+            <Section id="timeline" title="タイムライン">
               <Paragraph>
                 タイムラインパネルでは、時刻つきのエントリを時系列順に並べられます。
                 時刻なしのエントリは末尾の「不明」セクションにまとまります。
@@ -348,7 +538,7 @@ export default function GuidePage() {
               </SubFeature>
             </Section>
 
-            {/* ── §4 画像メモ ────────────────────────────────────────── */}
+            {/* ── §7 画像メモ ────────────────────────────────────────── */}
             <Section id="image" title="画像メモ">
               <Paragraph>
                 <InlineCode>Ctrl + V</InlineCode>{' '}
@@ -357,7 +547,7 @@ export default function GuidePage() {
               </Paragraph>
               <Paragraph>
                 画像メモは 40×40 のサムネイルとキャプションで表示され、サムネイルをクリックすると
-                全画面表示で拡大できます。キャプションは編集可能で、 キャラクターバッジや{' '}
+                全画面表示で拡大できます。キャプションは編集可能で、 登場人物バッジや{' '}
                 <InlineCode>[キーワード]</InlineCode> 記法も同様に使えます。
               </Paragraph>
               <PreviewFrame>
@@ -365,7 +555,7 @@ export default function GuidePage() {
               </PreviewFrame>
             </Section>
 
-            {/* ── §5 グループ管理 ────────────────────────────────────── */}
+            {/* ── §8 グループ管理 ────────────────────────────────────── */}
             <Section id="groups" title="グループ管理">
               <Paragraph>
                 フリーメモと自分用メモは、エントリを「グループ」に分けて整理できます。
@@ -405,28 +595,12 @@ export default function GuidePage() {
               </SubFeature>
             </Section>
 
-            {/* ── §6 登場人物 ────────────────────────────────────────── */}
-            <Section id="characters" title="登場人物">
+            {/* ── §9 登場人物バッジ ──────────────────────────────────── */}
+            <Section id="badges" title="登場人物バッジ">
               <Paragraph>
-                ヘッダーの「登場人物」から PL / NPC を登録できます。
-                登録した人物はメモにバッジで紐付けたり、相関図や人物推理メモで参照されます。
+                メモに紐付けた登場人物は、カード端に「バッジ」として表示されます。
+                バッジの見せ方は、パネルごとに表示形式と表示モードで調整できます。
               </Paragraph>
-              <Paragraph>
-                PL は「プレイヤー」（実プレイヤーが演じるキャラクター）、NPC は
-                「ノンプレイヤーキャラクター」（GM 管理または既登場の関係者）の略です。
-                登録時にどちらの役割かを選びます。
-              </Paragraph>
-
-              <SubFeature title="登録項目">
-                <SubList
-                  items={[
-                    '役割（PL / NPC）',
-                    '色（9 色パレットから選択。インライン色付けに使われる）',
-                    '行動順（PL/NPC それぞれの中での順序）',
-                    '表示制御（メモ内のバッジ列に出すかどうかを人物ごとに切替できる）',
-                  ]}
-                />
-              </SubFeature>
 
               <SubFeature title="バッジの表示形式">
                 <Paragraph>バッジには 3 つの表示形式があります。</Paragraph>
@@ -469,33 +643,14 @@ export default function GuidePage() {
 
               <SubFeature title="役職マーカー追加（メモへの紐付け）">
                 <Paragraph>
-                  メモを右クリック → 「役職マーカー追加」から、そのメモに登場人物を紐付けられます。
+                  メモを右クリック →
+                  「役職マーカー追加」から、そのメモに登場人物を紐付けられます。
                   紐付けるとカード端のバッジ列にその人物が現れます。
                 </Paragraph>
                 <Paragraph>
                   紐付け先のパネルの表示モードが「オフ」になっている場合、
                   紐付けても見えなくなってしまうのを避けるため、自動で「ミニマル」に切り替わります。
                 </Paragraph>
-              </SubFeature>
-
-              <SubFeature title="登場人物管理画面">
-                <Paragraph>
-                  ヘッダーの「登場人物」から開く管理画面の見た目です。色丸クリックで色パレットを
-                  開けます（プレビュー上の編集は保存されません）。
-                </Paragraph>
-                <PreviewFrame>
-                  <CharacterRowsPreview />
-                </PreviewFrame>
-              </SubFeature>
-
-              <SubFeature title="本文中のインライン色付け">
-                <Paragraph>
-                  メモ本文に登場人物の名前を書くと、自動でその人物の色で太字表示されます。
-                  同じ名前が複数いる場合は、長い名前から優先してマッチします。
-                </Paragraph>
-                <PreviewFrame>
-                  <InlineCharacterPreview />
-                </PreviewFrame>
               </SubFeature>
 
               <SubFeature title="パネル別の絞り込み">
@@ -511,7 +666,49 @@ export default function GuidePage() {
               </SubFeature>
             </Section>
 
-            {/* ── §7 相関図 ──────────────────────────────────────────── */}
+            {/* ── §10 検索とリンク ────────────────────────────────────── */}
+            <Section id="search-link" title="検索とリンク">
+              <Paragraph>
+                ヘッダーの「検索」から、タイムライン・フリーメモ・自分用メモを横断してキーワード検索できます。
+                検索結果はパネル別にグループ化され、マッチ箇所がハイライト表示されます。
+              </Paragraph>
+
+              <SubFeature title="横断検索">
+                <Paragraph>
+                  検索結果は最大 50 件まで表示され、各結果をクリックすると該当メモに飛びます。
+                </Paragraph>
+                <PreviewFrame>
+                  <SearchOverlayPreview />
+                </PreviewFrame>
+              </SubFeature>
+
+              <SubFeature title="[キーワード] 記法と自動辞書">
+                <Paragraph>
+                  メモ本文に <InlineCode>[キーワード]</InlineCode>{' '}
+                  と書くと、その箇所が検索リンク（青字 + 破線下線）として描画されます。
+                  クリックすると検索パレットがそのキーワードで開きます。
+                </Paragraph>
+                <Paragraph>
+                  確定したキーワードは自動的にリンク辞書に登録され、以降のメモでブラケットなしで書いても
+                  自動的にリンク化されます。
+                </Paragraph>
+                <PreviewFrame>
+                  <LinkSyntaxPreview />
+                </PreviewFrame>
+              </SubFeature>
+
+              <SubFeature title="リンク一覧">
+                <Paragraph>
+                  ヘッダーの「リンク一覧」を開くと、登録済みキーワードがリスト表示されます。
+                  各キーワードをクリックするとそのキーワードで検索が起動します。不要なキーワードは削除できます。
+                </Paragraph>
+                <PreviewFrame>
+                  <LinkListPreview />
+                </PreviewFrame>
+              </SubFeature>
+            </Section>
+
+            {/* ── §11 相関図 ──────────────────────────────────────────── */}
             <Section id="relations" title="相関図">
               <Paragraph>
                 登録した登場人物どうしを関係線で結ぶ機能です。 線の色やラベルで関係性（友人 / 敵対 /
@@ -563,7 +760,7 @@ export default function GuidePage() {
               </SubFeature>
             </Section>
 
-            {/* ── §8 人物推理メモ ────────────────────────────────────── */}
+            {/* ── §12 人物推理メモ ────────────────────────────────────── */}
             <Section id="deduction" title="人物推理メモ">
               <Paragraph>
                 ヘッダーの「人物推理メモ」から、登場人物ごとに疑惑度（★
@@ -593,82 +790,14 @@ export default function GuidePage() {
               </SubFeature>
             </Section>
 
-            {/* ── §9 検索とリンク ────────────────────────────────────── */}
-            <Section id="search-link" title="検索とリンク">
+            {/* ── §13 エクスポートとデータ管理 ────────────────────────── */}
+            <Section id="export" title="エクスポートとデータ管理">
               <Paragraph>
-                ヘッダーの「検索」から、タイムライン・フリーメモ・自分用メモを横断してキーワード検索できます。
-                検索結果はパネル別にグループ化され、マッチ箇所がハイライト表示されます。
+                セッション全体のデータをファイルに書き出したり、別アプリへテキストで貼り付けたりできます。
+                データの保存先や、オフライン利用についてもここでまとめます。
               </Paragraph>
 
-              <SubFeature title="横断検索">
-                <Paragraph>
-                  検索結果は最大 50 件まで表示され、各結果をクリックすると該当メモに飛びます。
-                </Paragraph>
-                <PreviewFrame>
-                  <SearchOverlayPreview />
-                </PreviewFrame>
-              </SubFeature>
-
-              <SubFeature title="[キーワード] 記法と自動辞書">
-                <Paragraph>
-                  メモ本文に <InlineCode>[キーワード]</InlineCode>{' '}
-                  と書くと、その箇所が検索リンク（青字 + 破線下線）として描画されます。
-                  クリックすると検索パレットがそのキーワードで開きます。
-                </Paragraph>
-                <Paragraph>
-                  確定したキーワードは自動的にリンク辞書に登録され、以降のメモでブラケットなしで書いても
-                  自動的にリンク化されます。
-                </Paragraph>
-                <PreviewFrame>
-                  <LinkSyntaxPreview />
-                </PreviewFrame>
-              </SubFeature>
-
-              <SubFeature title="リンク一覧">
-                <Paragraph>
-                  ヘッダーの「リンク一覧」を開くと、登録済みキーワードがリスト表示されます。
-                  各キーワードをクリックするとそのキーワードで検索が起動します。不要なキーワードは削除できます。
-                </Paragraph>
-                <PreviewFrame>
-                  <LinkListPreview />
-                </PreviewFrame>
-              </SubFeature>
-            </Section>
-
-            {/* ── §10 操作・データ管理 ──────────────────────────────── */}
-            <Section id="operations" title="操作・データ管理">
-              <SubFeature title="Undo / Redo">
-                <Paragraph>
-                  メモ・登場人物・推理メモ・相関図の変更は履歴に記録されます。
-                  <InlineCode>Ctrl + Z</InlineCode> で取り消し、
-                  <InlineCode>Ctrl + Shift + Z</InlineCode>{' '}
-                  でやり直しができます。セッションを切り替えると履歴はリセットされます。
-                </Paragraph>
-              </SubFeature>
-
-              <SubFeature title="キーボードショートカット">
-                <KeyValueTable
-                  rows={[
-                    { key: 'Ctrl + Z', keyAsCode: true, value: '直前の操作を取り消す' },
-                    { key: 'Ctrl + Shift + Z', keyAsCode: true, value: 'やり直す' },
-                    {
-                      key: 'Ctrl + V',
-                      keyAsCode: true,
-                      value: 'クリップボードの画像をフリーメモに画像メモとして貼り付け',
-                    },
-                    { key: 'Esc', keyAsCode: true, value: '編集確定 / モーダルを閉じる' },
-                    {
-                      key: 'Enter',
-                      keyAsCode: true,
-                      value: '時刻欄からテキスト欄へフォーカス移動',
-                    },
-                    { key: 'Shift + Enter', keyAsCode: true, value: '本文中で改行' },
-                    { key: 'Shift + クリック', value: 'エントリを範囲 / 追加選択' },
-                  ]}
-                />
-              </SubFeature>
-
-              <SubFeature title="エクスポート / インポート">
+              <SubFeature title="エクスポート / インポート（JSON）">
                 <Paragraph>
                   アプリ設定の「バックアップ」から、セッション全データを JSON
                   ファイルに書き出せます。 同じ画面から読み込めるので、PC
@@ -702,37 +831,37 @@ export default function GuidePage() {
                   アプリケーション一覧に追加できます。一度開いたあとはオフラインでも起動できます。
                 </Paragraph>
               </SubFeature>
+            </Section>
 
-              <SubFeature title="セッション管理">
+            {/* ── §14 ショートカット・設定リファレンス ──────────────── */}
+            <Section id="reference" title="ショートカット・設定リファレンス">
+              <SubFeature title="Undo / Redo">
                 <Paragraph>
-                  ヘッダー左のセッションメニューから、シナリオごとに独立したセッションを管理できます。
+                  メモ・登場人物・推理メモ・相関図の変更は履歴に記録されます。
+                  <InlineCode>Ctrl + Z</InlineCode> で取り消し、
+                  <InlineCode>Ctrl + Shift + Z</InlineCode>{' '}
+                  でやり直しができます。セッションを切り替えると履歴はリセットされます。
                 </Paragraph>
+              </SubFeature>
+
+              <SubFeature title="キーボードショートカット">
                 <KeyValueTable
                   rows={[
-                    { key: 'セッション切替', value: '直近に開いていたセッションを自動復元します' },
-                    { key: '新規作成（+）', value: '空のセッションを作成します' },
-                    { key: '名前変更', value: 'セッション名をその場で編集できます' },
-                  ]}
-                />
-                <Paragraph>
-                  データの削除には粒度が異なる 3 つのコマンドが用意されています。
-                </Paragraph>
-                <KeyValueTable
-                  rows={[
+                    { key: 'Ctrl + Z', keyAsCode: true, value: '直前の操作を取り消す' },
+                    { key: 'Ctrl + Shift + Z', keyAsCode: true, value: 'やり直す' },
                     {
-                      key: '初期化',
-                      value:
-                        '現在のセッションのメモ / 登場人物 / グループ / 画像を消去。セッション自体は残ります',
+                      key: 'Ctrl + V',
+                      keyAsCode: true,
+                      value: 'クリップボードの画像をフリーメモに画像メモとして貼り付け',
                     },
+                    { key: 'Esc', keyAsCode: true, value: '編集確定 / モーダルを閉じる' },
                     {
-                      key: 'セッションを削除',
-                      value:
-                        '現在のセッションそのものを削除。他のセッションは残ります（最後の 1 件は削除できません）',
+                      key: 'Enter',
+                      keyAsCode: true,
+                      value: '時刻欄からテキスト欄へフォーカス移動',
                     },
-                    {
-                      key: '完全リセット',
-                      value: '全セッション / 設定 / IndexedDB を消去し、アプリを初期状態に戻します',
-                    },
+                    { key: 'Shift + Enter', keyAsCode: true, value: '本文中で改行' },
+                    { key: 'Shift + クリック', value: 'エントリを範囲 / 追加選択' },
                   ]}
                 />
               </SubFeature>
@@ -760,14 +889,6 @@ export default function GuidePage() {
                     },
                   ]}
                 />
-              </SubFeature>
-
-              <SubFeature title="初回体験">
-                <Paragraph>
-                  初回起動 / バージョン更新後の起動時に「ようこそ」モーダルが表示され、
-                  サンプルシナリオが入った状態でアプリが開きます。
-                  サンプルはアプリのバージョンが上がるごとに更新されるので、新機能を反映した状態で見られます。
-                </Paragraph>
               </SubFeature>
             </Section>
           </article>

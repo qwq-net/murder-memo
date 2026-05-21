@@ -50,6 +50,7 @@ export function GroupHeaderStatesPreview() {
             onMoveDown={() => undefined}
             onRequestDelete={() => undefined}
             forceHover={v.forceHover}
+            autoFocusInput={false}
           />
         </div>
       ))}

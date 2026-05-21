@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
+  CircleHelp,
   Link2,
   Search,
   Settings,
@@ -184,12 +185,23 @@ export function AppShell() {
           className="flex items-center justify-between px-[14px]"
           style={{ height: 'var(--header-h)' }}
         >
-          {/* Logo / title */}
-          <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="マダめもくん" width="20" height="20" />
-            <span className="text-text-primary text-sm font-semibold tracking-[0.08em]">
-              マダめもくん
-            </span>
+          {/* Logo / title + 使い方ガイドへの導線 */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <img src="/logo.svg" alt="マダめもくん" width="20" height="20" />
+              <span className="text-text-primary text-sm font-semibold tracking-[0.08em]">
+                マダめもくん
+              </span>
+            </div>
+            <HeaderButton
+              href="/guide"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="使い方ガイドを別タブで開く"
+            >
+              <CircleHelp size={13} />
+              {!isMobile && '使い方'}
+            </HeaderButton>
           </div>
 
           {/* 右側ボタン群 */}

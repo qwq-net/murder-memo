@@ -15,6 +15,7 @@ export {
   ChevronUp,
   ChevronsDownUp,
   ChevronsUpDown,
+  CircleHelp,
   Link2,
   Plus,
   Search,
