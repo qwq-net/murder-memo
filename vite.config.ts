@@ -64,6 +64,16 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,json}'],
         // IndexedDB に保存される画像が大きくなりうるので precache のサイズ上限を緩める
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // ナビゲーションフォールバック (デフォルト `/index.html`) の対象外とするパス。
+        // SW がこれらを intercept すると LP の HTML が返り、`/robots.txt` などが
+        // クローラ / ブラウザから取得不能になるため、ネットワーク素通しさせる。
+        navigateFallbackDenylist: [
+          /^\/robots\.txt$/,
+          /^\/sitemap\.xml$/,
+          /^\/og-image\.png$/,
+          /^\/static-loader-data/,
+          /^\/cdn-cgi\//,
+        ],
       },
       // dev サーバーで manifest / SW を確認したい時のみ有効化する。
       // 環境変数 VITE_PWA_DEV=1 で `npm run dev` 時も PWA を動かせる。
