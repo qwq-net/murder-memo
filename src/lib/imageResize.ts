@@ -6,9 +6,12 @@ const MAX_HEIGHT = 1200;
 const JPEG_QUALITY = 0.85;
 
 /**
- * 画像 Blob を最大サイズ以内にリサイズする。
- * 既に範囲内なら元の Blob をそのまま返す。
- * Canvas で描画し JPEG として出力する。
+ * 画像 Blob を最大サイズ（既定 1200×1200px）以内にリサイズする。
+ *
+ * - 幅・高さが共に範囲内なら元の Blob をそのまま返す（MIME は変換されない）
+ * - リサイズ時のみアスペクト比を維持して縮小し、image/jpeg（品質 0.85）で再エンコードして返す
+ * - 2D コンテキストを取得できない環境では縮小を諦め、元の Blob をそのまま返す
+ *   （呼び手は戻り値が必ずしも縮小済み・JPEG とは限らない点に注意）
  */
 export async function resizeImage(
   blob: Blob,

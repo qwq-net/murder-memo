@@ -139,6 +139,15 @@ export async function putSession(session: GameSession): Promise<void> {
   await db.put('sessions', session);
 }
 
+/**
+ * セッションと、それに紐づく全データを単一トランザクションで削除する。
+ *
+ * 対象: sessions レコード本体 + by-session を持つ全ストア（entries / characters /
+ * timeline-groups / memo-groups / deductions / relations / link-keywords）+
+ * エントリが参照する images。
+ * 単一トランザクションのため途中で失敗すれば全体がロールバックされ、部分削除は残らない。
+ * セッション枠を残して中身だけ空にしたい場合は clearSessionData を使う。
+ */
 export async function deleteSession(id: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
@@ -199,7 +208,11 @@ export async function deleteSession(id: string): Promise<void> {
   await tx.done;
 }
 
-/** セッションのデータのみクリア（セッションレコード自体は残す） */
+/**
+ * セッション配下のデータを単一トランザクションで全削除する。
+ * deleteSession との違いは sessions レコード本体を残す点（セッション枠は維持し中身だけ空にする）。
+ * エントリが参照する images も併せて削除し、途中失敗時はトランザクションごとロールバックされる。
+ */
 export async function clearSessionData(id: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
@@ -285,6 +298,11 @@ export async function bulkPutEntries(entries: MemoEntry[], sessionId: string): P
 
 // ─── キャラクター ────────────────────────────────────────────────────────────
 
+/**
+ * セッションのキャラクター一覧を返す。
+ * 旧スキーマで role / showInEntries を持たないレコードには既定値（role: 'pl', showInEntries: true）を補う。
+ * 永続化用の sessionId フィールドは除去して返す。
+ */
 export async function getCharactersBySession(sessionId: string): Promise<Character[]> {
   const db = await getDb();
   const rows = await db.getAllFromIndex('characters', 'by-session', sessionId);

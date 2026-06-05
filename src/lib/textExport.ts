@@ -11,7 +11,12 @@ function buildCharMap(characters: Character[]): Map<string, string> {
   return new Map(characters.map((c) => [c.id, c.name]));
 }
 
-/** エントリ1件をテキスト行に変換 */
+/**
+ * エントリ1件を Markdown のリスト行 `- ...` に変換する。
+ * - タイムラインのエントリは先頭に時刻（未設定は "??:??"）を付ける
+ * - 画像エントリはキャプションのみ（無ければ "[画像]"）。本文の改行は " / " に畳む
+ * - 本文が空なら "（空）"。キャラクタータグがあれば末尾に `[名前, ...]`（charMap に無い ID は除外）
+ */
 function formatEntry(entry: MemoEntry, charMap: Map<string, string>): string {
   const parts: string[] = [];
 
@@ -102,7 +107,15 @@ function formatPanel(
   return lines.join('\n');
 }
 
-/** セッション全体をテキストに変換 */
+/**
+ * セッション全体を Markdown テキストに変換する（コピー / 書き出し用）。
+ *
+ * - 出力パネルは panelFilter 指定時はそのパネルのみ、未指定時は panelOrder の順
+ * - 階層は `# セッション名` → `## パネル` → `### グループ` → `- エントリ`。
+ *   panelFilter 指定時はヘッダーにパネル名を併記する（例: `# 名前 — タイムライン`）
+ * - エントリが1件も無いパネル・グループは見出しごと省略する
+ * - 出力すべき内容が何も無い場合は空文字列を返す（呼び手はコピー不可として扱える）
+ */
 export function formatSessionAsText(
   sessionName: string,
   entries: MemoEntry[],
@@ -127,7 +140,10 @@ export function formatSessionAsText(
   return [header, '', ...sections].join('\n');
 }
 
-/** クリップボードにコピー */
+/**
+ * テキストをクリップボードへコピーし、成否を boolean で返す。
+ * navigator.clipboard が使えない場合は一時 textarea + execCommand('copy') にフォールバックする。
+ */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);

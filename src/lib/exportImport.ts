@@ -41,7 +41,10 @@ const migrations: Record<number, MigrationFn> = {
 
 /**
  * エクスポートデータを現行バージョンにマイグレーションする。
- * version が EXPORT_VERSION と一致していればそのまま返す。
+ * version が EXPORT_VERSION 以上（同値・未来版）なら変換せずそのまま返す。
+ *
+ * throw: 現行版に届くまでの途中バージョンに対応する変換関数が未登録の場合
+ *        （例: v1→v2 はあるが v2→v3 が無いのに version=2 で EXPORT_VERSION=3）。
  *
  * （テスト容易性のため公開しているが、通常は `importSession` 経由で内部利用される）
  */
@@ -62,6 +65,17 @@ export function migrateToLatest(data: any): MurderMemoExport {
 
 // ─── バリデーション ──────────────────────────────────────────────────────────
 
+/**
+ * インポート対象データが MurderMemoExport の必須構造を満たすか判定する型ガード。
+ *
+ * true を返す条件: オブジェクトであること / version が 1〜EXPORT_VERSION の数値 /
+ * exportedAt が数値 / session.id が文字列 /
+ * entries・characters・timelineGroups・memoGroups・images がいずれも配列であること。
+ *
+ * - version > EXPORT_VERSION（未来版）は false（このアプリでは開けない）
+ * - deductions・relations・linkKeywords は optional のため検証しない
+ *   （これらを欠く旧バージョンのエクスポートも有効として受理する）
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateExport(data: any): data is MurderMemoExport {
   if (data == null || typeof data !== 'object') return false;
@@ -198,7 +212,19 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
   return new Blob([bytes], { type: mimeType });
 }
 
-/** JSON ファイルを読み込み、新しいセッションとしてインポート */
+/**
+ * エクスポート JSON ファイルを読み込み、独立した新規セッションとして取り込む。
+ *
+ * - 元データの全 ID を新しい nanoid に振り直すため、元セッションと共存できる。
+ *   参照（characterTags / timelineGroupId / groupId / characterId / imageBlobKey /
+ *   相関図の from・to 等）も同じマップで新 ID に整合させて書き換える
+ * - linkKeywords の id だけは外部参照されないため単純に新規発行する
+ * - 旧バージョンのデータは migrateToLatest で現行版に変換してから取り込む
+ * - throw: JSON 解析失敗 / validateExport 不合格 / 未定義マイグレーション / IDB 書き込み失敗
+ * - IDB 書き込みが途中で失敗した場合は deleteSession で部分書き込みを巻き戻す
+ *   （中途半端なセッションを残さない）。巻き戻し自体の失敗はログのみで握りつぶす
+ * - 戻り値: 取り込んだ新セッション。アクティブ化はしないので呼び手側で切り替える
+ */
 export async function importSession(file: File): Promise<GameSession> {
   const text = await file.text();
   let raw: unknown;

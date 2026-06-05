@@ -18,7 +18,11 @@ export const SITE_NAME = 'マダめもくん';
 /** OGP / Twitter Card 用の画像 URL */
 export const SITE_OG_IMAGE = `${SITE_ORIGIN}/og-image.png`;
 
-/** 与えられたパスから絶対 URL を組み立てる */
+/**
+ * 与えられたパスを本番オリジン起点の絶対 URL に組み立てる。
+ * 先頭が '/' ならそのまま連結し、そうでなければ '/' を補って連結する
+ * （例: "/guide" も "guide" も同じ "https://memo.qwqb.net/guide" になる）。
+ */
 export function absoluteUrl(path: string): string {
   if (!path.startsWith('/')) {
     return `${SITE_ORIGIN}/${path}`;
