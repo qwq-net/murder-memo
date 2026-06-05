@@ -42,8 +42,13 @@ export function groupEntriesByMemoGroup(
 // ─── タイムラインパネル用グループ分け ─────────────────────────────────────────
 
 /**
- * タイムラインエントリを TimelineGroup → 時間帯 の2階層でグループ化する。
- * 時間未設定のエントリは unknown に入る。
+ * タイムラインエントリを TimelineGroup → 時間帯（時単位）の2階層でグループ化する。
+ *
+ * - 戻り値は timelineGroups と同じ並び・同じ件数。該当エントリが0件のグループも要素として残る
+ * - 各グループ内: eventTimeSortKey が設定されたエントリのみを時刻昇順
+ *   （同時刻は sortOrder 昇順）に並べ、「時」単位で hourGroups に束ねる。
+ *   hourGroups 自体も時刻の早い順
+ * - eventTimeSortKey 未設定のエントリは hourGroups に含まれず、unknown に sortOrder 昇順で入る
  */
 export function groupEntriesByTimeline(
   entries: MemoEntry[],

@@ -55,8 +55,9 @@ export function parseEventTime(input: string): number | undefined {
 }
 
 /**
- * ソートキー（分換算）から時間帯ラベルを返す。
- * 720 → "12時台"
+ * ソートキー（分換算）を時間帯の見出しラベル "H:00" に変換する。
+ * 同じ「時」に属するキーは分を切り捨てて同一ラベルになる。
+ * 720（12:00）→ "12:00", 750（12:30）→ "12:00", 0 → "0:00"
  */
 export function getHourLabel(sortKey: number): string {
   const h = Math.floor(sortKey / 60);
