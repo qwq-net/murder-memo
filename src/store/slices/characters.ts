@@ -62,11 +62,20 @@ export const createCharactersSlice = (
 
   removeCharacter: async (id) => {
     await deleteCharacter(id);
-    // 関連する相関図の関係も削除
-    const { relations, removeRelation } = get();
+    const { relations, removeRelation, removeDeduction, entries, updateEntry } = get();
+    // 相関図の関係線（from / to 双方）を削除
     const related = relations.filter((r) => r.fromCharacterId === id || r.toCharacterId === id);
     for (const r of related) {
       await removeRelation(r.id);
+    }
+    // 推理メモ（characterId 参照）の孤児を削除（無ければ no-op）
+    await removeDeduction(id);
+    // エントリのキャラクタータグから当該 ID を除去（削除済みキャラへのダングリング参照を残さない）
+    const tagged = entries.filter((e) => e.characterTags.includes(id));
+    for (const entry of tagged) {
+      await updateEntry(entry.id, {
+        characterTags: entry.characterTags.filter((t) => t !== id),
+      });
     }
     set((s) => ({ characters: s.characters.filter((c) => c.id !== id) }));
   },

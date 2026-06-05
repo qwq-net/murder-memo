@@ -87,8 +87,11 @@ export const createTimelineGroupsSlice = (
     const group = get().timelineGroups.find((g) => g.id === id);
     if (!group) return;
     const updated = { ...group, collapsed: !group.collapsed };
-    // 非同期で永続化（結果を待たない）
-    putTimelineGroup(updated);
+    // 折りたたみは UI 用途で即時反映を優先するため await しないが、
+    // 失敗を握り潰して unhandled rejection にしないよう catch する
+    void putTimelineGroup(updated).catch((err) => {
+      console.error('タイムライングループの折りたたみ状態の永続化に失敗しました', err);
+    });
     set((s) => ({
       timelineGroups: s.timelineGroups.map((g) => (g.id === id ? updated : g)),
     }));

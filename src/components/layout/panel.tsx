@@ -64,6 +64,7 @@ export function Panel({ panelId, title, actions, children }: PanelProps) {
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />

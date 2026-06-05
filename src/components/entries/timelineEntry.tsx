@@ -7,7 +7,7 @@ import { useCallback, useRef, useState } from 'react';
 
 import { EntryContent } from '@/components/entries/entryContent';
 import { ImageEntry } from '@/components/entries/imageEntry';
-import { autoCompleteTime, normalizeTimeInput, parseEventTime } from '@/lib/timeParser';
+import { normalizeTimeInput, resolveEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
 
@@ -41,27 +41,36 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
 
   // 時刻保存
   const saveTime = useCallback(() => {
-    const completed = autoCompleteTime(draftTime);
-    setDraftTime(completed);
-    const sortKey = completed ? parseEventTime(completed) : undefined;
+    const resolved = resolveEventTime(draftTime);
+    if (!resolved.valid) {
+      // 不正な時刻は保存せず直前の値に戻す（eventTime と sortKey の不整合を防ぐ）
+      setDraftTime(entry.eventTime ?? '');
+      return;
+    }
+    setDraftTime(resolved.eventTime ?? '');
     updateEntry(entry.id, {
-      eventTime: completed || undefined,
-      eventTimeSortKey: sortKey,
+      eventTime: resolved.eventTime,
+      eventTimeSortKey: resolved.eventTimeSortKey,
     });
-  }, [draftTime, entry.id, updateEntry]);
+  }, [draftTime, entry.id, entry.eventTime, updateEntry]);
 
   // テキストエントリ用：content + 時刻をまとめて保存
   const handleContentSave = useCallback(
     (content: string) => {
-      const timeTrimmed = autoCompleteTime(draftTime);
-      const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
+      const resolved = resolveEventTime(draftTime);
+      if (!resolved.valid) {
+        // 時刻が不正なら content だけ保存し、時刻は直前の値に据え置く
+        setDraftTime(entry.eventTime ?? '');
+        updateEntry(entry.id, { content });
+        return;
+      }
       updateEntry(entry.id, {
         content,
-        eventTime: timeTrimmed || undefined,
-        eventTimeSortKey: sortKey,
+        eventTime: resolved.eventTime,
+        eventTimeSortKey: resolved.eventTimeSortKey,
       });
     },
-    [draftTime, entry.id, updateEntry],
+    [draftTime, entry.id, entry.eventTime, updateEntry],
   );
 
   // 時刻 input の blur

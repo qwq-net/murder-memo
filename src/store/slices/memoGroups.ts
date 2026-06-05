@@ -91,7 +91,11 @@ export const createMemoGroupsSlice = (
     const group = get().memoGroups.find((g) => g.id === id);
     if (!group) return;
     const updated = { ...group, collapsed: !group.collapsed };
-    putMemoGroup(updated);
+    // 折りたたみは UI 用途で即時反映を優先するため await しないが、
+    // 失敗を握り潰して unhandled rejection にしないよう catch する
+    void putMemoGroup(updated).catch((err) => {
+      console.error('メモグループの折りたたみ状態の永続化に失敗しました', err);
+    });
     set((s) => ({
       memoGroups: s.memoGroups.map((g) => (g.id === id ? updated : g)),
     }));

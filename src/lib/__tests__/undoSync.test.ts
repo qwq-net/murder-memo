@@ -9,6 +9,7 @@ const mockBulkPutTimelineGroups = vi.fn().mockResolvedValue(undefined);
 const mockBulkPutMemoGroups = vi.fn().mockResolvedValue(undefined);
 const mockBulkPutDeductions = vi.fn().mockResolvedValue(undefined);
 const mockBulkPutRelations = vi.fn().mockResolvedValue(undefined);
+const mockBulkPutLinkKeywords = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/lib/idb', () => ({
   clearSessionData: (...args: unknown[]) => mockClearSessionData(...args),
@@ -18,6 +19,7 @@ vi.mock('@/lib/idb', () => ({
   bulkPutMemoGroups: (...args: unknown[]) => mockBulkPutMemoGroups(...args),
   bulkPutDeductions: (...args: unknown[]) => mockBulkPutDeductions(...args),
   bulkPutRelations: (...args: unknown[]) => mockBulkPutRelations(...args),
+  bulkPutLinkKeywords: (...args: unknown[]) => mockBulkPutLinkKeywords(...args),
 }));
 
 function makeState(overrides: Partial<StoreState> = {}): StoreState {
@@ -29,6 +31,7 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     memoGroups: [{ id: 'mg1' }],
     deductions: [{ id: 'd1' }],
     relations: [{ id: 'r1' }],
+    linkKeywords: [{ id: 'lk1' }],
     ...overrides,
   } as unknown as StoreState;
 }
@@ -58,6 +61,19 @@ describe('syncStateToIdb', () => {
     expect(mockBulkPutMemoGroups).toHaveBeenCalledWith(state.memoGroups);
     expect(mockBulkPutDeductions).toHaveBeenCalledWith(state.deductions);
     expect(mockBulkPutRelations).toHaveBeenCalledWith(state.relations);
+  });
+
+  // 回帰防止: linkKeywords は TrackedState 外だが clearSessionData が消すため、
+  // 書き戻さないと Undo/Redo のたびに IDB 上の辞書が失われる
+  it('linkKeywords も IDB に書き戻す（辞書消失の回帰防止）', async () => {
+    const state = makeState();
+    await syncStateToIdb(state);
+    expect(mockBulkPutLinkKeywords).toHaveBeenCalledWith(state.linkKeywords, 'session-1');
+  });
+
+  it('activeSessionId が null なら linkKeywords も書き戻さない', async () => {
+    await syncStateToIdb(makeState({ activeSessionId: null }));
+    expect(mockBulkPutLinkKeywords).not.toHaveBeenCalled();
   });
 
   it('clearSessionData → bulk put の順序で実行される', async () => {

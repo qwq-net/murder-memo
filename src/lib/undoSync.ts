@@ -6,6 +6,7 @@ import {
   bulkPutCharacters,
   bulkPutDeductions,
   bulkPutEntries,
+  bulkPutLinkKeywords,
   bulkPutMemoGroups,
   bulkPutRelations,
   bulkPutTimelineGroups,
@@ -20,14 +21,10 @@ import type { StoreState } from '@/store/index';
  * - clearSessionData で対象セッションの全ストアを一旦空にしてから現在の state を書き戻す
  *   （差分更新ではなく総入れ替え）
  * - 書き戻す対象: entries / characters / timelineGroups / memoGroups / deductions / relations
- *   （= store の TrackedState と一致。Undo/Redo で巻き戻る範囲そのもの）
- *
- * ⚠️ 既知の不整合（要修正候補）: clearSessionData は link-keywords ストアも削除するが、
- *    本関数は linkKeywords を書き戻さない。linkKeywords は TrackedState 外で Undo/Redo の
- *    巻き戻し対象でもないため、Undo/Redo を行うたびに IDB 上のリンクキーワード辞書だけが消え、
- *    次回のセッション切替/再読込で辞書が失われる（その場ではメモリに残るため気付きにくい）。
- *    修正するなら bulkPutLinkKeywords を書き戻しに追加するか、clearSessionData 側で
- *    link-keywords を温存する必要がある。
+ *   （= store の TrackedState。Undo/Redo で巻き戻る範囲そのもの）に加えて linkKeywords も書き戻す。
+ *   linkKeywords は TrackedState 外で Undo/Redo の巻き戻し対象ではないが、clearSessionData が
+ *   link-keywords ストアごと消すため、現在の state を書き戻さないと IDB 上の辞書が失われてしまう
+ *   （メモリ上は残るため再読込時まで損失に気付けない）。よってここで必ず書き戻して整合を保つ。
  */
 export async function syncStateToIdb(state: StoreState): Promise<void> {
   const sid = state.activeSessionId;
@@ -41,5 +38,7 @@ export async function syncStateToIdb(state: StoreState): Promise<void> {
     bulkPutMemoGroups(state.memoGroups),
     bulkPutDeductions(state.deductions),
     bulkPutRelations(state.relations),
+    // linkKeywords は TrackedState 外だが clearSessionData が消すため必ず書き戻す
+    bulkPutLinkKeywords(state.linkKeywords, sid),
   ]);
 }

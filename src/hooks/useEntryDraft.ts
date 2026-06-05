@@ -9,6 +9,14 @@ interface UseEntryDraftParams<T extends Record<string, unknown>> {
   onSave: (values: T) => void;
 }
 
+/** 同一キー集合の浅い比較。全キーの値が === なら true。 */
+function shallowEqual(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every((k) => a[k] === b[k]);
+}
+
 /**
  * エントリ編集のドラフトステート管理を共通化するフック。
  * TextEntry と TimelineEntry で利用。
@@ -28,11 +36,14 @@ export function useEntryDraft<T extends Record<string, unknown>>({
   const blurHandledRef = useRef(false);
 
   // props → draft 同期（非編集時のみ）
-  // currentValues はオブジェクトなので JSON シリアライズで変更検出
-  const serialized = JSON.stringify(currentValues);
-  const [prevSyncKey, setPrevSyncKey] = useState({ serialized, isEditing });
-  if (serialized !== prevSyncKey.serialized || isEditing !== prevSyncKey.isEditing) {
-    setPrevSyncKey({ serialized, isEditing });
+  // currentValues はオブジェクトなので浅い比較で変更検出する
+  // （JSON.stringify はキー順序の差で誤検出し、undefined 値の差を取りこぼすため使わない）
+  const [prevSync, setPrevSync] = useState<{ values: T; isEditing: boolean }>({
+    values: currentValues,
+    isEditing,
+  });
+  if (!shallowEqual(currentValues, prevSync.values) || isEditing !== prevSync.isEditing) {
+    setPrevSync({ values: currentValues, isEditing });
     if (!isEditing) {
       setDraftState(currentValues);
     }

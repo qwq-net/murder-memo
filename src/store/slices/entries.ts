@@ -59,7 +59,14 @@ export const createEntriesSlice = (
     if (!entry) return;
     const updated = { ...entry, ...patch, updatedAt: Date.now() };
     set((s) => ({ entries: s.entries.map((e) => (e.id === id ? updated : e)) }));
-    await putEntry(updated, sessionId);
+    try {
+      await putEntry(updated, sessionId);
+    } catch (err) {
+      // 保存失敗時は元の内容へ戻し、メモリと IDB の乖離（リロードで変更消失）を防ぐ
+      set((s) => ({ entries: s.entries.map((e) => (e.id === id ? entry : e)) }));
+      get().addToast('メモの保存に失敗しました', 'error');
+      console.error('updateEntry の保存に失敗しました', err);
+    }
   },
 
   deleteEntry: async (id) => {
@@ -114,9 +121,10 @@ export const createEntriesSlice = (
   reorderEntries: async (panel, orderedIds) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) return;
+    const prev = get().entries;
     const now = Date.now();
     const changedEntries: MemoEntry[] = [];
-    const updated = get().entries.map((e) => {
+    const updated = prev.map((e) => {
       const idx = orderedIds.indexOf(e.id);
       if (e.panel !== panel || idx === -1) return e;
       const reordered = { ...e, sortOrder: idx, updatedAt: now };
@@ -126,7 +134,14 @@ export const createEntriesSlice = (
     // 同期的にstate更新 → DnDオーバーレイが正しい位置にアニメーションする
     set(() => ({ entries: updated }));
     // 対象パネルのエントリだけを IndexedDB に書き込む
-    await bulkPutEntries(changedEntries, sessionId);
+    try {
+      await bulkPutEntries(changedEntries, sessionId);
+    } catch (err) {
+      // 保存失敗時は並び替え前の状態へ戻す（メモリと IDB の乖離を防ぐ）
+      set(() => ({ entries: prev }));
+      get().addToast('並び替えの保存に失敗しました', 'error');
+      console.error('reorderEntries の保存に失敗しました', err);
+    }
   },
 
   bulkLoadEntries: async (entries, sessionId) => {

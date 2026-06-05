@@ -155,7 +155,7 @@ export function EntryContent({
         <div
           onClick={(e) => {
             if (e.shiftKey) return;
-            captureFromMouseEvent(e, entry.content.length);
+            captureFromMouseEvent(e, e.currentTarget, entry.content.length);
             setFocusedEntry(entry.id);
           }}
           className="cursor-text pt-px pr-1 pb-0 pl-3.5 text-sm leading-[1.2] break-words whitespace-pre-wrap"

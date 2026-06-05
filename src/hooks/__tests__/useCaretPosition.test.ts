@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { getCaretOffset, useCaretPosition } from '../useCaretPosition';
 
 describe('getCaretOffset', () => {
@@ -77,5 +78,36 @@ describe('useCaretPosition', () => {
 
     expect(el.selectionStart).toBe(el.value.length);
     expect(el.selectionEnd).toBe(el.value.length);
+  });
+
+  it('captureFromMouseEvent は複数 span にまたがる選択を絶対オフセットで記録する', () => {
+    // 本文 "ABCDE" を 2 つの span（"AB" + "CDE"）に分けて描画した状況を再現
+    const container = document.createElement('div');
+    const span1 = document.createElement('span');
+    span1.textContent = 'AB';
+    const span2 = document.createElement('span');
+    span2.textContent = 'CDE';
+    container.append(span1, span2);
+    document.body.appendChild(container);
+
+    // 先頭から 2 番目の span の途中（"ABCD"）までを選択
+    const range = document.createRange();
+    range.setStart(span1.firstChild!, 0);
+    range.setEnd(span2.firstChild!, 2);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    const { result } = renderHook(() => useCaretPosition());
+    result.current.captureFromMouseEvent(
+      { clientX: 0, clientY: 0 } as unknown as ReactMouseEvent,
+      container,
+      5,
+    );
+
+    // ノードローカル（span2 内の 2）ではなく、本文先頭からの絶対位置 4 が記録される
+    expect(result.current.pendingSelectionRef.current).toEqual({ start: 0, end: 4 });
+
+    document.body.removeChild(container);
   });
 });

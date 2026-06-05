@@ -163,6 +163,63 @@ describe('validateExport', () => {
       ),
     ).toBe(true);
   });
+
+  // 要素レベルの検証（import が前提とする参照フィールドの欠落を弾く）
+  it('entry に characterTags が無いと false（import の .map クラッシュ防止）', () => {
+    const data = makeValidExport();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (data.entries[0] as any).characterTags;
+    expect(validateExport(data)).toBe(false);
+  });
+
+  it('entry に id が無いと false', () => {
+    const data = makeValidExport();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (data.entries[0] as any).id;
+    expect(validateExport(data)).toBe(false);
+  });
+
+  it('character に id が無いと false', () => {
+    const data = makeValidExport();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (data.characters[0] as any).id;
+    expect(validateExport(data)).toBe(false);
+  });
+
+  it('deductions が存在し characterId を欠くと false（remap(undefined) 防止）', () => {
+    const data = makeValidExport({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      deductions: [{ id: 'd1' } as any],
+    });
+    expect(validateExport(data)).toBe(false);
+  });
+
+  it('relations が存在し from/to を欠くと false', () => {
+    const data = makeValidExport({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      relations: [{ id: 'r1', fromCharacterId: 'c1' } as any],
+    });
+    expect(validateExport(data)).toBe(false);
+  });
+
+  it('正しい deductions / relations を持つデータは valid', () => {
+    const data = makeValidExport({
+      deductions: [
+        {
+          id: 'd1',
+          sessionId: 's1',
+          characterId: 'c1',
+          suspicionLevel: 0,
+          memo: '',
+          updatedAt: 0,
+        },
+      ],
+      relations: [
+        { id: 'r1', sessionId: 's1', fromCharacterId: 'c1', toCharacterId: 'c1', label: '', sortOrder: 0 },
+      ],
+    });
+    expect(validateExport(data)).toBe(true);
+  });
 });
 
 // ─── マイグレーション (v1 → v2 linkKeywords 追加) ────────────────────────────

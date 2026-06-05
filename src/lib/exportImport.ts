@@ -58,7 +58,14 @@ export function migrateToLatest(data: any): MurderMemoExport {
         `マイグレーション v${current.version} → v${current.version + 1} が未定義です`,
       );
     }
+    const prevVersion = current.version as number;
     current = fn(current);
+    // version を進めない壊れた migration による無限ループを防ぐ（将来の登録ミス対策）
+    if (typeof current.version !== 'number' || current.version <= prevVersion) {
+      throw new Error(
+        `マイグレーション v${prevVersion} が version を進めませんでした（${String(current.version)}）`,
+      );
+    }
   }
   return current as MurderMemoExport;
 }
@@ -73,8 +80,12 @@ export function migrateToLatest(data: any): MurderMemoExport {
  * entries・characters・timelineGroups・memoGroups・images がいずれも配列であること。
  *
  * - version > EXPORT_VERSION（未来版）は false（このアプリでは開けない）
- * - deductions・relations・linkKeywords は optional のため検証しない
- *   （これらを欠く旧バージョンのエクスポートも有効として受理する）
+ * - deductions・relations・linkKeywords は optional だが、存在する場合は配列かつ
+ *   各要素が必須参照フィールド（id / characterId / from・toCharacterId / keyword）を持つことまで確認する。
+ *   欠く旧バージョンのエクスポート（フィールド自体が無い）は引き続き有効として受理する
+ * - entries / characters の要素も最小限検証する（importSession が e.characterTags.map や
+ *   remap(d.characterId) を前提とするため、ここで弾かないと import 時に TypeError や
+ *   不正な ID リマップで整合性が壊れる）
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateExport(data: any): data is MurderMemoExport {
@@ -88,6 +99,45 @@ export function validateExport(data: any): data is MurderMemoExport {
   if (!Array.isArray(data.timelineGroups)) return false;
   if (!Array.isArray(data.memoGroups)) return false;
   if (!Array.isArray(data.images)) return false;
+
+  // 必須配列の要素検証（import が前提とする参照フィールドの有無）
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!data.entries.every((e: any) => e != null && typeof e.id === 'string' && Array.isArray(e.characterTags)))
+    return false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!data.characters.every((c: any) => c != null && typeof c.id === 'string')) return false;
+
+  // optional 配列は「存在するなら配列 + 要素が必須参照を持つ」ことを検証
+  if (data.deductions != null) {
+    if (!Array.isArray(data.deductions)) return false;
+    if (
+      !data.deductions.every(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (d: any) => d != null && typeof d.id === 'string' && typeof d.characterId === 'string',
+      )
+    )
+      return false;
+  }
+  if (data.relations != null) {
+    if (!Array.isArray(data.relations)) return false;
+    if (
+      !data.relations.every(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (r: any) =>
+          r != null &&
+          typeof r.id === 'string' &&
+          typeof r.fromCharacterId === 'string' &&
+          typeof r.toCharacterId === 'string',
+      )
+    )
+      return false;
+  }
+  if (data.linkKeywords != null) {
+    if (!Array.isArray(data.linkKeywords)) return false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!data.linkKeywords.every((k: any) => k != null && typeof k.keyword === 'string'))
+      return false;
+  }
   return true;
 }
 
@@ -261,10 +311,17 @@ export async function importSession(file: File): Promise<GameSession> {
   };
 
   // キャラクター
-  const newCharacters = data.characters.map((c) => ({
-    ...c,
-    id: remap(c.id),
-  }));
+  // role / showInEntries を欠く旧データに既定値を補う（IDB の getCharactersBySession と
+  // 同じ補完を import 経路にも適用し、読み込み経路との非対称をなくす）。
+  const newCharacters = data.characters.map((c) => {
+    const { role, showInEntries, ...rest } = c;
+    return {
+      ...rest,
+      role: role ?? 'pl',
+      showInEntries: showInEntries ?? true,
+      id: remap(c.id),
+    };
+  });
 
   // タイムライングループ
   const newTimelineGroups = data.timelineGroups.map((g) => ({
@@ -319,32 +376,36 @@ export async function importSession(file: File): Promise<GameSession> {
   // IDB に書き込み。
   // 途中で失敗した場合は `deleteSession` で部分書き込みを一括クリーンアップする
   // （壊れた中途半端なセッションが IDB に残らないようにするため）。
+  // 並列書き込みは Promise.all が reject した後も他の書き込みが走り続けるため、
+  // クリーンアップ前に全書き込みの決着（allSettled）を待ってから deleteSession する。
+  // そうしないと deleteSession の後に生き残った書き込みが完了し、孤立データが残りうる。
+  const writes: Promise<unknown>[] = [];
   try {
     await putSession(newSession);
     // 各 by-session ストアは独立しているため並列書き込みで安全に高速化できる
-    await Promise.all([
+    writes.push(
       bulkPutCharacters(newCharacters, newSession.id),
       bulkPutTimelineGroups(newTimelineGroups),
       bulkPutMemoGroups(newMemoGroups),
       bulkPutEntries(newEntries, newSession.id),
-      newDeductions.length > 0 ? bulkPutDeductions(newDeductions) : Promise.resolve(),
-      newRelations.length > 0 ? bulkPutRelations(newRelations) : Promise.resolve(),
-      newLinkKeywords.length > 0
-        ? bulkPutLinkKeywords(newLinkKeywords, newSession.id)
-        : Promise.resolve(),
-    ]);
+    );
+    if (newDeductions.length > 0) writes.push(bulkPutDeductions(newDeductions));
+    if (newRelations.length > 0) writes.push(bulkPutRelations(newRelations));
+    if (newLinkKeywords.length > 0) writes.push(bulkPutLinkKeywords(newLinkKeywords, newSession.id));
 
     // 画像の復元（並列で書き込み。画像は entries.imageBlobKey から参照される）
-    await Promise.all(
-      data.images.map(async (img) => {
-        const newKey = idMap.get(img.blobKey);
-        if (!newKey) return;
-        const blob = base64ToBlob(img.base64, img.mimeType);
-        await putImage(newKey, blob);
-      }),
-    );
+    for (const img of data.images) {
+      const newKey = idMap.get(img.blobKey);
+      if (!newKey) continue;
+      const blob = base64ToBlob(img.base64, img.mimeType);
+      writes.push(putImage(newKey, blob));
+    }
+
+    await Promise.all(writes);
   } catch (err) {
-    // 部分書き込みをロールバック（deleteSession は対象セッションの全ストアを掃除する）
+    // 走り続けている並列書き込みが deleteSession の後に完了して孤立データを残さないよう、
+    // 全書き込みの決着を待ってからクリーンアップする
+    await Promise.allSettled(writes);
     try {
       await deleteSession(newSession.id);
     } catch (cleanupErr) {

@@ -4,6 +4,7 @@ import {
   getHourLabel,
   normalizeTimeInput,
   parseEventTime,
+  resolveEventTime,
 } from '../timeParser';
 
 describe('normalizeTimeInput', () => {
@@ -96,5 +97,56 @@ describe('getHourKey', () => {
     expect(getHourKey(750)).toBe(12);
     expect(getHourKey(0)).toBe(0);
     expect(getHourKey(1439)).toBe(23);
+  });
+});
+
+describe('resolveEventTime', () => {
+  it('空文字は valid だが時刻なし（両方 undefined）', () => {
+    expect(resolveEventTime('')).toEqual({
+      valid: true,
+      eventTime: undefined,
+      eventTimeSortKey: undefined,
+    });
+    expect(resolveEventTime('  ')).toEqual({
+      valid: true,
+      eventTime: undefined,
+      eventTimeSortKey: undefined,
+    });
+  });
+
+  it('妥当な時刻は補完済み eventTime と sortKey の両方を返す', () => {
+    expect(resolveEventTime('1300')).toEqual({
+      valid: true,
+      eventTime: '13:00',
+      eventTimeSortKey: 780,
+    });
+    expect(resolveEventTime('9')).toEqual({
+      valid: true,
+      eventTime: '9:00',
+      eventTimeSortKey: 540,
+    });
+  });
+
+  it('全角入力も補完して妥当な時刻として扱う', () => {
+    expect(resolveEventTime('１２：３０')).toEqual({
+      valid: true,
+      eventTime: '12:30',
+      eventTimeSortKey: 750,
+    });
+  });
+
+  it('範囲外の不正な時刻は valid:false（時刻フィールドを持たない）', () => {
+    expect(resolveEventTime('25:00')).toEqual({ valid: false });
+    expect(resolveEventTime('12:99')).toEqual({ valid: false });
+  });
+
+  it('eventTime と eventTimeSortKey は常に「両方 or どちらもなし」で整合する', () => {
+    for (const input of ['', '13:00', '0:00', '23:59', '25:00', 'abc']) {
+      const r = resolveEventTime(input);
+      if (r.valid) {
+        // 片方だけ設定されている状態は起こらない
+        expect(r.eventTime === undefined).toBe(r.eventTimeSortKey === undefined);
+      }
+    }
   });
 });

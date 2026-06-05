@@ -71,3 +71,30 @@ export function getHourLabel(sortKey: number): string {
 export function getHourKey(sortKey: number): number {
   return Math.floor(sortKey / 60);
 }
+
+/** {@link resolveEventTime} の戻り値。valid:false のときは時刻フィールドを持たない。 */
+export type ResolvedEventTime =
+  | { valid: true; eventTime?: string; eventTimeSortKey?: number }
+  | { valid: false };
+
+/**
+ * 時刻入力文字列を、保存用の eventTime と eventTimeSortKey のペアに正規化する。
+ *
+ * 入力は autoCompleteTime で補完してから parseEventTime で妥当性を判定する。
+ * - 空文字（時刻なし）→ valid:true、eventTime/eventTimeSortKey ともに undefined
+ * - 妥当な HH:MM → valid:true、補完済み eventTime と分換算 eventTimeSortKey の両方を返す
+ * - 不正な時刻（"25:00" や "12:99" など範囲外）→ valid:false（時刻フィールドなし）。
+ *   呼び手は保存せずエラー表示・据え置きする想定
+ *
+ * 目的: eventTime と eventTimeSortKey が常に「両方設定 or 両方 undefined」で整合するよう、
+ * 時刻を保存する箇所（entryInput / timelineEntry）はこの関数を必ず経由する。
+ * これを通さず eventTime だけ保存すると、タイムラインでは「時刻不明」なのに
+ * テキスト書き出しには不正時刻が出る、といった不整合を招く。
+ */
+export function resolveEventTime(input: string): ResolvedEventTime {
+  const completed = autoCompleteTime(input).trim();
+  if (!completed) return { valid: true, eventTime: undefined, eventTimeSortKey: undefined };
+  const sortKey = parseEventTime(completed);
+  if (sortKey === undefined) return { valid: false };
+  return { valid: true, eventTime: completed, eventTimeSortKey: sortKey };
+}

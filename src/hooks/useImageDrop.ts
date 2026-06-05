@@ -17,23 +17,25 @@ export function useImageDrop(panel: PanelId) {
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounterRef = useRef(0);
 
-  /** 画像 Blob をリサイズして IndexedDB に保存し、エントリを追加 */
+  /** 画像 Blob をリサイズして IndexedDB に保存し、エントリを追加する。成功したら true を返す */
   const addImage = useCallback(
-    async (blob: Blob) => {
-      const resized = await resizeImage(blob);
-      const blobKey = nanoid();
-      await putImage(blobKey, resized);
+    async (blob: Blob): Promise<boolean> => {
       const extra: Partial<MemoEntry> = {};
       if (panel === 'timeline') {
+        // 画像を IDB に保存する前にグループ有無を確認する。
+        // 先に putImage すると、ここで return した場合に参照されない孤児 blob が IDB に残る
         const groups = useStore.getState().timelineGroups;
         if (groups.length === 0) {
           addToast('先にメモグループを追加してください', 'error');
-          return;
+          return false;
         }
         extra.timelineGroupId = groups[0].id;
         // タイムラインでは type: 'timeline' にして TimelineEntry で表示（時刻は不明扱い）
         extra.type = 'timeline';
       }
+      const resized = await resizeImage(blob);
+      const blobKey = nanoid();
+      await putImage(blobKey, resized);
       addEntry({
         content: '',
         panel,
@@ -41,18 +43,40 @@ export function useImageDrop(panel: PanelId) {
         imageBlobKey: blobKey,
         ...extra,
       });
-      addToast('画像を追加しました');
+      return true;
     },
     [addEntry, addToast, panel],
   );
 
+  /**
+   * ファイル群から画像ファイルだけを順次すべて追加する（複数選択・複数ドロップ対応）。
+   * 非画像ファイルは無視する。成功件数に応じてトーストを1回だけ出す。
+   */
+  const addImageFiles = useCallback(
+    async (files: FileList | null) => {
+      if (!files) return;
+      const images = Array.from(files).filter((f) => f.type.startsWith('image/'));
+      if (images.length === 0) return;
+      let added = 0;
+      for (const file of images) {
+        // 失敗（タイムラインのグループ未作成など）は以降も同条件で失敗するため打ち切る
+        const ok = await addImage(file);
+        if (!ok) break;
+        added += 1;
+      }
+      if (added > 0) {
+        addToast(added === 1 ? '画像を追加しました' : `画像を ${added} 件追加しました`);
+      }
+    },
+    [addImage, addToast],
+  );
+
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file && file.type.startsWith('image/')) addImage(file);
+      void addImageFiles(e.target.files);
       e.target.value = '';
     },
-    [addImage],
+    [addImageFiles],
   );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -63,7 +87,9 @@ export function useImageDrop(panel: PanelId) {
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    dragCounterRef.current--;
+    // drop 後に後追いの dragleave が発火してもカウンタが負に陥らないようガードする
+    // （負になると次のドラッグで isDragOver が解除されずオーバーレイが張り付く）
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
     if (dragCounterRef.current === 0) setIsDragOver(false);
   }, []);
 
@@ -76,10 +102,9 @@ export function useImageDrop(panel: PanelId) {
       e.preventDefault();
       dragCounterRef.current = 0;
       setIsDragOver(false);
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('image/')) addImage(file);
+      void addImageFiles(e.dataTransfer.files);
     },
-    [addImage],
+    [addImageFiles],
   );
 
   const openFilePicker = useCallback(() => {

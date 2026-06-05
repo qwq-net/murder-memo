@@ -2,6 +2,7 @@ import { temporal } from 'zundo';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
+import { groupsEqualIgnoringCollapse } from '@/lib/historyEquality';
 import { getEntriesBySession } from '@/lib/idb';
 import type { CharactersSlice } from '@/store/slices/characters';
 import { createCharactersSlice } from '@/store/slices/characters';
@@ -65,12 +66,14 @@ export const useStore = create<StoreState>()(
         relations: state.relations,
       }),
       limit: 50,
-      // データ配列の参照が同じなら変更なしと判定（UI 変更で履歴が積まれるのを防止）
+      // データ配列の参照が同じなら変更なしと判定（UI 変更で履歴が積まれるのを防止）。
+      // グループは折りたたみトグル（collapsed）だけの変化を Undo 対象にしないため、
+      // collapsed を無視した比較を使う。
       equality: (past, current) =>
         past.entries === current.entries &&
         past.characters === current.characters &&
-        past.timelineGroups === current.timelineGroups &&
-        past.memoGroups === current.memoGroups &&
+        groupsEqualIgnoringCollapse(past.timelineGroups, current.timelineGroups) &&
+        groupsEqualIgnoringCollapse(past.memoGroups, current.memoGroups) &&
         past.deductions === current.deductions &&
         past.relations === current.relations,
       // テキスト入力を 1 操作にまとめるためのデバウンス

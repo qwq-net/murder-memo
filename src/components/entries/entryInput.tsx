@@ -75,6 +75,12 @@ export function EntryInput({ panel }: EntryInputProps) {
         setTextError(true);
         return;
       }
+      // 不正な時刻（範囲外の "25:00" 等）は保存しない。
+      // これを通すと eventTime は入るが eventTimeSortKey が undefined になり整合が崩れる
+      if (timeTrimmed && parseEventTime(timeTrimmed) === undefined) {
+        timeInput.setTimeError(true);
+        return;
+      }
       if (!effectiveGroupId) return;
     } else {
       if (!text) return;

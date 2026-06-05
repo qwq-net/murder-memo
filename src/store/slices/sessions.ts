@@ -226,6 +226,10 @@ export const createSessionsSlice = (
         relations: [],
         linkKeywords: [],
       }));
+
+      // 削除済みキャラを指すフィルターが残らないようクリアする
+      // （同一セッションに留まるため switchSession の subscribe は走らない）
+      get().clearAllCharacterFilters();
     },
   };
 };

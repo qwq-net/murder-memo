@@ -7,20 +7,36 @@
 
 const mockDeleteCharacter = vi.fn().mockResolvedValue(undefined);
 const mockDeleteRelation = vi.fn().mockResolvedValue(undefined);
+const mockDeleteDeduction = vi.fn().mockResolvedValue(undefined);
 const mockPutCharacter = vi.fn().mockResolvedValue(undefined);
+const mockPutEntry = vi.fn().mockResolvedValue(undefined);
 const mockBulkPutCharacters = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/lib/idb', () => ({
   deleteCharacter: (...args: unknown[]) => mockDeleteCharacter(...args),
   deleteRelation: (...args: unknown[]) => mockDeleteRelation(...args),
+  deleteDeduction: (...args: unknown[]) => mockDeleteDeduction(...args),
   putCharacter: (...args: unknown[]) => mockPutCharacter(...args),
+  putEntry: (...args: unknown[]) => mockPutEntry(...args),
   bulkPutCharacters: (...args: unknown[]) => mockBulkPutCharacters(...args),
   getCharactersBySession: vi.fn().mockResolvedValue([]),
   getEntriesBySession: vi.fn().mockResolvedValue([]),
 }));
 
+import type { CharacterDeduction } from '@/types/memo';
 import { useStore } from '@/store/index';
-import { makeCharacter, makeRelation } from './helpers';
+import { makeCharacter, makeEntry, makeRelation } from './helpers';
+
+function makeDeduction(overrides: Partial<CharacterDeduction> & { characterId: string }) {
+  return {
+    id: `ded-${overrides.characterId}`,
+    sessionId: 'session-test',
+    suspicionLevel: 0,
+    memo: '',
+    updatedAt: 0,
+    ...overrides,
+  } satisfies CharacterDeduction;
+}
 
 describe('charactersSlice', () => {
   beforeEach(() => {
@@ -29,6 +45,8 @@ describe('charactersSlice', () => {
       activeSessionId: 'session-test',
       characters: [],
       relations: [],
+      deductions: [],
+      entries: [],
     });
   });
 
@@ -132,6 +150,65 @@ describe('charactersSlice', () => {
 
       expect(useStore.getState().relations).toEqual([bobCarolRel]);
       expect(mockDeleteRelation).not.toHaveBeenCalled();
+    });
+
+    // 孤児参照のクリーンアップ（推理メモ・エントリのキャラクタータグ）
+    it('削除対象キャラの推理メモ（deduction）も削除される', async () => {
+      const alice = makeCharacter({ id: 'alice' });
+      useStore.setState({
+        characters: [alice],
+        deductions: [makeDeduction({ characterId: 'alice', suspicionLevel: 3 })],
+      });
+
+      await useStore.getState().removeCharacter('alice');
+
+      expect(useStore.getState().deductions).toEqual([]);
+      expect(mockDeleteDeduction).toHaveBeenCalledWith('ded-alice');
+    });
+
+    it('他キャラの推理メモは残し、削除対象の deduction だけ消す', async () => {
+      const alice = makeCharacter({ id: 'alice' });
+      const bob = makeCharacter({ id: 'bob' });
+      useStore.setState({
+        characters: [alice, bob],
+        deductions: [
+          makeDeduction({ characterId: 'alice' }),
+          makeDeduction({ characterId: 'bob' }),
+        ],
+      });
+
+      await useStore.getState().removeCharacter('alice');
+
+      expect(useStore.getState().deductions.map((d) => d.characterId)).toEqual(['bob']);
+    });
+
+    it('エントリの characterTags から削除対象キャラ ID が除去される', async () => {
+      const alice = makeCharacter({ id: 'alice' });
+      const bob = makeCharacter({ id: 'bob' });
+      const entry = makeEntry({ id: 'e1', characterTags: ['alice', 'bob'] });
+      useStore.setState({
+        characters: [alice, bob],
+        entries: [entry],
+      });
+
+      await useStore.getState().removeCharacter('alice');
+
+      expect(useStore.getState().entries[0].characterTags).toEqual(['bob']);
+      expect(mockPutEntry).toHaveBeenCalled();
+    });
+
+    it('characterTags に削除対象を含まないエントリは putEntry されない', async () => {
+      const alice = makeCharacter({ id: 'alice' });
+      const entry = makeEntry({ id: 'e1', characterTags: ['bob'] });
+      useStore.setState({
+        characters: [alice],
+        entries: [entry],
+      });
+
+      await useStore.getState().removeCharacter('alice');
+
+      expect(useStore.getState().entries[0].characterTags).toEqual(['bob']);
+      expect(mockPutEntry).not.toHaveBeenCalled();
     });
   });
 });
