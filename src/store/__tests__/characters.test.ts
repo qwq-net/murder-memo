@@ -210,5 +210,20 @@ describe('charactersSlice', () => {
       expect(useStore.getState().entries[0].characterTags).toEqual(['bob']);
       expect(mockPutEntry).not.toHaveBeenCalled();
     });
+
+    it('削除キャラが全パネルのキャラクターフィルターから除去される', async () => {
+      const alice = makeCharacter({ id: 'alice' });
+      useStore.setState({
+        characters: [alice],
+        characterFilter: { free: ['alice'], personal: ['alice', 'bob'], timeline: [] },
+      });
+
+      await useStore.getState().removeCharacter('alice');
+
+      const filter = useStore.getState().characterFilter;
+      expect(filter.free).toEqual([]);
+      expect(filter.personal).toEqual(['bob']);
+      expect(filter.timeline).toEqual([]);
+    });
   });
 });

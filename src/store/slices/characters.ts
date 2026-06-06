@@ -34,6 +34,12 @@ export const createCharactersSlice = (
     set(() => ({ characters: chars }));
   },
 
+  /**
+   * 新しいキャラクターを作成して末尾に追加する。
+   * role / showInEntries の既定は pl / true。sortOrder は既存の最大+1。id は自動採番。
+   * activeSessionId が無ければ throw する（呼び手はアクティブセッション前提で呼ぶこと）。
+   * IDB へ保存し、生成したキャラクターを返す。
+   */
   addCharacter: async (partial) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) throw new Error('No active session');
@@ -60,6 +66,19 @@ export const createCharactersSlice = (
     set((s) => ({ characters: s.characters.map((c) => (c.id === id ? updated : c)) }));
   },
 
+  /**
+   * キャラクターを削除し、そのキャラを参照する周辺データも連動して掃除する。
+   *
+   * 連動削除（ダングリング参照を残さない）:
+   * - 相関図の関係線（from / to のいずれかが当該キャラ）
+   * - 当該キャラの推理メモ（deduction）
+   * - 全エントリの characterTags から当該 ID を除去
+   * - 全パネルのキャラクターフィルターから当該 ID を除去（削除済みキャラで絞り込んだまま
+   *   バーから解除できずパネルが空白化するのを防ぐ）
+   *
+   * 注意: 単一トランザクションではないため、途中の IDB エラーで一部だけ消える可能性がある。
+   * 該当が無いキャラの削除でも安全（周辺データの掃除は no-op になる）。
+   */
   removeCharacter: async (id) => {
     await deleteCharacter(id);
     const { relations, removeRelation, removeDeduction, entries, updateEntry } = get();
@@ -77,6 +96,8 @@ export const createCharactersSlice = (
         characterTags: entry.characterTags.filter((t) => t !== id),
       });
     }
+    // 全パネルのキャラクターフィルターからも除去（残ると解除不能のまま絞り込みが効き続ける）
+    get().removeCharacterFromFilters(id);
     set((s) => ({ characters: s.characters.filter((c) => c.id !== id) }));
   },
 

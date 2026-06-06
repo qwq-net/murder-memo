@@ -61,6 +61,11 @@ export const createTimelineGroupsSlice = (
     }));
   },
 
+  /**
+   * タイムライングループを削除する。所属エントリ（timelineGroupId 一致）も併せて削除する。
+   * （メモグループの removeMemoGroup がエントリを未分類として残すのと対照的）。
+   * 各エントリは deleteEntry 経由で消すため、画像エントリの blob も連動削除される。
+   */
   removeTimelineGroup: async (id) => {
     // グループに所属するエントリも削除
     const entries = get().entries.filter((e) => e.timelineGroupId === id);
@@ -83,6 +88,11 @@ export const createTimelineGroupsSlice = (
     set(() => ({ timelineGroups: updated }));
   },
 
+  /**
+   * タイムライングループの折りたたみ状態を反転する（同期。戻り値なし）。
+   * 永続化は await せず投げっぱなしにする（UI 即時反映優先。失敗はログのみ）。
+   * collapsed は UI 寄り状態として Undo 履歴の対象外（historyEquality で除外）。
+   */
   toggleTimelineGroupCollapse: (id) => {
     const group = get().timelineGroups.find((g) => g.id === id);
     if (!group) return;

@@ -14,7 +14,7 @@ function buildCharMap(characters: Character[]): Map<string, string> {
 /**
  * エントリ1件を Markdown のリスト行 `- ...` に変換する。
  * - タイムラインのエントリは先頭に時刻（未設定は "??:??"）を付ける
- * - 画像エントリはキャプションのみ（無ければ "[画像]"）。本文の改行は " / " に畳む
+ * - 画像エントリは "[画像] キャプション"（キャプション無しは "[画像]"）。本文の改行は " / " に畳む
  * - 本文が空なら "（空）"。キャラクタータグがあれば末尾に `[名前, ...]`（charMap に無い ID は除外）
  */
 function formatEntry(entry: MemoEntry, charMap: Map<string, string>): string {

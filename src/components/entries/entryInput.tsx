@@ -6,7 +6,7 @@ import { useImagePicker } from '@/components/layout/imagePickerContext';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useTimeInput } from '@/hooks/useTimeInput';
-import { parseEventTime } from '@/lib/timeParser';
+import { resolveEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 
@@ -67,17 +67,18 @@ export function EntryInput({ panel }: EntryInputProps) {
     if (submittingRef.current) return;
 
     const text = value.trim();
-    const timeTrimmed = timeInput.getCompleted();
+    // 時刻は resolveEventTime に集約（eventTime と eventTimeSortKey の整合を単一経路で保証）
+    const timeRaw = timeInput.timeValue.trim();
+    const time = resolveEventTime(timeInput.timeValue);
 
     if (isTimeline) {
-      if (!text && !timeTrimmed) return;
-      if (timeTrimmed && !text) {
+      if (!text && !timeRaw) return;
+      if (timeRaw && !text) {
         setTextError(true);
         return;
       }
-      // 不正な時刻（範囲外の "25:00" 等）は保存しない。
-      // これを通すと eventTime は入るが eventTimeSortKey が undefined になり整合が崩れる
-      if (timeTrimmed && parseEventTime(timeTrimmed) === undefined) {
+      // 不正な時刻（範囲外の "25:00" 等）は保存しない（eventTime/eventTimeSortKey の整合を保つ）
+      if (!time.valid) {
         timeInput.setTimeError(true);
         return;
       }
@@ -88,7 +89,6 @@ export function EntryInput({ panel }: EntryInputProps) {
 
     submittingRef.current = true;
     try {
-      const sortKey = timeTrimmed ? parseEventTime(timeTrimmed) : undefined;
       const defaultType = isTimeline ? ('timeline' as const) : ('text' as const);
       const memoGroupId = isMemoPanel && effectiveGroupId ? effectiveGroupId : undefined;
 
@@ -96,11 +96,11 @@ export function EntryInput({ panel }: EntryInputProps) {
         content: text,
         panel,
         type: defaultType,
-        ...(isTimeline
+        ...(isTimeline && time.valid
           ? {
               timelineGroupId: effectiveGroupId,
-              eventTime: timeTrimmed || undefined,
-              eventTimeSortKey: sortKey,
+              eventTime: time.eventTime,
+              eventTimeSortKey: time.eventTimeSortKey,
             }
           : {}),
         ...(memoGroupId ? { groupId: memoGroupId } : {}),

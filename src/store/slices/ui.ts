@@ -56,6 +56,8 @@ export interface UiSlice {
   toggleCharacterFilter: (panel: PanelId, characterId: string) => void;
   clearCharacterFilter: (panel: PanelId) => void;
   clearAllCharacterFilters: () => void;
+  /** 指定キャラを全パネルのフィルターから除去する（キャラ削除時のダングリング参照クリーンアップ用） */
+  removeCharacterFromFilters: (characterId: string) => void;
   addToast: (message: string, type?: ToastType) => void;
   removeToast: (id: string) => void;
   setWelcomeOpen: (open: boolean) => void;
@@ -125,6 +127,16 @@ export const createUiSlice = (
     set((s) => ({ characterFilter: { ...s.characterFilter, [panel]: [] } })),
 
   clearAllCharacterFilters: () => set(() => ({ characterFilter: { ...EMPTY_FILTER } })),
+
+  removeCharacterFromFilters: (characterId) =>
+    set((s) => ({
+      characterFilter: Object.fromEntries(
+        (Object.entries(s.characterFilter) as [PanelId, string[]][]).map(([panel, ids]) => [
+          panel,
+          ids.filter((id) => id !== characterId),
+        ]),
+      ) as Record<PanelId, string[]>,
+    })),
 
   addToast: (message, type = 'info') =>
     set((s) => ({

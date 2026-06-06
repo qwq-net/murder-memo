@@ -3,8 +3,10 @@ import { useCallback } from 'react';
 import { swapAdjacent } from '@/lib/arrayUtils';
 
 /**
- * グループの隣接入れ替えを共通化するフック。
- * MemoPanel と TimelinePanel で利用。
+ * グループの隣接入れ替えを共通化するフック。MemoPanel と TimelinePanel で利用。
+ *
+ * 返り値は (index, direction) => void。direction は -1 で前（上）、+1 で後ろ（下）の隣と入れ替える。
+ * 入れ替え後の id 順を reorder コールバックに渡す。端で範囲外になる場合は reorder を呼ばない（no-op）。
  */
 export function useGroupSwap<T extends { id: string }>(
   groups: T[],

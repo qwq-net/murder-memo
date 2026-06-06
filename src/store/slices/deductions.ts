@@ -26,6 +26,14 @@ export const createDeductionsSlice = (
     set(() => ({ deductions }));
   },
 
+  /**
+   * キャラクター単位の推理メモを作成または更新する（upsert）。
+   *
+   * - 同 characterId の既存があれば patch をマージし updatedAt を現在時刻に更新
+   * - 無ければ suspicionLevel:0 / memo:'' を既定値として新規作成（id は自動採番）
+   * - activeSessionId が無ければ何もしない（no-op）
+   * - IDB へ保存し、メモリ state も同期更新する
+   */
   upsertDeduction: async (characterId, patch) => {
     const { activeSessionId, deductions } = get();
     if (!activeSessionId) return;
@@ -53,6 +61,11 @@ export const createDeductionsSlice = (
     }
   },
 
+  /**
+   * 指定キャラクターの推理メモを削除する。
+   * 引数は deduction の id ではなく characterId（推理メモはキャラ1人につき最大1件のため）。
+   * 該当が無ければ何もしない。キャラクター削除時のクリーンアップ（removeCharacter）からも呼ばれる。
+   */
   removeDeduction: async (characterId) => {
     const { deductions } = get();
     const target = deductions.find((d) => d.characterId === characterId);

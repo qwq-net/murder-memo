@@ -63,6 +63,11 @@ export const createMemoGroupsSlice = (
     }));
   },
 
+  /**
+   * メモグループを削除する。所属エントリは削除せず、groupId をクリアして「未分類」へ移す。
+   * （タイムライングループの removeTimelineGroup が所属エントリごと削除するのと対照的）。
+   * activeSessionId が無ければ no-op。
+   */
   removeMemoGroup: async (id) => {
     // グループを削除時、所属エントリのgroupIdをクリア（エントリは残す → 未分類へ）
     const sessionId = get().activeSessionId;
@@ -87,6 +92,11 @@ export const createMemoGroupsSlice = (
     set(() => ({ memoGroups: updated }));
   },
 
+  /**
+   * メモグループの折りたたみ状態を反転する（同期。戻り値なし）。
+   * 永続化は await せず投げっぱなしにする（UI 即時反映優先。失敗はログのみ）。
+   * collapsed は UI 寄り状態として Undo 履歴の対象外（historyEquality で除外）。
+   */
   toggleMemoGroupCollapse: (id) => {
     const group = get().memoGroups.find((g) => g.id === id);
     if (!group) return;

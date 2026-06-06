@@ -4,7 +4,14 @@ import { syncStateToIdb } from '@/lib/undoSync';
 import type { StoreState } from '@/store';
 import { useStore } from '@/store';
 
-/** undo/redo で何が変わったかを検出し、説明文を返す */
+/**
+ * undo/redo の前後 state を比較し、トースト用の変更説明文を返す。
+ *
+ * 配列の参照比較で差分を判定する（要素数の増減があれば「N件追加/削除」、
+ * 数が同じで参照だけ変われば「編集」「変更」のような汎用ラベル）。
+ * このため並び替えやパネル移動など件数不変の変更はすべて「メモ編集」とまとめて表示される。
+ * 該当する変更が一つも無ければ "変更" を返す（空文字は返さない）。
+ */
 function describeChange(before: StoreState, after: StoreState): string {
   const diffs: string[] = [];
 
@@ -29,8 +36,13 @@ function describeChange(before: StoreState, after: StoreState): string {
 }
 
 /**
- * Ctrl+Z / Ctrl+Shift+Z (Mac: Cmd) でエントリ等のデータ変更を Undo/Redo するフック。
- * テキスト入力中（input / textarea にフォーカス中）は発火しない。
+ * Ctrl+Z / Ctrl+Shift+Z（Mac: Cmd、Redo は Ctrl+Y も可）でデータ変更を Undo/Redo するフック。
+ *
+ * - テキスト入力中（input / textarea フォーカス中、contentEditable）は発火しない
+ * - 巻き戻せる/やり直せる履歴が無ければ何もしない
+ * - Undo/Redo 後はインメモリ状態を IndexedDB に同期し（syncStateToIdb、失敗はログのみ）、
+ *   変更内容をトーストで通知する
+ * - document に keydown リスナーを張り、アンマウントで解除する（戻り値なし）
  */
 export function useUndoRedo() {
   useEffect(() => {

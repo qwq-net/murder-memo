@@ -146,4 +146,56 @@ describe('entriesSlice', () => {
       expect(useStore.getState().entries[0].panel).toBe('timeline');
     });
   });
+
+  describe('updateEntry の楽観更新ロールバック', () => {
+    it('成功時は更新が反映される', async () => {
+      useStore.setState({ entries: [makeEntry({ id: 'e1', content: '元の内容' })] });
+
+      await useStore.getState().updateEntry('e1', { content: '新しい内容' });
+
+      expect(useStore.getState().entries.find((e) => e.id === 'e1')?.content).toBe('新しい内容');
+    });
+
+    it('putEntry が失敗したら内容を元に戻す', async () => {
+      useStore.setState({ entries: [makeEntry({ id: 'e1', content: '元の内容' })] });
+      mockPutEntry.mockRejectedValueOnce(new Error('IDB error'));
+
+      await useStore.getState().updateEntry('e1', { content: '新しい内容' });
+
+      // ロールバックで元の内容に戻る
+      expect(useStore.getState().entries.find((e) => e.id === 'e1')?.content).toBe('元の内容');
+    });
+  });
+
+  describe('reorderEntries の楽観更新ロールバック', () => {
+    it('成功時は orderedIds 順に sortOrder が再採番される', async () => {
+      useStore.setState({
+        entries: [
+          makeEntry({ id: 'e1', panel: 'free', sortOrder: 0 }),
+          makeEntry({ id: 'e2', panel: 'free', sortOrder: 1 }),
+        ],
+      });
+
+      await useStore.getState().reorderEntries('free', ['e2', 'e1']);
+
+      expect(useStore.getState().entries.find((e) => e.id === 'e2')?.sortOrder).toBe(0);
+      expect(useStore.getState().entries.find((e) => e.id === 'e1')?.sortOrder).toBe(1);
+    });
+
+    it('bulkPutEntries が失敗したら並び順を元に戻す', async () => {
+      useStore.setState({
+        entries: [
+          makeEntry({ id: 'e1', panel: 'free', sortOrder: 0 }),
+          makeEntry({ id: 'e2', panel: 'free', sortOrder: 1 }),
+        ],
+      });
+      mockBulkPutEntries.mockRejectedValueOnce(new Error('IDB error'));
+
+      await useStore.getState().reorderEntries('free', ['e2', 'e1']);
+
+      // ロールバックで元の sortOrder に戻る
+      expect(useStore.getState().entries.find((e) => e.id === 'e1')?.sortOrder).toBe(0);
+      expect(useStore.getState().entries.find((e) => e.id === 'e2')?.sortOrder).toBe(1);
+    });
+  });
 });

@@ -211,9 +211,15 @@ export async function deleteSession(id: string): Promise<void> {
 /**
  * セッション配下のデータを単一トランザクションで全削除する。
  * deleteSession との違いは sessions レコード本体を残す点（セッション枠は維持し中身だけ空にする）。
- * エントリが参照する images も併せて削除し、途中失敗時はトランザクションごとロールバックされる。
+ * 途中失敗時はトランザクションごとロールバックされる。
+ *
+ * keepImages=false（既定）: エントリが参照する画像 blob も併せて削除する（clearCurrentSession 用の完全クリア）。
+ * keepImages=true: 画像 blob は削除せず温存する（Undo/Redo 同期 syncStateToIdb 用）。
+ *   Undo 同期は entries を imageBlobKey ごと書き戻すが、画像 blob 本体はメモリに無く再書き込みできない。
+ *   ここで消すと書き戻した imageBlobKey が参照先を失い、画像が全滅する。よって温存する
+ *   （巻き戻しで参照されなくなった blob は孤児として残るが、セッション削除時にまとめて掃除される）。
  */
-export async function clearSessionData(id: string): Promise<void> {
+export async function clearSessionData(id: string, keepImages = false): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
     [
@@ -232,7 +238,7 @@ export async function clearSessionData(id: string): Promise<void> {
   const entries = await tx.objectStore('entries').index('by-session').getAll(id);
   for (const entry of entries) {
     await tx.objectStore('entries').delete(entry.id);
-    if (entry.imageBlobKey) {
+    if (!keepImages && entry.imageBlobKey) {
       await tx.objectStore('images').delete(entry.imageBlobKey);
     }
   }

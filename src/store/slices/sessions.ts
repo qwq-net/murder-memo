@@ -50,6 +50,15 @@ export const createSessionsSlice = (
     sessions: [],
     activeSessionId: null,
 
+    /**
+     * アプリ起動時のセッション初期化。全スライスの初期データを IDB から読み込んで一括投入する。
+     *
+     * - デモセッションが未作成 or バージョン不一致なら作り直す（古いものは関連データごと削除）
+     * - 直前に開いていたセッション（localStorage）を復元。無ければ最古のセッションにフォールバック
+     * - 全 IO 完了後に一度だけ set するため、途中失敗でストアが中途半端な状態にならない
+     * - 多重呼び出し（StrictMode 等）は initPromise のキャッシュで1回に集約する。
+     *   失敗時は initPromise をクリアして再試行可能にし、エラートーストを出して UI は操作可能にする
+     */
     initSessions: () => {
       if (initPromise) return initPromise;
       initPromise = (async () => {
@@ -177,6 +186,16 @@ export const createSessionsSlice = (
       set((s) => ({ sessions: s.sessions.map((s2) => (s2.id === id ? updated : s2)) }));
     },
 
+    /**
+     * セッションと、その配下の全データ（エントリ・画像等）を IDB から削除する。
+     *
+     * - デモセッションは削除不可（no-op）
+     * - 削除対象が現在アクティブなら、残りの先頭セッションへアクティブを移す（全滅時は null）
+     * - localStorage の「最終開封セッション」が対象なら、次のアクティブ ID に張り替え or 除去する
+     *
+     * 注意: このアクション自体は Undo 履歴をクリアしないため、UI 側で pause/clear/resume を
+     * 行わずに直接呼ぶと、削除済みデータが Undo で復活しうる（現状の呼び出しは UI 側で防御済み）。
+     */
     removeSession: async (id) => {
       // デモセッションは削除不可
       const session = get().sessions.find((s) => s.id === id);
@@ -199,6 +218,15 @@ export const createSessionsSlice = (
       });
     },
 
+    /**
+     * 現在のセッションの中身を空にする（セッション枠自体は残す）。
+     *
+     * - デモセッション、またはアクティブセッションが無ければ no-op
+     * - IDB は clearSessionData で配下データを全削除（link-keywords / 画像含む）、session レコードは残す
+     * - メモリ上の全データスライス（linkKeywords 含む）を空にし、updatedAt を更新する
+     * - 削除済みキャラを指すキャラクターフィルターが残らないようクリアする
+     *   （同一セッションに留まるため switchSession の subscribe は走らない）
+     */
     clearCurrentSession: async () => {
       const { activeSessionId, sessions } = get();
       if (!activeSessionId) return;

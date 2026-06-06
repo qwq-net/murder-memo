@@ -7,9 +7,13 @@ import { useEffect, useRef, useState } from 'react';
  * Guide ページのサイド目次ハイライト用。スクロールに応じて active な section を切り替える。
  *
  * @param ids 監視対象の要素 ID リスト（ドキュメント順に並んでいる前提）
- * @returns 現在 active な ID。まだ要素が見つからない / どれも可視でない場合は null
+ * @returns 現在 active な ID。初期状態（まだどれも可視になっていない）では null。
  *
- * 注意: SSG 環境では実行されない（useEffect 内で `document` を参照するため、初期値は null）。
+ * 挙動の注意:
+ * - 一度 active が決まると、全セクションが判定域外になっても null には戻さず直前の値を保持する
+ *   （スクロールで見出しハイライトが消えないようにするため）
+ * - SSG 環境では実行されない（useEffect 内で `document` を参照するため、初期値は null のまま）
+ * - ids は呼び手側で安定参照にしないと、配列が毎レンダー新規生成されるたびに observer が再構築される
  */
 export function useActiveSection(ids: string[]): string | null {
   const [activeId, setActiveId] = useState<string | null>(null);

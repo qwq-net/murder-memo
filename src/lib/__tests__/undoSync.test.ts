@@ -49,7 +49,15 @@ describe('syncStateToIdb', () => {
 
   it('最初に clearSessionData を呼ぶ', async () => {
     await syncStateToIdb(makeState());
-    expect(mockClearSessionData).toHaveBeenCalledWith('session-1');
+    expect(mockClearSessionData).toHaveBeenCalledWith('session-1', true);
+  });
+
+  // 回帰防止: 画像 blob は書き戻せないため keepImages=true で温存させる。
+  // false だと clearSessionData が画像を消し、Undo/Redo 一回で全画像が失われる
+  it('clearSessionData を keepImages=true で呼ぶ（画像消失の回帰防止）', async () => {
+    await syncStateToIdb(makeState());
+    expect(mockClearSessionData).toHaveBeenCalledWith('session-1', true);
+    expect(mockClearSessionData).not.toHaveBeenCalledWith('session-1');
   });
 
   it('全ストアの bulk put を呼ぶ', async () => {

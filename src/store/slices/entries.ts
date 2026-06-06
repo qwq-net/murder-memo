@@ -29,6 +29,14 @@ export const createEntriesSlice = (
 
   loadEntries: (entries) => set(() => ({ entries })),
 
+  /**
+   * 新しいエントリを作成して末尾に追加する。
+   * type の既定は 'text'、content の既定は ''、sortOrder は既存の最大+1。id / createdAt /
+   * updatedAt は自動採番。activeSessionId が無ければ throw する。
+   *
+   * 状態を先に同期更新してから IDB へ保存する（後続の addEntry が正しい maxOrder を読めるように）。
+   * このため IDB 保存失敗時はメモリに残ったまま（リロードで消える）になる点に注意。
+   */
   addEntry: async (partial) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) throw new Error('No active session');
@@ -52,23 +60,35 @@ export const createEntriesSlice = (
     return entry;
   },
 
+  /**
+   * 指定エントリを patch でマージ更新し、updatedAt を現在時刻にする。
+   * activeSessionId が無い・対象が存在しない場合は何もしない（no-op）。
+   * 楽観更新（先に state を反映）し、IDB 保存に失敗したら元の内容へロールバックしてエラートーストを出す。
+   */
   updateEntry: async (id, patch) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) return;
-    const entry = get().entries.find((e) => e.id === id);
+    const prev = get().entries;
+    const entry = prev.find((e) => e.id === id);
     if (!entry) return;
     const updated = { ...entry, ...patch, updatedAt: Date.now() };
     set((s) => ({ entries: s.entries.map((e) => (e.id === id ? updated : e)) }));
     try {
       await putEntry(updated, sessionId);
     } catch (err) {
-      // 保存失敗時は元の内容へ戻し、メモリと IDB の乖離（リロードで変更消失）を防ぐ
-      set((s) => ({ entries: s.entries.map((e) => (e.id === id ? entry : e)) }));
+      // 保存失敗時は元の配列参照ごと復元する（reorderEntries と同方式。
+      // メモリと IDB の乖離を防ぎ、参照比較の Undo 履歴も汚さない）
+      set(() => ({ entries: prev }));
       get().addToast('メモの保存に失敗しました', 'error');
       console.error('updateEntry の保存に失敗しました', err);
     }
   },
 
+  /**
+   * 指定エントリを削除する。
+   * 画像エントリの場合は参照している画像 blob（imageBlobKey）も IDB から削除する。
+   * 対象が無ければ delete は no-op。IDB 削除後にメモリ state から除去する。
+   */
   deleteEntry: async (id) => {
     const entry = get().entries.find((e) => e.id === id);
     if (entry?.imageBlobKey) await deleteImage(entry.imageBlobKey);
@@ -78,6 +98,12 @@ export const createEntriesSlice = (
     }));
   },
 
+  /**
+   * エントリを別パネルへ移動する。
+   * タイムライン以外へ移す場合は、タイムライン固有の情報（timelineGroupId / eventTime /
+   * eventTimeSortKey）をクリアする（移動先で無効なデータが残らないように）。
+   * activeSessionId が無い・対象が無ければ no-op。
+   */
   moveEntryToPanel: async (id, panel) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) return;
@@ -118,6 +144,14 @@ export const createEntriesSlice = (
     set((s) => ({ entries: s.entries.map((e) => (e.id === entryId ? updated : e)) }));
   },
 
+  /**
+   * 指定パネル内のエントリを orderedIds の並びに再採番する（sortOrder = orderedIds 内の位置）。
+   *
+   * - orderedIds に含まれない、または panel が一致しないエントリは対象外（変更しない）
+   * - sortOrder が変わったエントリだけを IDB へ書き込む
+   * - 楽観更新（先に state 反映でDnDアニメを滑らかに）し、保存失敗時は並び替え前へロールバックする
+   * - 呼び手はそのパネルの全エントリ ID を渡す前提（フィルタ表示中の部分集合を渡すと sortOrder が衝突しうる）
+   */
   reorderEntries: async (panel, orderedIds) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) return;

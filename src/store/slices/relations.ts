@@ -29,6 +29,10 @@ export const createRelationsSlice = (
     set(() => ({ relations: relations.sort((a, b) => a.sortOrder - b.sortOrder) }));
   },
 
+  /**
+   * 相関図の関係線を追加する。sortOrder は既存の最大+1、id / sessionId は自動付与。
+   * activeSessionId が無ければ throw する。IDB へ保存し、生成した関係を返す。
+   */
   addRelation: async (partial) => {
     const { activeSessionId, relations } = get();
     if (!activeSessionId) throw new Error('No active session');

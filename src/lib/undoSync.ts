@@ -18,19 +18,22 @@ import type { StoreState } from '@/store/index';
  * Undo/Redo 直後のインメモリ状態を、対象セッションの IndexedDB へ完全リセット方式で書き戻す。
  *
  * - activeSessionId が無ければ何もしない（no-op）
- * - clearSessionData で対象セッションの全ストアを一旦空にしてから現在の state を書き戻す
- *   （差分更新ではなく総入れ替え）
+ * - clearSessionData(sid, keepImages=true) で対象セッションの全ストアを一旦空にしてから
+ *   現在の state を書き戻す（差分更新ではなく総入れ替え）
  * - 書き戻す対象: entries / characters / timelineGroups / memoGroups / deductions / relations
  *   （= store の TrackedState。Undo/Redo で巻き戻る範囲そのもの）に加えて linkKeywords も書き戻す。
  *   linkKeywords は TrackedState 外で Undo/Redo の巻き戻し対象ではないが、clearSessionData が
  *   link-keywords ストアごと消すため、現在の state を書き戻さないと IDB 上の辞書が失われてしまう
  *   （メモリ上は残るため再読込時まで損失に気付けない）。よってここで必ず書き戻して整合を保つ。
+ * - 画像 blob は state に本体を持たず書き戻せないため、keepImages=true で clearSessionData に
+ *   消させない。これを怠ると Undo/Redo 一回でセッションの全画像が IDB から消えて全滅する。
  */
 export async function syncStateToIdb(state: StoreState): Promise<void> {
   const sid = state.activeSessionId;
   if (!sid) return;
 
-  await clearSessionData(sid);
+  // keepImages=true: 画像 blob は書き戻せないため温存する（消すと全画像が失われる）
+  await clearSessionData(sid, true);
   await Promise.all([
     bulkPutEntries(state.entries, sid),
     bulkPutCharacters(state.characters, sid),

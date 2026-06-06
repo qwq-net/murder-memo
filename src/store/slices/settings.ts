@@ -45,6 +45,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   panelOrder: ['free', 'timeline', 'personal'],
 };
 
+/**
+ * localStorage から設定を読み込む。
+ * 保存値は DEFAULT_SETTINGS に上書きマージするため、新フィールド追加時も既定値で補完される。
+ * 値が無い・JSON 解析に失敗した場合は DEFAULT_SETTINGS をそのまま返す（壊れた設定でも落ちない）。
+ */
 function readSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);

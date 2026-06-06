@@ -5,9 +5,13 @@ import { putImage } from '@/lib/idb';
 import { resizeImage } from '@/lib/imageResize';
 
 /**
- * クリップボードからの画像ペーストを検知するフック。
- * FreeMemoPanel の画像ペースト処理を分離。
- * 画像は最大 1200×1200px にリサイズしてから保存する。
+ * クリップボードからの画像ペーストを検知するフック（戻り値なし）。
+ *
+ * - document の paste を監視し、クリップボード内の画像をすべて（複数可）リサイズ（最大 1200×1200px）して
+ *   IndexedDB に保存し、保存ごとに onImagePaste(blobKey) を呼ぶ
+ * - 画像が1枚でもあれば preventDefault する（テキスト等の既定ペーストは抑止）。画像が無ければ何もしない
+ * - enabled=false の間はリスナーを張らない（既定 true）
+ * - onImagePaste は安定参照（useCallback）で渡すこと。毎レンダー新規だとリスナーが張り直される
  */
 export function useClipboardPaste(onImagePaste: (blobKey: string) => void, enabled = true) {
   const handlePaste = useCallback(
