@@ -20,7 +20,7 @@ npm run preview    # ビルドプレビュー
 
 ### 状態管理（Zustand スライス）
 
-`src/store/index.ts` に9つのスライスを結合:
+`src/store/index.ts` に10個のスライスを結合:
 
 | スライス        | 責務                                      |
 | --------------- | ----------------------------------------- |
@@ -31,10 +31,13 @@ npm run preview    # ビルドプレビュー
 | memo-groups     | 自由メモ / 個人メモのグループ管理         |
 | deductions      | 人物推理メモ（犯人投票・疑惑度）          |
 | relations       | 相関図の関係線管理                        |
+| link-keywords   | リンクキーワード辞書（`[ワード]` 自動リンク化対象） |
 | settings        | アプリ設定（パネル順、表示形式等）        |
-| ui              | モーダル表示状態、アクティブパネル        |
+| ui              | モーダル表示状態、アクティブパネル、トースト、キャラクターフィルター |
 
 セッション切替時に `subscribeWithSelector` で自動リロードされる。
+
+Undo/Redo（`zundo`）は `entries / characters / timelineGroups / memoGroups / deductions / relations` のみを履歴対象（TrackedState）にする。`linkKeywords` や `ui` 等は履歴対象外。詳細は「データ永続化」の注意を参照。
 
 ### コンポーネント階層
 
@@ -55,16 +58,19 @@ App → SelectionProvider → AppShell
 
 | フック                    | 用途                                                           |
 | ------------------------- | -------------------------------------------------------------- |
+| useActiveSection          | IntersectionObserver による現在表示中セクションの判定（ガイド目次） |
+| useAutoRegisterLinkKeywords | メモ確定時に `[ワード]` をリンク辞書へ自動登録                |
 | useAutoResizeTextarea     | textarea の高さ自動調整                                        |
-| useCaretPosition          | テキストカーソル位置の取得・復元                               |
-| useClipboardPaste         | クリップボード画像ペースト検知                                 |
+| useCaretPosition          | テキストカーソル位置の取得（絶対オフセット）・復元             |
+| useClipboardPaste         | クリップボード画像ペースト検知（複数画像対応）                 |
 | useDeleteWithConfirmation | 確認ダイアログ付き削除ロジック                                 |
 | useEntryDraft             | エントリの下書き状態管理（blur / Escape）                      |
 | useEscapeKey              | ESC キー監視                                                   |
 | useFilteredCharacters     | PL / NPC ロール別キャラクター分割                              |
 | useGroupLabelEditor       | グループラベル編集 + トースト                                  |
 | useGroupSwap              | 隣接グループ入れ替え                                           |
-| useImageBlob              | IndexedDB 画像ロード + URL 管理                                |
+| useImageBlob              | IndexedDB 画像ロード + Object URL 管理                         |
+| useImageDrop              | 画像 D&D + ファイル選択（複数画像対応・孤児 blob 防止）        |
 | useLocalStorage           | localStorage 永続化                                            |
 | useMenuContext            | メニューコンテキスト管理                                       |
 | useResponsive             | レスポンシブブレイクポイント判定                               |
@@ -139,6 +145,16 @@ SVG アイコンは `icons/index.tsx` に集約。`size` と `className` props �
   3. IndexedDB スキーマ変更時は `DB_VERSION` バンプ + upgrade 関数追加
   4. エクスポート → インポートのラウンドトリップで動作確認
 
+`importSession` は全 ID を新規採番し（元セッションと共存可）、書き込み途中で失敗したら `Promise.allSettled` 後に `deleteSession` で巻き戻す。`validateExport` は必須配列の要素の参照フィールドまで検証する。
+
+## ドメイン整合性ルール
+
+挙動を変える時は次の不変条件を壊さないこと（各所の契約コメント・テストで保証）:
+
+- **タイムライン時刻**: `eventTime` と `eventTimeSortKey` は「両方設定 or 両方 undefined」で必ず整合する。保存は `src/lib/timeParser.ts` の `resolveEventTime` に集約し、不正時刻（範囲外の `25:00` 等）は保存しない（entryInput / timelineEntry の両経路で経由）。
+- **カスケード削除**: キャラクター削除（`removeCharacter`）は関連する相関図・推理メモ・エントリの `characterTags`・キャラクターフィルターからの参照も連動して掃除する。タイムライングループ削除は所属エントリごと削除、メモグループ削除は所属エントリを未分類化（エントリは残す）。
+- **楽観更新のロールバック**: `set` を先行させる更新（`addEntry` / `updateEntry` / `reorderEntries`）は、IDB 書き込み失敗時に state を巻き戻す（参照ごと復元して Undo 履歴を汚さない）。
+
 ## パフォーマンス注意点
 
 - `useMemo` でフィルタ・ソート結果をキャッシュする（AppShell のキャラクターフィルタリング等）
@@ -149,7 +165,7 @@ SVG アイコンは `icons/index.tsx` に集約。`size` と `className` props �
 
 ## データ永続化
 
-IndexedDB（`murder-memo` データベース、スキーマバージョン 5）:
+IndexedDB（`murder-memo` データベース、スキーマバージョン 6）:
 
 | ストア          | インデックス         |
 | --------------- | -------------------- |
@@ -159,8 +175,20 @@ IndexedDB（`murder-memo` データベース、スキーマバージョン 5）:
 | memo-groups     | by-session           |
 | deductions      | by-session           |
 | relations       | by-session           |
+| link-keywords   | by-session           |
 | sessions        | —                    |
 | images          | —                    |
+
+### Undo/Redo と IDB 同期の不変条件（重要）
+
+`zundo` はインメモリ状態のみ巻き戻す。永続層への反映は `src/lib/undoSync.ts` の `syncStateToIdb` が担い、`clearSessionData` で対象セッションを空にしてから現在の state を総入れ替えで書き戻す。ここに2つの落とし穴がある:
+
+1. **per-session で IDB 保存されるが TrackedState 外のスライス**（例: `linkKeywords`）は、`clearSessionData` で消えるのに巻き戻し対象でないため、書き戻さないと Undo/Redo のたびに失われる。`syncStateToIdb` の書き戻しリストに必ず加えること。
+2. **state に本体を持たないバイナリ**（`images` の blob。state は `imageBlobKey` しか持たない）は書き戻せない。`clearSessionData(id, keepImages: true)` で温存する。怠ると Undo/Redo 一回で全画像が消える。
+
+折りたたみ状態（`collapsed`）のような UI 寄りの変更で Undo 履歴が積まれないよう、`store/index.ts` の `equality` は `src/lib/historyEquality.ts` の `groupsEqualIgnoringCollapse` で collapsed を無視して比較する。
+
+新しい per-session スライスを足すときは、上記2点と回帰テスト（`src/lib/__tests__/undoSync.test.ts`）の更新を忘れないこと。
 
 ## デプロイ
 
