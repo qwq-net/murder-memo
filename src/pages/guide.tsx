@@ -262,7 +262,7 @@ export default function GuidePage() {
             {/* ── §3 登場人物を登録する ──────────────────────────────── */}
             <Section id="characters" title="登場人物を登録する">
               <Paragraph>
-                ヘッダーの「登場人物」から、シナリオに出てくる PL / NPC を登録します。
+                ヘッダーの「登場人物設定」から、シナリオに出てくる PL / NPC を登録します。
                 登録した人物はメモにバッジで紐付けたり、相関図や人物推理メモで参照されます。
               </Paragraph>
 
@@ -279,7 +279,7 @@ export default function GuidePage() {
 
               <SubFeature title="登場人物管理画面">
                 <Paragraph>
-                  ヘッダーの「登場人物」から開く管理画面の見た目です。色丸クリックで色パレットを
+                  ヘッダーの「登場人物設定」から開く管理画面の見た目です。色丸クリックで色パレットを
                   開けます（プレビュー上の編集は保存されません）。
                 </Paragraph>
                 <PreviewFrame>
@@ -313,6 +313,13 @@ export default function GuidePage() {
                   <ActionOrderStepperPreview />
                 </PreviewFrame>
               </SubFeature>
+
+              <SubFeature title="登場人物の削除">
+                <Paragraph>
+                  登場人物を削除すると、その人物が関わる相関図の関係線・人物推理メモ・各メモに付いた
+                  バッジ（タグ）・絞り込みフィルターの選択も一緒に取り除かれます。
+                </Paragraph>
+              </SubFeature>
             </Section>
 
             {/* ── §4 3 つのパネル ─────────────────────────────────────── */}
@@ -322,6 +329,13 @@ export default function GuidePage() {
                 各パネルは独立しており、書いたメモは他のパネルに自動では引き継がれません。
                 並び順はアプリ設定から変更できます。
               </Paragraph>
+
+              <SubFeature title="パネル幅の調整（デスクトップ）">
+                <Paragraph>
+                  デスクトップではパネル間の境界をドラッグして、3 列の幅の比率を自由に変えられます。
+                  調整した幅は保持されます（モバイルはタブ切替のため対象外）。
+                </Paragraph>
+              </SubFeature>
 
               <SubFeature title="フリーメモ">
                 <Paragraph>
@@ -387,18 +401,19 @@ export default function GuidePage() {
                     {
                       key: 'Ctrl + V',
                       keyAsCode: true,
-                      value: 'クリップボードの画像をフリーメモに画像メモとして貼り付け',
+                      value: 'クリップボードの画像をフリーメモに画像メモとして貼り付け（複数枚も可）',
                     },
                     {
                       key: 'ドラッグ&ドロップ',
                       value:
-                        '画像ファイルを各パネルにドロップすると、そのパネルに画像メモとして追加',
+                        '画像ファイル（複数可）を各パネルにドロップすると、そのパネルに画像メモとして追加',
                     },
                   ]}
                 />
                 <Paragraph>
-                  メモグループが 1 つもない状態ではフリーメモ / 自分用メモの入力欄は無効化されます。
-                  先に「+ グループ」からグループを追加してください。
+                  タイムラインはグループ（タイムライングループ）が 1 つもないと入力欄が無効化されます。
+                  先に「+ グループ」から追加してください。フリーメモ / 自分用メモはグループが無くても
+                  入力でき、グループ未選択のメモは「未分類」としてまとめられます。
                 </Paragraph>
               </SubFeature>
 
@@ -504,6 +519,10 @@ export default function GuidePage() {
                   ]}
                 />
                 <Paragraph>
+                  <InlineCode>25:00</InlineCode> や <InlineCode>12:70</InlineCode>{' '}
+                  のような範囲外の時刻は保存されません（入力欄が警告表示になります）。
+                </Paragraph>
+                <Paragraph>
                   時刻欄で <InlineCode>Enter</InlineCode>{' '}
                   を押すと、本文の入力欄にフォーカスが移ります。時刻 → 本文 → 送信 の流れを
                   キーボードだけで完結できます。
@@ -544,6 +563,7 @@ export default function GuidePage() {
                 <InlineCode>Ctrl + V</InlineCode>{' '}
                 を押すと、クリップボードの画像がフリーメモに画像メモとして貼り付けられます。
                 各パネルに画像ファイルをドラッグ&ドロップしても画像メモとして追加できます。
+                クリップボード・ドラッグ&ドロップ・画像追加ボタンのいずれも、複数枚をまとめて取り込めます。
               </Paragraph>
               <Paragraph>
                 画像メモは 40×40 のサムネイルとキャプションで表示され、サムネイルをクリックすると
@@ -676,6 +696,7 @@ export default function GuidePage() {
               <SubFeature title="横断検索">
                 <Paragraph>
                   検索結果は最大 50 件まで表示され、各結果をクリックすると該当メモに飛びます。
+                  検索対象はテキスト・タイムラインのメモ本文で、画像メモのキャプションは対象外です。
                 </Paragraph>
                 <PreviewFrame>
                   <SearchOverlayPreview />
@@ -746,13 +767,15 @@ export default function GuidePage() {
                 <Paragraph>
                   マウスホイールで 0.5 倍〜3 倍までズーム、左ドラッグでパンできます。
                   右上の「リセット」ボタンで等倍 / 中央位置に戻ります。
+                  なお図（ダイアグラム）ビューはデスクトップのみで、モバイルではリスト表示になります。
                 </Paragraph>
               </SubFeature>
 
               <SubFeature title="リスト表示">
                 <Paragraph>
-                  相関図モーダルでは、関係性の一覧をリスト形式でも編集できます。 各行は from /
-                  ラベル（左に色アクセント）/ to で構成されます。
+                  相関図モーダルでは、関係性の一覧をリスト形式で追加・削除できます。 各行は from /
+                  ラベル（左に色アクセント）/ to で構成されます。 既存の関係の編集（ラベル・色・方向の変更）は
+                  できないため、変更したいときは一度削除して追加し直します。
                 </Paragraph>
                 <PreviewFrame>
                   <RelationListPreview />
@@ -842,19 +865,24 @@ export default function GuidePage() {
                   <InlineCode>Ctrl + Shift + Z</InlineCode>{' '}
                   でやり直しができます。セッションを切り替えると履歴はリセットされます。
                 </Paragraph>
+                <Paragraph>
+                  メモの入力欄にフォーカスしている間の <InlineCode>Ctrl + Z</InlineCode>{' '}
+                  は、その入力欄の文字入力の取り消しとして扱われます。メモ自体を取り消すときは、
+                  入力欄の外をクリックしてから押してください。
+                </Paragraph>
               </SubFeature>
 
               <SubFeature title="キーボードショートカット">
                 <KeyValueTable
                   rows={[
                     { key: 'Ctrl + Z', keyAsCode: true, value: '直前の操作を取り消す' },
-                    { key: 'Ctrl + Shift + Z', keyAsCode: true, value: 'やり直す' },
+                    { key: 'Ctrl + Shift + Z', keyAsCode: true, value: 'やり直す（Ctrl + Y も可）' },
                     {
                       key: 'Ctrl + V',
                       keyAsCode: true,
-                      value: 'クリップボードの画像をフリーメモに画像メモとして貼り付け',
+                      value: 'クリップボードの画像をフリーメモに画像メモとして貼り付け（複数枚も可）',
                     },
-                    { key: 'Esc', keyAsCode: true, value: '編集確定 / モーダルを閉じる' },
+                    { key: 'Esc', keyAsCode: true, value: '編集をキャンセル（変更を破棄）/ モーダルを閉じる' },
                     {
                       key: 'Enter',
                       keyAsCode: true,
@@ -876,7 +904,7 @@ export default function GuidePage() {
                       key: '言語',
                       value: '日本語のみ対応（English は未実装 / WIP）',
                     },
-                    { key: 'テーマ', value: 'auto（OS 設定追従）/ dark / light' },
+                    { key: 'テーマ', value: '自動（OS 設定追従）/ ダーク / ライト' },
                     {
                       key: 'パネル並び順',
                       value: 'フリーメモ / 自分用メモ / タイムラインを並び替え',
