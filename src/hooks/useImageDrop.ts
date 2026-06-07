@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import { useCallback, useRef, useState } from 'react';
 
-import { putImage } from '@/lib/idb';
+import { deleteImage, putImage } from '@/lib/idb';
 import { resizeImage } from '@/lib/imageResize';
 import { useStore } from '@/store';
 import type { MemoEntry, PanelId } from '@/types/memo';
@@ -17,7 +17,11 @@ export function useImageDrop(panel: PanelId) {
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounterRef = useRef(0);
 
-  /** 画像 Blob をリサイズして IndexedDB に保存し、エントリを追加する。成功したら true を返す */
+  /**
+   * 画像 Blob をリサイズして IndexedDB に保存し、エントリを追加する。成功したら true を返す。
+   * リサイズ・保存・エントリ追加のいずれが失敗してもエラートーストを出し（無言で落とさない）、
+   * 保存済み blob は孤児にしないよう後始末する。
+   */
   const addImage = useCallback(
     async (blob: Blob): Promise<boolean> => {
       const extra: Partial<MemoEntry> = {};
@@ -33,16 +37,36 @@ export function useImageDrop(panel: PanelId) {
         // タイムラインでは type: 'timeline' にして TimelineEntry で表示（時刻は不明扱い）
         extra.type = 'timeline';
       }
-      const resized = await resizeImage(blob);
+      let resized: Blob;
+      try {
+        resized = await resizeImage(blob);
+      } catch (err) {
+        addToast('画像の読み込みに失敗しました', 'error');
+        console.error('resizeImage に失敗しました', err);
+        return false;
+      }
       const blobKey = nanoid();
-      await putImage(blobKey, resized);
-      addEntry({
-        content: '',
-        panel,
-        type: extra.type ?? 'image',
-        imageBlobKey: blobKey,
-        ...extra,
-      });
+      try {
+        await putImage(blobKey, resized);
+      } catch (err) {
+        addToast('画像の保存に失敗しました', 'error');
+        console.error('putImage に失敗しました', err);
+        return false;
+      }
+      try {
+        // 保存成功を待つ（失敗時は addEntry がロールバック＋エラートースト済み）
+        await addEntry({
+          content: '',
+          panel,
+          type: extra.type ?? 'image',
+          imageBlobKey: blobKey,
+          ...extra,
+        });
+      } catch {
+        // エントリ追加に失敗 → 保存済み blob を後始末（孤児にしない）
+        await deleteImage(blobKey).catch(() => {});
+        return false;
+      }
       return true;
     },
     [addEntry, addToast, panel],

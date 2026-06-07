@@ -13,7 +13,10 @@ function caretNodeAt(x: number, y: number): { node: Node; offset: number } | nul
   }
   const cp = (
     document as Document & {
-      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+      caretPositionFromPoint?: (
+        x: number,
+        y: number,
+      ) => { offsetNode: Node; offset: number } | null;
     }
   ).caretPositionFromPoint?.(x, y);
   return cp ? { node: cp.offsetNode, offset: cp.offset } : null;

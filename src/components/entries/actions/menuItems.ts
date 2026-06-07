@@ -47,7 +47,11 @@ export interface MenuContext {
   memoGroups: MemoGroup[];
   /** showInEntries が true のキャラクター一覧（役職マーカー追加用） */
   characters: Character[];
-  moveEntryToPanel: (id: string, panel: PanelId) => Promise<void>;
+  moveEntryToPanel: (
+    id: string,
+    panel: PanelId,
+    opts?: { timelineGroupId?: string; groupId?: string },
+  ) => Promise<void>;
   updateEntry: (id: string, patch: Partial<MemoEntry>) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
   addEntry: (
@@ -125,10 +129,8 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
               entries,
               async (entry) => {
                 if (entry.panel === p) return;
-                await ctx.moveEntryToPanel(entry.id, p);
-                await ctx.updateEntry(entry.id, {
+                await ctx.moveEntryToPanel(entry.id, p, {
                   timelineGroupId: ctx.timelineGroups[0].id,
-                  type: 'timeline',
                 });
               },
               ctx,
@@ -146,8 +148,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
                 entries,
                 async (entry) => {
                   if (entry.panel === p) return;
-                  await ctx.moveEntryToPanel(entry.id, p);
-                  await ctx.updateEntry(entry.id, { timelineGroupId: g.id, type: 'timeline' });
+                  await ctx.moveEntryToPanel(entry.id, p, { timelineGroupId: g.id });
                 },
                 ctx,
                 moveToast(p),
@@ -166,8 +167,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
               entries,
               async (entry) => {
                 if (entry.panel === p) return;
-                await ctx.moveEntryToPanel(entry.id, p);
-                await ctx.updateEntry(entry.id, { groupId: undefined });
+                await ctx.moveEntryToPanel(entry.id, p, { groupId: undefined });
               },
               ctx,
               moveToast(p),
@@ -183,8 +183,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
               entries,
               async (entry) => {
                 if (entry.panel === p) return;
-                await ctx.moveEntryToPanel(entry.id, p);
-                await ctx.updateEntry(entry.id, { groupId: undefined });
+                await ctx.moveEntryToPanel(entry.id, p, { groupId: undefined });
               },
               ctx,
               moveToast(p),
@@ -199,8 +198,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
                 entries,
                 async (entry) => {
                   if (entry.panel === p) return;
-                  await ctx.moveEntryToPanel(entry.id, p);
-                  await ctx.updateEntry(entry.id, { groupId: g.id });
+                  await ctx.moveEntryToPanel(entry.id, p, { groupId: g.id });
                 },
                 ctx,
                 moveToast(p),
@@ -509,9 +507,17 @@ export function buildDuplicateItems(entries: MemoEntry[], ctx: MenuContext): Con
           entries,
           async (entry) => {
             // 複製では元エントリの id / 各タイムスタンプ / sortOrder は破棄し、
-            // addEntry 側で採番させる（rest だけが残れば必要なフィールドはすべて含まれる）
+            // addEntry 側で採番させる（rest だけが残れば必要なフィールドはすべて含まれる）。
+            // 画像エントリは imageBlobKey をそのまま共有する（複数エントリが同一 blob を指してよい）。
+            // 削除は blob をハード削除せず GC で回収する方式（cleanupOrphanImages）のため、
+            // 片方を削除しても blob は残り、もう片方の画像は表示され続ける。
             const { id: _id, createdAt: _c, updatedAt: _u, sortOrder: _s, ...rest } = entry;
-            await ctx.addEntry({ ...rest });
+            try {
+              await ctx.addEntry({ ...rest });
+            } catch {
+              // addEntry 失敗時は addEntry 内でロールバック＋エラートースト済み。
+              // ここで握って残りの複製処理を継続する。
+            }
           },
           ctx,
           {

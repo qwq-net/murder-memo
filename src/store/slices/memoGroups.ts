@@ -2,9 +2,9 @@ import { nanoid } from 'nanoid';
 
 import {
   bulkPutMemoGroups,
-  deleteMemoGroup,
   getMemoGroupsBySession,
   putMemoGroup,
+  reassignMemoGroupAndDelete,
 } from '@/lib/idb';
 import type { StoreState } from '@/store/index';
 import type { MemoGroup } from '@/types/memo';
@@ -66,20 +66,32 @@ export const createMemoGroupsSlice = (
   /**
    * メモグループを削除する。所属エントリは削除せず、groupId をクリアして「未分類」へ移す。
    * （タイムライングループの removeTimelineGroup が所属エントリごと削除するのと対照的）。
-   * activeSessionId が無ければ no-op。
+   *
+   * エントリの未分類化（groupId クリア）とグループ削除を単一トランザクション
+   * （reassignMemoGroupAndDelete）で行い、途中失敗で「エントリは未分類化されたのにグループが残る」
+   * 等の不整合を作らない。失敗時は楽観更新した state を巻き戻す。activeSessionId が無ければ no-op。
    */
   removeMemoGroup: async (id) => {
-    // グループを削除時、所属エントリのgroupIdをクリア（エントリは残す → 未分類へ）
     const sessionId = get().activeSessionId;
     if (!sessionId) return;
-    const entries = get().entries.filter((e) => e.groupId === id);
-    for (const entry of entries) {
-      await get().updateEntry(entry.id, { groupId: undefined });
-    }
-    await deleteMemoGroup(id);
+    const prevEntries = get().entries;
+    const prevGroups = get().memoGroups;
+    const now = Date.now();
+    const reassigned = prevEntries
+      .filter((e) => e.groupId === id)
+      .map((e) => ({ ...e, groupId: undefined, updatedAt: now }));
+    const reassignedById = new Map(reassigned.map((e) => [e.id, e]));
     set((s) => ({
+      entries: s.entries.map((e) => reassignedById.get(e.id) ?? e),
       memoGroups: s.memoGroups.filter((g) => g.id !== id),
     }));
+    try {
+      await reassignMemoGroupAndDelete(id, reassigned, sessionId);
+    } catch (err) {
+      set(() => ({ entries: prevEntries, memoGroups: prevGroups }));
+      get().addToast('グループの削除に失敗しました', 'error');
+      console.error('removeMemoGroup の保存に失敗しました', err);
+    }
   },
 
   reorderMemoGroups: async (orderedIds) => {

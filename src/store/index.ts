@@ -54,7 +54,7 @@ export const useStore = create<StoreState>()(
       ...createRelationsSlice(set as Parameters<typeof createRelationsSlice>[0], get),
       ...createLinkKeywordsSlice(set as Parameters<typeof createLinkKeywordsSlice>[0], get),
       ...createSettingsSlice(set as Parameters<typeof createSettingsSlice>[0]),
-      ...createUiSlice(set as Parameters<typeof createUiSlice>[0]),
+      ...createUiSlice(set as Parameters<typeof createUiSlice>[0], get),
     })),
     {
       partialize: (state): TrackedState => ({

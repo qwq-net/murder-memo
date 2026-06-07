@@ -235,9 +235,7 @@ export default function GuidePage() {
               </SubFeature>
 
               <SubFeature title="データの削除粒度">
-                <Paragraph>
-                  データを消す操作は、粒度の異なる 3 種類が用意されています。
-                </Paragraph>
+                <Paragraph>データを消す操作は、粒度の異なる 3 種類が用意されています。</Paragraph>
                 <KeyValueTable
                   rows={[
                     {
@@ -299,15 +297,15 @@ export default function GuidePage() {
 
               <SubFeature title="ヘッダーの行動順ステッパー">
                 <Paragraph>
-                  ヘッダー右側には、登録した登場人物が「PL → セパレータ <InlineCode>|</InlineCode>{' '}
-                  → NPC」の順で 1 列に並びます。
-                  PL / NPC それぞれの中では「登場人物管理画面」で並べ替えた順序に従い、
+                  ヘッダー右側には、登録した登場人物が「PL → セパレータ <InlineCode>|</InlineCode> →
+                  NPC」の順で 1 列に並びます。 PL / NPC
+                  それぞれの中では「登場人物管理画面」で並べ替えた順序に従い、
                   シナリオ進行中に手番や行動順を俯瞰するためのリファレンスとして使えます。
                 </Paragraph>
                 <Paragraph>
                   並び順は登場人物管理画面でドラッグして変更できます。
-                  ステッパーの表示は登録済みの全人物が対象で、「メモに表示する」のオン
-                  / オフとは独立しています。
+                  ステッパーの表示は登録済みの全人物が対象で、「メモに表示する」のオン /
+                  オフとは独立しています。
                 </Paragraph>
                 <PreviewFrame>
                   <ActionOrderStepperPreview />
@@ -401,7 +399,8 @@ export default function GuidePage() {
                     {
                       key: 'Ctrl + V',
                       keyAsCode: true,
-                      value: 'クリップボードの画像をフリーメモに画像メモとして貼り付け（複数枚も可）',
+                      value:
+                        'クリップボードの画像をフリーメモに画像メモとして貼り付け（複数枚も可）',
                     },
                     {
                       key: 'ドラッグ&ドロップ',
@@ -411,8 +410,9 @@ export default function GuidePage() {
                   ]}
                 />
                 <Paragraph>
-                  タイムラインはグループ（タイムライングループ）が 1 つもないと入力欄が無効化されます。
-                  先に「+ グループ」から追加してください。フリーメモ / 自分用メモはグループが無くても
+                  タイムラインはグループ（タイムライングループ）が 1
+                  つもないと入力欄が無効化されます。 先に「+
+                  グループ」から追加してください。フリーメモ / 自分用メモはグループが無くても
                   入力でき、グループ未選択のメモは「未分類」としてまとめられます。
                 </Paragraph>
               </SubFeature>
@@ -663,8 +663,7 @@ export default function GuidePage() {
 
               <SubFeature title="役職マーカー追加（メモへの紐付け）">
                 <Paragraph>
-                  メモを右クリック →
-                  「役職マーカー追加」から、そのメモに登場人物を紐付けられます。
+                  メモを右クリック → 「役職マーカー追加」から、そのメモに登場人物を紐付けられます。
                   紐付けるとカード端のバッジ列にその人物が現れます。
                 </Paragraph>
                 <Paragraph>
@@ -774,7 +773,8 @@ export default function GuidePage() {
               <SubFeature title="リスト表示">
                 <Paragraph>
                   相関図モーダルでは、関係性の一覧をリスト形式で追加・削除できます。 各行は from /
-                  ラベル（左に色アクセント）/ to で構成されます。 既存の関係の編集（ラベル・色・方向の変更）は
+                  ラベル（左に色アクセント）/ to で構成されます。
+                  既存の関係の編集（ラベル・色・方向の変更）は
                   できないため、変更したいときは一度削除して追加し直します。
                 </Paragraph>
                 <PreviewFrame>
@@ -876,13 +876,22 @@ export default function GuidePage() {
                 <KeyValueTable
                   rows={[
                     { key: 'Ctrl + Z', keyAsCode: true, value: '直前の操作を取り消す' },
-                    { key: 'Ctrl + Shift + Z', keyAsCode: true, value: 'やり直す（Ctrl + Y も可）' },
+                    {
+                      key: 'Ctrl + Shift + Z',
+                      keyAsCode: true,
+                      value: 'やり直す（Ctrl + Y も可）',
+                    },
                     {
                       key: 'Ctrl + V',
                       keyAsCode: true,
-                      value: 'クリップボードの画像をフリーメモに画像メモとして貼り付け（複数枚も可）',
+                      value:
+                        'クリップボードの画像をフリーメモに画像メモとして貼り付け（複数枚も可）',
                     },
-                    { key: 'Esc', keyAsCode: true, value: '編集をキャンセル（変更を破棄）/ モーダルを閉じる' },
+                    {
+                      key: 'Esc',
+                      keyAsCode: true,
+                      value: '編集をキャンセル（変更を破棄）/ モーダルを閉じる',
+                    },
                     {
                       key: 'Enter',
                       keyAsCode: true,

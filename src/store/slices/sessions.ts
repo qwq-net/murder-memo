@@ -9,6 +9,7 @@ import {
   bulkPutMemoGroups,
   bulkPutRelations,
   bulkPutTimelineGroups,
+  cleanupOrphanImages,
   clearSessionData,
   deleteSession,
   getAllSessions,
@@ -143,6 +144,13 @@ export const createSessionsSlice = (
             linkKeywords,
             isSessionReady: true,
           }));
+
+          // 参照されなくなった孤児画像 blob を回収する。削除（エントリ/グループ削除・セッション初期化）は
+          // 画像 blob をハード削除せず GC に委ねる方式のため、Undo 履歴が空で安全なこの起動時に掃除する。
+          // 失敗してもアプリ動作には影響しないのでログのみ（投げっぱなしにしない）。
+          void cleanupOrphanImages().catch((err) =>
+            console.error('孤児画像のクリーンアップに失敗しました', err),
+          );
         } catch (err) {
           // IDB のマイグレーション失敗・デモ投入失敗など、致命的エラーをユーザーに通知。
           // ローディング画面で固まらないよう、UI を出して再操作可能な状態にする。
@@ -222,7 +230,10 @@ export const createSessionsSlice = (
      * 現在のセッションの中身を空にする（セッション枠自体は残す）。
      *
      * - デモセッション、またはアクティブセッションが無ければ no-op
-     * - IDB は clearSessionData で配下データを全削除（link-keywords / 画像含む）、session レコードは残す
+     * - IDB は clearSessionData で配下データを全削除（link-keywords 含む）、session レコードは残す。
+     *   画像 blob は keepImages=true で温存する（この操作は TrackedState を空にするため Undo で復活
+     *   しうる。即削除すると Undo 後に画像参照が壊れる）。孤児化した blob は次回起動時の
+     *   cleanupOrphanImages で回収する
      * - メモリ上の全データスライス（linkKeywords 含む）を空にし、updatedAt を更新する
      * - 削除済みキャラを指すキャラクターフィルターが残らないようクリアする
      *   （同一セッションに留まるため switchSession の subscribe は走らない）
@@ -235,7 +246,8 @@ export const createSessionsSlice = (
       const session = sessions.find((s) => s.id === activeSessionId);
       if (!session || session.isDemo) return;
 
-      await clearSessionData(activeSessionId);
+      // keepImages=true: Undo で復活しうるため画像 blob は温存（孤児は起動時 GC で回収）
+      await clearSessionData(activeSessionId, true);
 
       // updatedAt を更新
       const updated = { ...session, updatedAt: Date.now() };

@@ -198,4 +198,76 @@ describe('entriesSlice', () => {
       expect(useStore.getState().entries.find((e) => e.id === 'e2')?.sortOrder).toBe(1);
     });
   });
+
+  describe('addEntry の保存失敗ロールバック', () => {
+    it('成功時は末尾に追加され entry を返す', async () => {
+      useStore.setState({ entries: [] });
+      const created = await useStore.getState().addEntry({ panel: 'free', content: 'x' });
+      expect(useStore.getState().entries.map((e) => e.id)).toEqual([created.id]);
+    });
+
+    // 回帰防止: CLAUDE.md の楽観更新ロールバック契約に addEntry を整合させる
+    it('putEntry が失敗したら追加分を除去し throw する', async () => {
+      useStore.setState({ entries: [] });
+      mockPutEntry.mockRejectedValueOnce(new Error('IDB error'));
+
+      await expect(useStore.getState().addEntry({ panel: 'free', content: 'x' })).rejects.toThrow();
+      // ロールバックで追加分が残らない
+      expect(useStore.getState().entries).toEqual([]);
+    });
+  });
+
+  describe('deleteEntry の画像 blob 非ハード削除（GC 方式）', () => {
+    // 回帰防止: 削除時に blob を即削除すると Undo 復活で画像が壊れる/複製で共有 blob を巻き添えにする。
+    // blob は GC（cleanupOrphanImages）で回収するため deleteEntry では消さない。
+    it('画像エントリを削除しても deleteImage は呼ばれない', async () => {
+      useStore.setState({
+        entries: [makeEntry({ id: 'e1', type: 'image', imageBlobKey: 'blob-1' })],
+      });
+
+      await useStore.getState().deleteEntry('e1');
+
+      expect(mockDeleteImage).not.toHaveBeenCalled();
+      expect(mockDeleteEntry).toHaveBeenCalledWith('e1');
+      expect(useStore.getState().entries).toEqual([]);
+    });
+  });
+
+  describe('moveEntryToPanel の原子化（panel + group を 1 回で確定）', () => {
+    it('free → timeline で type/timelineGroupId を設定し groupId をクリア（1 回の put）', async () => {
+      useStore.setState({
+        entries: [makeEntry({ id: 'e1', panel: 'free', type: 'text', groupId: 'mg-1' })],
+      });
+
+      await useStore.getState().moveEntryToPanel('e1', 'timeline', { timelineGroupId: 'tg-1' });
+
+      const moved = useStore.getState().entries.find((e) => e.id === 'e1');
+      expect(moved?.panel).toBe('timeline');
+      expect(moved?.type).toBe('timeline');
+      expect(moved?.timelineGroupId).toBe('tg-1');
+      // メモグループ参照はタイムラインで無効なのでクリアされる
+      expect(moved?.groupId).toBeUndefined();
+      // 2 段階ではなく 1 回の put で原子的に確定する（不可視孤児を作らない）
+      expect(mockPutEntry).toHaveBeenCalledTimes(1);
+    });
+
+    it('opts.groupId 未指定なら非タイムライン移動で groupId を保持する', async () => {
+      useStore.setState({
+        entries: [makeEntry({ id: 'e1', panel: 'free', groupId: 'mg-1' })],
+      });
+
+      await useStore.getState().moveEntryToPanel('e1', 'personal');
+
+      expect(useStore.getState().entries.find((e) => e.id === 'e1')?.groupId).toBe('mg-1');
+    });
+
+    it('putEntry が失敗したら移動前へロールバックする', async () => {
+      useStore.setState({ entries: [makeEntry({ id: 'e1', panel: 'free' })] });
+      mockPutEntry.mockRejectedValueOnce(new Error('IDB error'));
+
+      await useStore.getState().moveEntryToPanel('e1', 'personal');
+
+      expect(useStore.getState().entries.find((e) => e.id === 'e1')?.panel).toBe('free');
+    });
+  });
 });

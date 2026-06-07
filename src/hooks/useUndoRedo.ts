@@ -36,6 +36,26 @@ function describeChange(before: StoreState, after: StoreState): string {
 }
 
 /**
+ * Undo/Redo 後の state を IDB へ同期する。同期は単一トランザクション（replaceSessionData）で
+ * 行われ、失敗時は全体がロールバックされるため IDB 側は同期前の状態に保たれる。その場合
+ * メモリ（巻き戻し済み）と IDB が乖離するため、黙殺せずユーザーへ通知する。
+ * （リロードすると IDB 側＝同期前の内容に戻るため、エクスポートでの保全を促す）
+ */
+async function persistUndoSync(state: StoreState): Promise<void> {
+  try {
+    await syncStateToIdb(state);
+  } catch (err) {
+    console.error('Undo/Redo の IDB 同期に失敗しました', err);
+    useStore
+      .getState()
+      .addToast(
+        '変更の保存に失敗しました。重要なデータはバックアップのエクスポートをおすすめします。',
+        'error',
+      );
+  }
+}
+
+/**
  * Ctrl+Z / Ctrl+Shift+Z（Mac: Cmd、Redo は Ctrl+Y も可）でデータ変更を Undo/Redo するフック。
  *
  * - テキスト入力中（input / textarea フォーカス中、contentEditable）は発火しない
@@ -52,8 +72,12 @@ export function useUndoRedo() {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable)
         return;
 
-      const isUndo = (e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey;
-      const isRedo = (e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y');
+      // Shift 併用時は KeyboardEvent.key が大文字 'Z'、CapsLock でも大文字になるため
+      // toLowerCase で吸収する（生比較だと Ctrl+Shift+Z の Redo が永遠に発火しない）
+      const key = e.key.toLowerCase();
+      const mod = e.ctrlKey || e.metaKey;
+      const isUndo = mod && key === 'z' && !e.shiftKey;
+      const isRedo = mod && ((key === 'z' && e.shiftKey) || key === 'y');
 
       if (!isUndo && !isRedo) return;
       e.preventDefault();
@@ -64,13 +88,13 @@ export function useUndoRedo() {
         const before = useStore.getState();
         temporal.undo();
         const after = useStore.getState();
-        syncStateToIdb(after).catch((err) => console.error('Undo IDB sync failed:', err));
+        void persistUndoSync(after);
         useStore.getState().addToast(`元に戻しました: ${describeChange(before, after)}`);
       } else if (isRedo && temporal.futureStates.length > 0) {
         const before = useStore.getState();
         temporal.redo();
         const after = useStore.getState();
-        syncStateToIdb(after).catch((err) => console.error('Redo IDB sync failed:', err));
+        void persistUndoSync(after);
         useStore.getState().addToast(`やり直しました: ${describeChange(before, after)}`);
       }
     };

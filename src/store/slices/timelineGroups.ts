@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid';
 
 import {
   bulkPutTimelineGroups,
-  deleteTimelineGroup,
+  deleteTimelineGroupCascade,
   getTimelineGroupsBySession,
   putTimelineGroup,
 } from '@/lib/idb';
@@ -64,18 +64,27 @@ export const createTimelineGroupsSlice = (
   /**
    * タイムライングループを削除する。所属エントリ（timelineGroupId 一致）も併せて削除する。
    * （メモグループの removeMemoGroup がエントリを未分類として残すのと対照的）。
-   * 各エントリは deleteEntry 経由で消すため、画像エントリの blob も連動削除される。
+   *
+   * グループ削除とエントリ削除を単一トランザクション（deleteTimelineGroupCascade）で行い、
+   * 途中失敗で「一部エントリだけ削除・グループ残存」という中途半端な状態を作らない。失敗時は
+   * 楽観更新した state を巻き戻す。画像 blob はハード削除せず GC で回収する（Undo 復活のため）。
    */
   removeTimelineGroup: async (id) => {
-    // グループに所属するエントリも削除
-    const entries = get().entries.filter((e) => e.timelineGroupId === id);
-    for (const entry of entries) {
-      await get().deleteEntry(entry.id);
-    }
-    await deleteTimelineGroup(id);
+    const prevEntries = get().entries;
+    const prevGroups = get().timelineGroups;
+    const entryIds = prevEntries.filter((e) => e.timelineGroupId === id).map((e) => e.id);
+    const removedIds = new Set(entryIds);
     set((s) => ({
+      entries: s.entries.filter((e) => !removedIds.has(e.id)),
       timelineGroups: s.timelineGroups.filter((g) => g.id !== id),
     }));
+    try {
+      await deleteTimelineGroupCascade(id, entryIds);
+    } catch (err) {
+      set(() => ({ entries: prevEntries, timelineGroups: prevGroups }));
+      get().addToast('グループの削除に失敗しました', 'error');
+      console.error('removeTimelineGroup の保存に失敗しました', err);
+    }
   },
 
   reorderTimelineGroups: async (orderedIds) => {

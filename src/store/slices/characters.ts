@@ -2,9 +2,9 @@ import { nanoid } from 'nanoid';
 
 import {
   bulkPutCharacters,
-  deleteCharacter,
   getCharactersBySession,
   putCharacter,
+  removeCharacterCascade,
 } from '@/lib/idb';
 import type { StoreState } from '@/store/index';
 import type { Character } from '@/types/memo';
@@ -76,29 +76,58 @@ export const createCharactersSlice = (
    * - 全パネルのキャラクターフィルターから当該 ID を除去（削除済みキャラで絞り込んだまま
    *   バーから解除できずパネルが空白化するのを防ぐ）
    *
-   * 注意: 単一トランザクションではないため、途中の IDB エラーで一部だけ消える可能性がある。
+   * キャラ本体・相関図・推理メモ・エントリの掃除は単一トランザクション（removeCharacterCascade）で
+   * 行い、途中失敗で「参照だけ残る中途半端な状態」を作らない。失敗時は楽観更新を巻き戻す。
+   * キャラクターフィルター（UI state）は永続層外なので set 成功後に別途掃除する。
    * 該当が無いキャラの削除でも安全（周辺データの掃除は no-op になる）。
    */
   removeCharacter: async (id) => {
-    await deleteCharacter(id);
-    const { relations, removeRelation, removeDeduction, entries, updateEntry } = get();
-    // 相関図の関係線（from / to 双方）を削除
-    const related = relations.filter((r) => r.fromCharacterId === id || r.toCharacterId === id);
-    for (const r of related) {
-      await removeRelation(r.id);
+    const sessionId = get().activeSessionId;
+    if (!sessionId) return;
+    const { relations, deductions, entries } = get();
+    const prev = {
+      characters: get().characters,
+      relations,
+      deductions,
+      entries,
+    };
+
+    const relationIds = relations
+      .filter((r) => r.fromCharacterId === id || r.toCharacterId === id)
+      .map((r) => r.id);
+    const relationIdSet = new Set(relationIds);
+    const deduction = deductions.find((d) => d.characterId === id);
+    const now = Date.now();
+    const entryUpdates = entries
+      .filter((e) => e.characterTags.includes(id))
+      .map((e) => ({
+        ...e,
+        characterTags: e.characterTags.filter((t) => t !== id),
+        updatedAt: now,
+      }));
+    const entryUpdateById = new Map(entryUpdates.map((e) => [e.id, e]));
+
+    set((s) => ({
+      characters: s.characters.filter((c) => c.id !== id),
+      relations: s.relations.filter((r) => !relationIdSet.has(r.id)),
+      deductions: deduction ? s.deductions.filter((d) => d.id !== deduction.id) : s.deductions,
+      entries: s.entries.map((e) => entryUpdateById.get(e.id) ?? e),
+    }));
+
+    try {
+      await removeCharacterCascade(
+        { characterId: id, relationIds, deductionId: deduction?.id, entryUpdates },
+        sessionId,
+      );
+    } catch (err) {
+      set(() => prev);
+      get().addToast('登場人物の削除に失敗しました', 'error');
+      console.error('removeCharacter の保存に失敗しました', err);
+      return;
     }
-    // 推理メモ（characterId 参照）の孤児を削除（無ければ no-op）
-    await removeDeduction(id);
-    // エントリのキャラクタータグから当該 ID を除去（削除済みキャラへのダングリング参照を残さない）
-    const tagged = entries.filter((e) => e.characterTags.includes(id));
-    for (const entry of tagged) {
-      await updateEntry(entry.id, {
-        characterTags: entry.characterTags.filter((t) => t !== id),
-      });
-    }
+
     // 全パネルのキャラクターフィルターからも除去（残ると解除不能のまま絞り込みが効き続ける）
     get().removeCharacterFromFilters(id);
-    set((s) => ({ characters: s.characters.filter((c) => c.id !== id) }));
   },
 
   reorderCharacters: async (orderedIds) => {

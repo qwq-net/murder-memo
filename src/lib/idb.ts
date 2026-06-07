@@ -482,6 +482,169 @@ export async function bulkPutLinkKeywords(
   await tx.done;
 }
 
+// ─── トランザクション横断のアトミック操作 ───────────────────────────────────
+//
+// 「楽観 set 先行 → 独立トランザクションを逐次 await」方式は途中失敗でメモリと IDB が
+// 恒久乖離する。データ整合性が要のアプリのため、複数ストアにまたがる更新・カスケード削除は
+// ここに集約し「単一トランザクションで全部成功 or 全部ロールバック」を保証する。
+
+/** {@link replaceSessionData} に渡すセッション配下データ一式（state の TrackedState + linkKeywords）。 */
+export interface SessionReplacement {
+  entries: MemoEntry[];
+  characters: Character[];
+  timelineGroups: TimelineGroup[];
+  memoGroups: MemoGroup[];
+  deductions: CharacterDeduction[];
+  relations: CharacterRelation[];
+  linkKeywords: LinkKeyword[];
+}
+
+/** by-session を持つ（images 以外の）全ストア名。 */
+const SESSION_STORES = [
+  'entries',
+  'characters',
+  'timeline-groups',
+  'memo-groups',
+  'deductions',
+  'relations',
+  'link-keywords',
+] as const;
+
+/**
+ * 対象セッション配下の 7 ストア（by-session を持つ全ストア。images を除く）を
+ * 単一トランザクションで「総入れ替え」する。Undo/Redo 後の {@link syncStateToIdb} 専用。
+ *
+ * - 削除と書き戻しを 1 本の readwrite トランザクションで行うため、途中で失敗（QuotaExceeded・
+ *   abort 等）すれば全体がロールバックされ、「一部ストアが空のまま確定」する事故が起きない。
+ * - images は state に本体を持たず書き戻せないため一切触らない（keepImages=true 相当）。
+ *   巻き戻しで参照されなくなった blob は孤児として残るが、{@link cleanupOrphanImages} や
+ *   セッション削除でまとめて回収する。
+ * - entries / characters / linkKeywords は内部フィールド sessionId を付与して保存する。
+ *   timelineGroups / memoGroups / deductions / relations は要素が sessionId を保持しているため
+ *   そのまま保存する。
+ */
+export async function replaceSessionData(
+  data: SessionReplacement,
+  sessionId: string,
+): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction(SESSION_STORES, 'readwrite');
+
+  // 既存レコードを全削除（当該セッション分のみ）してから現在の state を書き戻す
+  for (const store of SESSION_STORES) {
+    const keys = await tx.objectStore(store).index('by-session').getAllKeys(sessionId);
+    await Promise.all(keys.map((k) => tx.objectStore(store).delete(k)));
+  }
+
+  await Promise.all([
+    ...data.entries.map((e) =>
+      tx.objectStore('entries').put({ ...e, sessionId } as MemoEntry & { sessionId: string }),
+    ),
+    ...data.characters.map((c) => tx.objectStore('characters').put({ ...c, sessionId })),
+    ...data.timelineGroups.map((g) => tx.objectStore('timeline-groups').put(g)),
+    ...data.memoGroups.map((g) => tx.objectStore('memo-groups').put(g)),
+    ...data.deductions.map((d) => tx.objectStore('deductions').put(d)),
+    ...data.relations.map((r) => tx.objectStore('relations').put(r)),
+    ...data.linkKeywords.map((kw) => tx.objectStore('link-keywords').put({ ...kw, sessionId })),
+  ]);
+
+  await tx.done;
+}
+
+/**
+ * タイムライングループと所属エントリを単一トランザクションで削除する。
+ * 画像 blob はハード削除せず GC（{@link cleanupOrphanImages}）に委ねる（Undo 復活のため）。
+ */
+export async function deleteTimelineGroupCascade(
+  groupId: string,
+  entryIds: string[],
+): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction(['entries', 'timeline-groups'], 'readwrite');
+  await Promise.all(entryIds.map((id) => tx.objectStore('entries').delete(id)));
+  await tx.objectStore('timeline-groups').delete(groupId);
+  await tx.done;
+}
+
+/**
+ * メモグループを削除し、所属エントリを未分類化（groupId クリア済みの更新版を put）する処理を
+ * 単一トランザクションで行う。エントリ本体は残す（タイムライングループと対照的）。
+ */
+export async function reassignMemoGroupAndDelete(
+  groupId: string,
+  reassignedEntries: MemoEntry[],
+  sessionId: string,
+): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction(['entries', 'memo-groups'], 'readwrite');
+  await Promise.all(
+    reassignedEntries.map((e) =>
+      tx.objectStore('entries').put({ ...e, sessionId } as MemoEntry & { sessionId: string }),
+    ),
+  );
+  await tx.objectStore('memo-groups').delete(groupId);
+  await tx.done;
+}
+
+/** {@link removeCharacterCascade} に渡す、キャラ削除に伴う連動更新の内訳。 */
+export interface CharacterCascade {
+  characterId: string;
+  relationIds: string[];
+  deductionId?: string;
+  /** characterTags から当該キャラを除去済みのエントリ更新版 */
+  entryUpdates: MemoEntry[];
+}
+
+/**
+ * キャラクター削除と、それに連動する周辺データ（相関図・推理メモ・エントリの characterTags）の
+ * 掃除を単一トランザクションで行う。途中失敗で「参照だけ残る中途半端な状態」を作らない。
+ * キャラクターフィルタ（UI state）の掃除は永続層外なので呼び手側で別途行う。
+ */
+export async function removeCharacterCascade(
+  cascade: CharacterCascade,
+  sessionId: string,
+): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction(['characters', 'relations', 'deductions', 'entries'], 'readwrite');
+  await tx.objectStore('characters').delete(cascade.characterId);
+  await Promise.all(cascade.relationIds.map((id) => tx.objectStore('relations').delete(id)));
+  if (cascade.deductionId) await tx.objectStore('deductions').delete(cascade.deductionId);
+  await Promise.all(
+    cascade.entryUpdates.map((e) =>
+      tx.objectStore('entries').put({ ...e, sessionId } as MemoEntry & { sessionId: string }),
+    ),
+  );
+  await tx.done;
+}
+
+/**
+ * どのエントリからも参照されていない画像 blob を回収する（孤児 blob 掃除）。
+ *
+ * Undo/Redo 同期（replaceSessionData は images を温存）やインポート途中失敗のロールバックで
+ * 参照を失った blob が IDB に蓄積するのを防ぐ。entries 全件の imageBlobKey を参照集合とし、
+ * images ストアのうち参照されないキーを削除する。戻り値は削除した blob 数。
+ */
+export async function cleanupOrphanImages(): Promise<number> {
+  const db = await getDb();
+  const tx = db.transaction(['entries', 'images'], 'readwrite');
+  const entries = await tx.objectStore('entries').getAll();
+  const referenced = new Set<string>();
+  for (const e of entries) {
+    if (e.imageBlobKey) referenced.add(e.imageBlobKey);
+  }
+  const imageKeys = await tx.objectStore('images').getAllKeys();
+  let removed = 0;
+  await Promise.all(
+    imageKeys.map((k) => {
+      if (referenced.has(k as string)) return Promise.resolve();
+      removed++;
+      return tx.objectStore('images').delete(k);
+    }),
+  );
+  await tx.done;
+  return removed;
+}
+
 // ─── 完全リセット ─────────────────────────────────────────────────────────
 
 /** IndexedDB データベースを完全に削除し、内部キャッシュをクリアする */

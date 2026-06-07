@@ -26,6 +26,8 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
   const isImage = !!entry.imageBlobKey;
   const [draftTime, setDraftTime] = useState(entry.eventTime ?? '');
   const containerRef = useRef<HTMLDivElement>(null);
+  // EntryContent が公開する本文ドラフト確定関数（編集終了時に本文＋時刻をまとめて保存するため）
+  const contentCommitRef = useRef<(() => void) | null>(null);
   /**
    * 時刻 span クリックで編集に入った場合 true（textarea ではなく time input にフォーカスする）。
    * autoFocus 属性で render 中に参照するため state で管理する。
@@ -79,12 +81,24 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
       e.currentTarget.style.borderColor = 'transparent';
       e.currentTarget.style.background = 'transparent';
       e.currentTarget.placeholder = '';
-      // テキストエントリ: コンテナ内（textarea）への移動なら時刻だけ保存しない
-      if (!isImage && containerRef.current?.contains(e.relatedTarget as Node)) return;
-      // コンテナ外 or 画像エントリ → 時刻を保存
-      saveTime();
-      // テキストエントリの場合は編集終了
-      if (!isImage) setFocusedEntry(null);
+      if (isImage) {
+        // 画像エントリ: 本文編集は無いので時刻のみ保存
+        saveTime();
+        return;
+      }
+      // テキストエントリ: コンテナ内（textarea）への移動なら編集継続（保存しない）
+      if (containerRef.current?.contains(e.relatedTarget as Node)) return;
+      // コンテナ外へ抜ける＝エントリ全体の編集終了。
+      // 時刻だけ保存して本文ドラフトを捨てる事故を防ぐため、本文＋時刻をまとめて確定する。
+      const commitContent = contentCommitRef.current;
+      if (commitContent) {
+        // EntryContent.draftBlur: onSave(=handleContentSave で本文＋時刻を保存) + setFocusedEntry(null)
+        commitContent();
+      } else {
+        // 本文確定関数が未公開の場合のフォールバック（時刻のみ保存して編集終了）
+        saveTime();
+        setFocusedEntry(null);
+      }
     },
     [isImage, saveTime, setFocusedEntry],
   );
@@ -198,6 +212,7 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
           onEscape={() => setDraftTime(entry.eventTime ?? '')}
           autoFocus={!focusTime}
           containerRef={containerRef}
+          commitDraftRef={contentCommitRef}
         />
       )}
     </div>

@@ -92,7 +92,9 @@ export function EntryInput({ panel }: EntryInputProps) {
       const defaultType = isTimeline ? ('timeline' as const) : ('text' as const);
       const memoGroupId = isMemoPanel && effectiveGroupId ? effectiveGroupId : undefined;
 
-      await addEntry({
+      // addEntry は保存失敗時にロールバック＋エラートーストして throw する。
+      // その場合は入力をクリアせず（再送できるように）成功トーストも出さない
+      const created = await addEntry({
         content: text,
         panel,
         type: defaultType,
@@ -104,7 +106,8 @@ export function EntryInput({ panel }: EntryInputProps) {
             }
           : {}),
         ...(memoGroupId ? { groupId: memoGroupId } : {}),
-      });
+      }).catch(() => null);
+      if (!created) return;
       addToast('メモを追加しました');
       setValue('');
       timeInput.reset();

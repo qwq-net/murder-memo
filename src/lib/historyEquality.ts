@@ -23,10 +23,7 @@ interface CollapsibleGroup {
  * 並び順が同じであることを前提とする（store の各アクションは map で順序を保つ）。
  * 使われ方: store/index.ts の zundo `equality` から timelineGroups / memoGroups の比較に使う。
  */
-export function groupsEqualIgnoringCollapse(
-  a: CollapsibleGroup[],
-  b: CollapsibleGroup[],
-): boolean {
+export function groupsEqualIgnoringCollapse(a: CollapsibleGroup[], b: CollapsibleGroup[]): boolean {
   if (a === b) return true;
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {

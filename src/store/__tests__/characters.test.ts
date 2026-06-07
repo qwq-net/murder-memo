@@ -5,27 +5,34 @@
  * というカスケード削除のドメインルールを保証することが目的。
  */
 
-const mockDeleteCharacter = vi.fn().mockResolvedValue(undefined);
-const mockDeleteRelation = vi.fn().mockResolvedValue(undefined);
-const mockDeleteDeduction = vi.fn().mockResolvedValue(undefined);
+// removeCharacter はキャラ本体＋相関図＋推理メモ＋エントリの掃除を単一トランザクション
+// （removeCharacterCascade）で行う。連動内訳はその引数 cascade で検証する。
+const mockRemoveCharacterCascade = vi.fn().mockResolvedValue(undefined);
 const mockPutCharacter = vi.fn().mockResolvedValue(undefined);
-const mockPutEntry = vi.fn().mockResolvedValue(undefined);
 const mockBulkPutCharacters = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/lib/idb', () => ({
-  deleteCharacter: (...args: unknown[]) => mockDeleteCharacter(...args),
-  deleteRelation: (...args: unknown[]) => mockDeleteRelation(...args),
-  deleteDeduction: (...args: unknown[]) => mockDeleteDeduction(...args),
+  removeCharacterCascade: (...args: unknown[]) => mockRemoveCharacterCascade(...args),
   putCharacter: (...args: unknown[]) => mockPutCharacter(...args),
-  putEntry: (...args: unknown[]) => mockPutEntry(...args),
   bulkPutCharacters: (...args: unknown[]) => mockBulkPutCharacters(...args),
   getCharactersBySession: vi.fn().mockResolvedValue([]),
   getEntriesBySession: vi.fn().mockResolvedValue([]),
 }));
 
-import type { CharacterDeduction } from '@/types/memo';
 import { useStore } from '@/store/index';
+import type { CharacterDeduction } from '@/types/memo';
 import { makeCharacter, makeEntry, makeRelation } from './helpers';
+
+/** removeCharacterCascade に渡された連動削除内訳（最後の呼び出し）を取り出す。 */
+function lastCascade(): {
+  characterId: string;
+  relationIds: string[];
+  deductionId?: string;
+  entryUpdates: { id: string }[];
+} {
+  const calls = mockRemoveCharacterCascade.mock.calls;
+  return calls[calls.length - 1][0];
+}
 
 function makeDeduction(overrides: Partial<CharacterDeduction> & { characterId: string }) {
   return {
@@ -59,7 +66,7 @@ describe('charactersSlice', () => {
       await useStore.getState().removeCharacter('alice');
 
       expect(useStore.getState().characters.map((c) => c.id)).toEqual(['bob']);
-      expect(mockDeleteCharacter).toHaveBeenCalledWith('alice');
+      expect(lastCascade().characterId).toBe('alice');
     });
 
     it('削除対象キャラを fromCharacterId に持つ関係が削除される', async () => {
@@ -78,7 +85,7 @@ describe('charactersSlice', () => {
       await useStore.getState().removeCharacter('alice');
 
       expect(useStore.getState().relations).toEqual([]);
-      expect(mockDeleteRelation).toHaveBeenCalledWith('rel-1');
+      expect(lastCascade().relationIds).toEqual(['rel-1']);
     });
 
     it('削除対象キャラを toCharacterId に持つ関係が削除される', async () => {
@@ -97,7 +104,7 @@ describe('charactersSlice', () => {
       await useStore.getState().removeCharacter('alice');
 
       expect(useStore.getState().relations).toEqual([]);
-      expect(mockDeleteRelation).toHaveBeenCalledWith('rel-2');
+      expect(lastCascade().relationIds).toEqual(['rel-2']);
     });
 
     it('複数の関係を持つキャラ削除時、関係する側だけが削除され他は保持される', async () => {
@@ -129,9 +136,7 @@ describe('charactersSlice', () => {
 
       // alice 絡みの 2 本だけ削除、bob ⇔ carol は残る
       expect(useStore.getState().relations.map((r) => r.id)).toEqual(['rel-bc']);
-      expect(mockDeleteRelation).toHaveBeenCalledWith('rel-ab');
-      expect(mockDeleteRelation).toHaveBeenCalledWith('rel-ac');
-      expect(mockDeleteRelation).not.toHaveBeenCalledWith('rel-bc');
+      expect(lastCascade().relationIds.sort()).toEqual(['rel-ab', 'rel-ac']);
     });
 
     it('関係が一つも無いキャラを削除しても relations は変化しない', async () => {
@@ -149,7 +154,7 @@ describe('charactersSlice', () => {
       await useStore.getState().removeCharacter('alice');
 
       expect(useStore.getState().relations).toEqual([bobCarolRel]);
-      expect(mockDeleteRelation).not.toHaveBeenCalled();
+      expect(lastCascade().relationIds).toEqual([]);
     });
 
     // 孤児参照のクリーンアップ（推理メモ・エントリのキャラクタータグ）
@@ -163,7 +168,7 @@ describe('charactersSlice', () => {
       await useStore.getState().removeCharacter('alice');
 
       expect(useStore.getState().deductions).toEqual([]);
-      expect(mockDeleteDeduction).toHaveBeenCalledWith('ded-alice');
+      expect(lastCascade().deductionId).toBe('ded-alice');
     });
 
     it('他キャラの推理メモは残し、削除対象の deduction だけ消す', async () => {
@@ -194,7 +199,7 @@ describe('charactersSlice', () => {
       await useStore.getState().removeCharacter('alice');
 
       expect(useStore.getState().entries[0].characterTags).toEqual(['bob']);
-      expect(mockPutEntry).toHaveBeenCalled();
+      expect(lastCascade().entryUpdates.map((e) => e.id)).toEqual(['e1']);
     });
 
     it('characterTags に削除対象を含まないエントリは putEntry されない', async () => {
@@ -208,7 +213,7 @@ describe('charactersSlice', () => {
       await useStore.getState().removeCharacter('alice');
 
       expect(useStore.getState().entries[0].characterTags).toEqual(['bob']);
-      expect(mockPutEntry).not.toHaveBeenCalled();
+      expect(lastCascade().entryUpdates).toEqual([]);
     });
 
     it('削除キャラが全パネルのキャラクターフィルターから除去される', async () => {

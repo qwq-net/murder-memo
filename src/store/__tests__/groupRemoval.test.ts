@@ -10,11 +10,15 @@
  * グループ削除でメモが消えた」という事故を招く。両方をペアでテストする。
  */
 
+// グループ削除は単一トランザクションのヘルパーに委譲する:
+//   - removeTimelineGroup → deleteTimelineGroupCascade(groupId, entryIds)
+//   - removeMemoGroup     → reassignMemoGroupAndDelete(groupId, reassignedEntries, sid)
+// 画像 blob は削除時にハード削除せず GC（cleanupOrphanImages）に委ねるため、
+// グループ削除経路では deleteImage を一切呼ばない（Undo 復活のため）。
 const mockPutEntry = vi.fn().mockResolvedValue(undefined);
-const mockDeleteEntry = vi.fn().mockResolvedValue(undefined);
 const mockDeleteImage = vi.fn().mockResolvedValue(undefined);
-const mockDeleteTimelineGroup = vi.fn().mockResolvedValue(undefined);
-const mockDeleteMemoGroup = vi.fn().mockResolvedValue(undefined);
+const mockDeleteTimelineGroupCascade = vi.fn().mockResolvedValue(undefined);
+const mockReassignMemoGroupAndDelete = vi.fn().mockResolvedValue(undefined);
 const mockPutTimelineGroup = vi.fn().mockResolvedValue(undefined);
 const mockPutMemoGroup = vi.fn().mockResolvedValue(undefined);
 const mockBulkPutTimelineGroups = vi.fn().mockResolvedValue(undefined);
@@ -22,10 +26,9 @@ const mockBulkPutMemoGroups = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/lib/idb', () => ({
   putEntry: (...args: unknown[]) => mockPutEntry(...args),
-  deleteEntry: (...args: unknown[]) => mockDeleteEntry(...args),
   deleteImage: (...args: unknown[]) => mockDeleteImage(...args),
-  deleteTimelineGroup: (...args: unknown[]) => mockDeleteTimelineGroup(...args),
-  deleteMemoGroup: (...args: unknown[]) => mockDeleteMemoGroup(...args),
+  deleteTimelineGroupCascade: (...args: unknown[]) => mockDeleteTimelineGroupCascade(...args),
+  reassignMemoGroupAndDelete: (...args: unknown[]) => mockReassignMemoGroupAndDelete(...args),
   putTimelineGroup: (...args: unknown[]) => mockPutTimelineGroup(...args),
   putMemoGroup: (...args: unknown[]) => mockPutMemoGroup(...args),
   bulkPutTimelineGroups: (...args: unknown[]) => mockBulkPutTimelineGroups(...args),
@@ -75,18 +78,19 @@ describe('グループ削除のドメインルール', () => {
 
       await useStore.getState().removeTimelineGroup('tg-1');
 
-      // グループ削除
+      // グループ削除（所属エントリ ID と共に単一トランザクションのカスケードへ委譲）
       expect(useStore.getState().timelineGroups).toEqual([]);
-      expect(mockDeleteTimelineGroup).toHaveBeenCalledWith('tg-1');
+      const [groupId, entryIds] = mockDeleteTimelineGroupCascade.mock.calls[0];
+      expect(groupId).toBe('tg-1');
+      expect([...entryIds].sort()).toEqual(['e-in-a', 'e-in-b']);
 
       // 所属エントリも削除されている（他グループのエントリは残る）
       expect(useStore.getState().entries.map((e) => e.id)).toEqual(['e-other']);
-      expect(mockDeleteEntry).toHaveBeenCalledWith('e-in-a');
-      expect(mockDeleteEntry).toHaveBeenCalledWith('e-in-b');
-      expect(mockDeleteEntry).not.toHaveBeenCalledWith('e-other');
     });
 
-    it('画像エントリを含む場合、IDB の画像 blob も削除される', async () => {
+    // 回帰防止: グループ削除では画像 blob をハード削除しない（Undo で復活しうるため）。
+    // 孤児 blob は安全な時点で cleanupOrphanImages がまとめて回収する。
+    it('画像エントリを含む場合でも IDB の画像 blob はハード削除しない（GC に委ねる）', async () => {
       const tg = makeTimelineGroup({ id: 'tg-1' });
       const imageEntry = makeEntry({
         id: 'e-img',
@@ -102,8 +106,12 @@ describe('グループ削除のドメインルール', () => {
 
       await useStore.getState().removeTimelineGroup('tg-1');
 
-      // deleteEntry 経由で deleteImage('blob-key-1') が呼ばれる
-      expect(mockDeleteImage).toHaveBeenCalledWith('blob-key-1');
+      // blob は即時削除されない（GC 方式）
+      expect(mockDeleteImage).not.toHaveBeenCalled();
+      // エントリ自体はカスケード対象として削除される
+      const [, entryIds] = mockDeleteTimelineGroupCascade.mock.calls[0];
+      expect(entryIds).toEqual(['e-img']);
+      expect(useStore.getState().entries).toEqual([]);
     });
 
     it('所属エントリが無いグループでも安全に削除できる', async () => {
@@ -113,8 +121,9 @@ describe('グループ削除のドメインルール', () => {
       await useStore.getState().removeTimelineGroup('tg-empty');
 
       expect(useStore.getState().timelineGroups).toEqual([]);
-      expect(mockDeleteTimelineGroup).toHaveBeenCalledWith('tg-empty');
-      expect(mockDeleteEntry).not.toHaveBeenCalled();
+      const [groupId, entryIds] = mockDeleteTimelineGroupCascade.mock.calls[0];
+      expect(groupId).toBe('tg-empty');
+      expect(entryIds).toEqual([]);
     });
   });
 
@@ -132,9 +141,12 @@ describe('グループ削除のドメインルール', () => {
 
       await useStore.getState().removeMemoGroup('mg-1');
 
-      // グループは削除
+      // グループは削除（未分類化エントリと共に単一トランザクションのヘルパーへ委譲）
       expect(useStore.getState().memoGroups).toEqual([]);
-      expect(mockDeleteMemoGroup).toHaveBeenCalledWith('mg-1');
+      const [groupId, reassigned] = mockReassignMemoGroupAndDelete.mock.calls[0];
+      expect(groupId).toBe('mg-1');
+      expect(reassigned.map((e: { id: string }) => e.id).sort()).toEqual(['e-in-a', 'e-in-b']);
+      expect(reassigned.every((e: { groupId?: string }) => e.groupId === undefined)).toBe(true);
 
       // エントリは消えず、groupId だけクリア
       const entries = useStore.getState().entries;
@@ -177,8 +189,9 @@ describe('グループ削除のドメインルール', () => {
       await useStore.getState().removeMemoGroup('mg-empty');
 
       expect(useStore.getState().memoGroups).toEqual([]);
-      expect(mockDeleteMemoGroup).toHaveBeenCalledWith('mg-empty');
-      expect(mockPutEntry).not.toHaveBeenCalled();
+      const [groupId, reassigned] = mockReassignMemoGroupAndDelete.mock.calls[0];
+      expect(groupId).toBe('mg-empty');
+      expect(reassigned).toEqual([]);
     });
 
     it('activeSessionId が null なら早期 return で何もしない', async () => {
@@ -193,7 +206,7 @@ describe('グループ削除のドメインルール', () => {
       await useStore.getState().removeMemoGroup('mg-1');
 
       // セッションなしでは何も起きない
-      expect(mockDeleteMemoGroup).not.toHaveBeenCalled();
+      expect(mockReassignMemoGroupAndDelete).not.toHaveBeenCalled();
       expect(useStore.getState().memoGroups).toEqual([mg]);
       expect(useStore.getState().entries[0].groupId).toBe('mg-1');
     });

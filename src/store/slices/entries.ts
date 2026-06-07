@@ -1,8 +1,8 @@
 import { nanoid } from 'nanoid';
 
-import { bulkPutEntries, deleteEntry, deleteImage, putEntry } from '@/lib/idb';
+import { bulkPutEntries, deleteEntry, putEntry } from '@/lib/idb';
 import type { StoreState } from '@/store/index';
-import type { MemoEntry, MemoEntryType, PanelId } from '@/types/memo';
+import type { MemoEntry, PanelId } from '@/types/memo';
 
 export interface EntriesSlice {
   entries: MemoEntry[];
@@ -14,8 +14,16 @@ export interface EntriesSlice {
   ) => Promise<MemoEntry>;
   updateEntry: (id: string, patch: Partial<MemoEntry>) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
-  moveEntryToPanel: (id: string, panel: PanelId) => Promise<void>;
-  reclassifyEntry: (id: string, type: MemoEntryType) => Promise<void>;
+  /**
+   * エントリを別パネルへ移動する。移動先がタイムラインなら所属グループ(timelineGroupId)を、
+   * メモパネルなら所属メモグループ(groupId)を opts で同時指定し、1 回の更新で原子的に確定する
+   * （panel と group を別アクションに分けると 2 手目失敗で不可視の孤児が残るため）。
+   */
+  moveEntryToPanel: (
+    id: string,
+    panel: PanelId,
+    opts?: { timelineGroupId?: string; groupId?: string },
+  ) => Promise<void>;
   toggleCharacterTag: (entryId: string, characterId: string) => Promise<void>;
   reorderEntries: (panel: PanelId, orderedIds: string[]) => Promise<void>;
   bulkLoadEntries: (entries: MemoEntry[], sessionId: string) => Promise<void>;
@@ -35,7 +43,9 @@ export const createEntriesSlice = (
    * updatedAt は自動採番。activeSessionId が無ければ throw する。
    *
    * 状態を先に同期更新してから IDB へ保存する（後続の addEntry が正しい maxOrder を読めるように）。
-   * このため IDB 保存失敗時はメモリに残ったまま（リロードで消える）になる点に注意。
+   * IDB 保存に失敗したら追加分のみを除去してロールバックし、エラートーストを出して **再 throw** する
+   * （updateEntry / reorderEntries と同じく「メモリと IDB を乖離させない」契約。新規追加なので
+   * 参照復元ではなく id 一致で除去する）。呼び手は throw を捕捉して後始末（画像 blob 削除等）できる。
    */
   addEntry: async (partial) => {
     const sessionId = get().activeSessionId;
@@ -56,7 +66,14 @@ export const createEntriesSlice = (
     };
     // 状態を先に同期更新（後続の addEntry が正しい maxOrder を取得できるように）
     set((s) => ({ entries: [...s.entries, entry] }));
-    await putEntry(entry, sessionId);
+    try {
+      await putEntry(entry, sessionId);
+    } catch (err) {
+      set((s) => ({ entries: s.entries.filter((e) => e.id !== entry.id) }));
+      get().addToast('メモの追加に失敗しました', 'error');
+      console.error('addEntry の保存に失敗しました', err);
+      throw err;
+    }
     return entry;
   },
 
@@ -86,62 +103,73 @@ export const createEntriesSlice = (
 
   /**
    * 指定エントリを削除する。
-   * 画像エントリの場合は参照している画像 blob（imageBlobKey）も IDB から削除する。
-   * 対象が無ければ delete は no-op。IDB 削除後にメモリ state から除去する。
+   * 画像エントリの画像 blob はここでは **ハード削除しない**（imageBlobKey 参照を持つエントリが
+   * 消えるだけ）。エントリ削除は TrackedState の変更なので Undo で復活しうるが、blob を即削除すると
+   * Undo 後に参照先を失って画像が壊れる。また複製で同一 blob を共有するケースもある。
+   * 参照されなくなった孤児 blob は、Undo 履歴が空の安全な時点（アプリ初期化）で
+   * cleanupOrphanImages がまとめて回収する。対象が無ければ no-op。
    */
   deleteEntry: async (id) => {
-    const entry = get().entries.find((e) => e.id === id);
-    if (entry?.imageBlobKey) await deleteImage(entry.imageBlobKey);
     await deleteEntry(id);
     set((s) => ({
       entries: s.entries.filter((e) => e.id !== id),
     }));
   },
 
-  /**
-   * エントリを別パネルへ移動する。
-   * タイムライン以外へ移す場合は、タイムライン固有の情報（timelineGroupId / eventTime /
-   * eventTimeSortKey）をクリアする（移動先で無効なデータが残らないように）。
-   * activeSessionId が無い・対象が無ければ no-op。
-   */
-  moveEntryToPanel: async (id, panel) => {
+  /** {@inheritDoc EntriesSlice.moveEntryToPanel} */
+  moveEntryToPanel: async (id, panel, opts = {}) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) return;
-    const entry = get().entries.find((e) => e.id === id);
+    const prev = get().entries;
+    const entry = prev.find((e) => e.id === id);
     if (!entry) return;
     const patch: Partial<MemoEntry> = { panel, updatedAt: Date.now() };
-    // タイムラインから離れる場合、グループ・時刻情報をクリア
-    if (panel !== 'timeline') {
+    if (panel === 'timeline') {
+      // タイムラインへ: type を timeline 化し所属グループを設定する。これで
+      // 「panel==='timeline' は timelineGroupId 必須」の不変条件を 1 回の更新で満たし、
+      // 旧来の「move → 別 update」2 段階による不可視孤児（timelineGroupId 欠落）を防ぐ。
+      // メモグループ参照はタイムラインでは無効なのでクリアする。
+      patch.type = 'timeline';
+      patch.timelineGroupId = opts.timelineGroupId;
+      patch.groupId = undefined;
+    } else {
+      // タイムラインから離れる: グループ・時刻情報をクリア（移動先で無効なデータを残さない）
       patch.timelineGroupId = undefined;
       patch.eventTime = undefined;
       patch.eventTimeSortKey = undefined;
+      // 呼び手が移動先メモグループを指定した場合のみ groupId を更新する（未指定なら保持）
+      if ('groupId' in opts) patch.groupId = opts.groupId;
     }
     const updated = { ...entry, ...patch };
-    await putEntry(updated, sessionId);
+    // 楽観更新 → 失敗時は参照ごとロールバック＋エラートースト（updateEntry と同方式）
     set((s) => ({ entries: s.entries.map((e) => (e.id === id ? updated : e)) }));
-  },
-
-  reclassifyEntry: async (id, type) => {
-    const sessionId = get().activeSessionId;
-    if (!sessionId) return;
-    const entry = get().entries.find((e) => e.id === id);
-    if (!entry) return;
-    const updated = { ...entry, type, updatedAt: Date.now() };
-    await putEntry(updated, sessionId);
-    set((s) => ({ entries: s.entries.map((e) => (e.id === id ? updated : e)) }));
+    try {
+      await putEntry(updated, sessionId);
+    } catch (err) {
+      set(() => ({ entries: prev }));
+      get().addToast('メモの移動に失敗しました', 'error');
+      console.error('moveEntryToPanel の保存に失敗しました', err);
+    }
   },
 
   toggleCharacterTag: async (entryId, characterId) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) return;
-    const entry = get().entries.find((e) => e.id === entryId);
+    const prev = get().entries;
+    const entry = prev.find((e) => e.id === entryId);
     if (!entry) return;
     const tags = entry.characterTags.includes(characterId)
       ? entry.characterTags.filter((t) => t !== characterId)
       : [...entry.characterTags, characterId];
     const updated = { ...entry, characterTags: tags, updatedAt: Date.now() };
-    await putEntry(updated, sessionId);
     set((s) => ({ entries: s.entries.map((e) => (e.id === entryId ? updated : e)) }));
+    try {
+      await putEntry(updated, sessionId);
+    } catch (err) {
+      set(() => ({ entries: prev }));
+      get().addToast('関連人物の更新に失敗しました', 'error');
+      console.error('toggleCharacterTag の保存に失敗しました', err);
+    }
   },
 
   /**

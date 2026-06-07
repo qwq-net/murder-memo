@@ -1,25 +1,11 @@
 import type { StoreState } from '@/store/index';
 import { syncStateToIdb } from '../undoSync';
 
-// idb モジュールのモック
-const mockClearSessionData = vi.fn().mockResolvedValue(undefined);
-const mockBulkPutEntries = vi.fn().mockResolvedValue(undefined);
-const mockBulkPutCharacters = vi.fn().mockResolvedValue(undefined);
-const mockBulkPutTimelineGroups = vi.fn().mockResolvedValue(undefined);
-const mockBulkPutMemoGroups = vi.fn().mockResolvedValue(undefined);
-const mockBulkPutDeductions = vi.fn().mockResolvedValue(undefined);
-const mockBulkPutRelations = vi.fn().mockResolvedValue(undefined);
-const mockBulkPutLinkKeywords = vi.fn().mockResolvedValue(undefined);
+// idb モジュールのモック。syncStateToIdb は単一トランザクションの replaceSessionData に委譲する。
+const mockReplaceSessionData = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/lib/idb', () => ({
-  clearSessionData: (...args: unknown[]) => mockClearSessionData(...args),
-  bulkPutEntries: (...args: unknown[]) => mockBulkPutEntries(...args),
-  bulkPutCharacters: (...args: unknown[]) => mockBulkPutCharacters(...args),
-  bulkPutTimelineGroups: (...args: unknown[]) => mockBulkPutTimelineGroups(...args),
-  bulkPutMemoGroups: (...args: unknown[]) => mockBulkPutMemoGroups(...args),
-  bulkPutDeductions: (...args: unknown[]) => mockBulkPutDeductions(...args),
-  bulkPutRelations: (...args: unknown[]) => mockBulkPutRelations(...args),
-  bulkPutLinkKeywords: (...args: unknown[]) => mockBulkPutLinkKeywords(...args),
+  replaceSessionData: (...args: unknown[]) => mockReplaceSessionData(...args),
 }));
 
 function makeState(overrides: Partial<StoreState> = {}): StoreState {
@@ -43,58 +29,33 @@ describe('syncStateToIdb', () => {
 
   it('activeSessionId が null なら何もしない', async () => {
     await syncStateToIdb(makeState({ activeSessionId: null }));
-    expect(mockClearSessionData).not.toHaveBeenCalled();
-    expect(mockBulkPutEntries).not.toHaveBeenCalled();
+    expect(mockReplaceSessionData).not.toHaveBeenCalled();
   });
 
-  it('最初に clearSessionData を呼ぶ', async () => {
-    await syncStateToIdb(makeState());
-    expect(mockClearSessionData).toHaveBeenCalledWith('session-1', true);
-  });
-
-  // 回帰防止: 画像 blob は書き戻せないため keepImages=true で温存させる。
-  // false だと clearSessionData が画像を消し、Undo/Redo 一回で全画像が失われる
-  it('clearSessionData を keepImages=true で呼ぶ（画像消失の回帰防止）', async () => {
-    await syncStateToIdb(makeState());
-    expect(mockClearSessionData).toHaveBeenCalledWith('session-1', true);
-    expect(mockClearSessionData).not.toHaveBeenCalledWith('session-1');
-  });
-
-  it('全ストアの bulk put を呼ぶ', async () => {
+  // replaceSessionData は削除→書き戻しを単一トランザクションで行う。
+  // これにより「clear は成功したが bulkPut が失敗してストアが空のまま確定」する旧バグを防ぐ。
+  it('replaceSessionData に全 TrackedState + linkKeywords を渡して委譲する', async () => {
     const state = makeState();
     await syncStateToIdb(state);
-    expect(mockBulkPutEntries).toHaveBeenCalledWith(state.entries, 'session-1');
-    expect(mockBulkPutCharacters).toHaveBeenCalledWith(state.characters, 'session-1');
-    expect(mockBulkPutTimelineGroups).toHaveBeenCalledWith(state.timelineGroups);
-    expect(mockBulkPutMemoGroups).toHaveBeenCalledWith(state.memoGroups);
-    expect(mockBulkPutDeductions).toHaveBeenCalledWith(state.deductions);
-    expect(mockBulkPutRelations).toHaveBeenCalledWith(state.relations);
-  });
-
-  // 回帰防止: linkKeywords は TrackedState 外だが clearSessionData が消すため、
-  // 書き戻さないと Undo/Redo のたびに IDB 上の辞書が失われる
-  it('linkKeywords も IDB に書き戻す（辞書消失の回帰防止）', async () => {
-    const state = makeState();
-    await syncStateToIdb(state);
-    expect(mockBulkPutLinkKeywords).toHaveBeenCalledWith(state.linkKeywords, 'session-1');
-  });
-
-  it('activeSessionId が null なら linkKeywords も書き戻さない', async () => {
-    await syncStateToIdb(makeState({ activeSessionId: null }));
-    expect(mockBulkPutLinkKeywords).not.toHaveBeenCalled();
-  });
-
-  it('clearSessionData → bulk put の順序で実行される', async () => {
-    const callOrder: string[] = [];
-    mockClearSessionData.mockImplementation(async () => {
-      callOrder.push('clear');
+    expect(mockReplaceSessionData).toHaveBeenCalledTimes(1);
+    const [data, sid] = mockReplaceSessionData.mock.calls[0];
+    expect(sid).toBe('session-1');
+    expect(data).toEqual({
+      entries: state.entries,
+      characters: state.characters,
+      timelineGroups: state.timelineGroups,
+      memoGroups: state.memoGroups,
+      deductions: state.deductions,
+      relations: state.relations,
+      // 回帰防止: linkKeywords は TrackedState 外だが書き戻さないと辞書が失われる
+      linkKeywords: state.linkKeywords,
     });
-    mockBulkPutEntries.mockImplementation(async () => {
-      callOrder.push('entries');
-    });
+  });
 
-    await syncStateToIdb(makeState());
-    expect(callOrder[0]).toBe('clear');
-    expect(callOrder).toContain('entries');
+  // 回帰防止: 書き戻しが失敗したら呼び手が検知できるよう throw する（黙殺しない）。
+  // 単一トランザクションのため IDB 側はロールバックされ「空のまま確定」しない。
+  it('replaceSessionData が reject したら throw する（呼び手が通知できるように）', async () => {
+    mockReplaceSessionData.mockRejectedValueOnce(new Error('IDB error'));
+    await expect(syncStateToIdb(makeState())).rejects.toThrow('IDB error');
   });
 });

@@ -215,7 +215,14 @@ describe('validateExport', () => {
         },
       ],
       relations: [
-        { id: 'r1', sessionId: 's1', fromCharacterId: 'c1', toCharacterId: 'c1', label: '', sortOrder: 0 },
+        {
+          id: 'r1',
+          sessionId: 's1',
+          fromCharacterId: 'c1',
+          toCharacterId: 'c1',
+          label: '',
+          sortOrder: 0,
+        },
       ],
     });
     expect(validateExport(data)).toBe(true);

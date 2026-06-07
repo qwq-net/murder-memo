@@ -2,46 +2,40 @@
  * Undo/Redo 後のインメモリ状態を IndexedDB に書き戻して同期するモジュール。
  * zundo はインメモリ状態のみ巻き戻すため、永続層への反映は syncStateToIdb が担う。
  */
-import {
-  bulkPutCharacters,
-  bulkPutDeductions,
-  bulkPutEntries,
-  bulkPutLinkKeywords,
-  bulkPutMemoGroups,
-  bulkPutRelations,
-  bulkPutTimelineGroups,
-  clearSessionData,
-} from '@/lib/idb';
+import { replaceSessionData } from '@/lib/idb';
 import type { StoreState } from '@/store/index';
 
 /**
  * Undo/Redo 直後のインメモリ状態を、対象セッションの IndexedDB へ完全リセット方式で書き戻す。
  *
  * - activeSessionId が無ければ何もしない（no-op）
- * - clearSessionData(sid, keepImages=true) で対象セッションの全ストアを一旦空にしてから
- *   現在の state を書き戻す（差分更新ではなく総入れ替え）
+ * - 永続化は idb の {@link replaceSessionData} に委譲する。これは「対象セッション配下の削除 →
+ *   現 state の書き戻し」を **単一トランザクション** で行うため、途中失敗（QuotaExceeded・abort 等）
+ *   でも全体がロールバックされ、「一部ストアが空のまま確定してデータ消失」する事故が起きない
+ *   （旧実装は clearSessionData と各 bulkPut が別トランザクションで、bulkPut 失敗時にそのストアが
+ *   空のまま残る恐れがあった）。
  * - 書き戻す対象: entries / characters / timelineGroups / memoGroups / deductions / relations
- *   （= store の TrackedState。Undo/Redo で巻き戻る範囲そのもの）に加えて linkKeywords も書き戻す。
- *   linkKeywords は TrackedState 外で Undo/Redo の巻き戻し対象ではないが、clearSessionData が
- *   link-keywords ストアごと消すため、現在の state を書き戻さないと IDB 上の辞書が失われてしまう
- *   （メモリ上は残るため再読込時まで損失に気付けない）。よってここで必ず書き戻して整合を保つ。
- * - 画像 blob は state に本体を持たず書き戻せないため、keepImages=true で clearSessionData に
- *   消させない。これを怠ると Undo/Redo 一回でセッションの全画像が IDB から消えて全滅する。
+ *   （= TrackedState。Undo/Redo で巻き戻る範囲）に加えて linkKeywords も含める。linkKeywords は
+ *   TrackedState 外だが、セッション配下削除で消えるため書き戻さないと IDB 上の辞書が失われる。
+ * - 画像 blob は state に本体を持たず書き戻せないため replaceSessionData は images を触らない
+ *   （旧 keepImages=true 相当）。これを怠ると Undo/Redo 一回でセッションの全画像が失われる。
+ * - 失敗時は throw する。呼び手（useUndoRedo）は catch でユーザーに通知すること（黙殺禁止）。
  */
 export async function syncStateToIdb(state: StoreState): Promise<void> {
   const sid = state.activeSessionId;
   if (!sid) return;
 
-  // keepImages=true: 画像 blob は書き戻せないため温存する（消すと全画像が失われる）
-  await clearSessionData(sid, true);
-  await Promise.all([
-    bulkPutEntries(state.entries, sid),
-    bulkPutCharacters(state.characters, sid),
-    bulkPutTimelineGroups(state.timelineGroups),
-    bulkPutMemoGroups(state.memoGroups),
-    bulkPutDeductions(state.deductions),
-    bulkPutRelations(state.relations),
-    // linkKeywords は TrackedState 外だが clearSessionData が消すため必ず書き戻す
-    bulkPutLinkKeywords(state.linkKeywords, sid),
-  ]);
+  await replaceSessionData(
+    {
+      entries: state.entries,
+      characters: state.characters,
+      timelineGroups: state.timelineGroups,
+      memoGroups: state.memoGroups,
+      deductions: state.deductions,
+      relations: state.relations,
+      // linkKeywords は TrackedState 外だが、セッション配下削除で消えるため必ず書き戻す
+      linkKeywords: state.linkKeywords,
+    },
+    sid,
+  );
 }

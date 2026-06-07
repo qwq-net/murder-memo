@@ -30,6 +30,8 @@ export function SearchOverlay() {
   const entries = useStore((s) => s.entries);
   const order = useStore((s) => s.layout.order);
   const setActivePanel = useStore((s) => s.setActivePanel);
+  const revealEntry = useStore((s) => s.revealEntry);
+  const addToast = useStore((s) => s.addToast);
 
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -104,13 +106,17 @@ export function SearchOverlay() {
     [grouped],
   );
 
-  // 結果クリック → エントリにスクロール＆ハイライト
+  // 結果クリック → 対象を可視化（折りたたみ展開・干渉フィルタ解除）してからスクロール＆ハイライト。
+  // 折りたたみグループ内やフィルタ非表示のエントリでも遷移できるようにする（旧実装は無反応だった）。
   const handleSelect = useCallback(
     (entry: MemoEntry) => {
       close();
-      navigateToEntry(entry.id, entry.panel, setActivePanel);
+      revealEntry(entry);
+      navigateToEntry(entry.id, entry.panel, setActivePanel, () =>
+        addToast('対象のメモを表示できませんでした', 'error'),
+      );
     },
-    [close, setActivePanel],
+    [close, setActivePanel, revealEntry, addToast],
   );
 
   if (!isOpen) return null;

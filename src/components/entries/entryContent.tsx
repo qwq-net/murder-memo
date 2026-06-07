@@ -2,7 +2,7 @@
  * テキスト編集 + 役職マーカー（CharacterBadgeBar）の共通コンポーネント。
  * TextEntry と TimelineEntry の両方から利用される。
  */
-import { type RefObject, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import { type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
 import { EntryContentView } from '@/components/entries/entryContentView';
@@ -26,6 +26,12 @@ interface EntryContentProps {
   autoFocus?: boolean;
   /** コンテナ内フォーカス移動で blur 保存をスキップするための ref */
   containerRef?: RefObject<HTMLDivElement | null>;
+  /**
+   * 親（TimelineEntry）が編集終了時に本文ドラフトを確定できるよう、最新の確定関数を公開する ref。
+   * 時刻 input がコンテナ外へ blur した際に textarea の blur 保存がスキップされ本文が失われる問題
+   * （時刻だけ保存される）を防ぐため、親はこれを呼んで本文＋時刻をまとめて保存する。
+   */
+  commitDraftRef?: RefObject<(() => void) | null>;
 }
 
 export function EntryContent({
@@ -35,6 +41,7 @@ export function EntryContent({
   onEscape,
   autoFocus = true,
   containerRef,
+  commitDraftRef,
 }: EntryContentProps) {
   const focusedEntryId = useStore((s) => s.focusedEntryId);
   const setFocusedEntry = useStore((s) => s.setFocusedEntry);
@@ -111,6 +118,16 @@ export function EntryContent({
     },
     [containerRef, draftBlur],
   );
+
+  // 親が編集終了時に本文ドラフトを確定できるよう、最新の draftBlur を ref に公開する。
+  // draftBlur は内部で onSave（本文＋時刻をまとめて保存）→ setFocusedEntry(null) を行う。
+  useEffect(() => {
+    if (!commitDraftRef) return;
+    commitDraftRef.current = draftBlur;
+    return () => {
+      commitDraftRef.current = null;
+    };
+  }, [commitDraftRef, draftBlur]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

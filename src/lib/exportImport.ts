@@ -102,7 +102,11 @@ export function validateExport(data: any): data is MurderMemoExport {
 
   // 必須配列の要素検証（import が前提とする参照フィールドの有無）
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (!data.entries.every((e: any) => e != null && typeof e.id === 'string' && Array.isArray(e.characterTags)))
+  if (
+    !data.entries.every(
+      (e: any) => e != null && typeof e.id === 'string' && Array.isArray(e.characterTags),
+    )
+  )
     return false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (!data.characters.every((c: any) => c != null && typeof c.id === 'string')) return false;
@@ -391,7 +395,8 @@ export async function importSession(file: File): Promise<GameSession> {
     );
     if (newDeductions.length > 0) writes.push(bulkPutDeductions(newDeductions));
     if (newRelations.length > 0) writes.push(bulkPutRelations(newRelations));
-    if (newLinkKeywords.length > 0) writes.push(bulkPutLinkKeywords(newLinkKeywords, newSession.id));
+    if (newLinkKeywords.length > 0)
+      writes.push(bulkPutLinkKeywords(newLinkKeywords, newSession.id));
 
     // 画像の復元（並列で書き込み。画像は entries.imageBlobKey から参照される）
     for (const img of data.images) {

@@ -1,5 +1,5 @@
 import type { StoreState } from '@/store/index';
-import type { PanelId, PanelLayoutConfig } from '@/types/memo';
+import type { MemoEntry, PanelId, PanelLayoutConfig } from '@/types/memo';
 
 const EMPTY_FILTER: Record<PanelId, string[]> = { free: [], personal: [], timeline: [] };
 
@@ -53,6 +53,12 @@ export interface UiSlice {
   setSessionSwitcherOpen: (open: boolean) => void;
   setFocusedEntry: (id: string | null) => void;
   setUncategorizedCollapsed: (panel: string, collapsed: boolean) => void;
+  /**
+   * 指定エントリを画面上で可視状態にする（検索結果クリック時のスクロール前準備）。
+   * 所属グループ（タイムライン/メモ/未分類）が折りたたまれていれば展開し、当該パネルの
+   * キャラクターフィルターが対象エントリを隠している場合のみ解除する。スクロールは別途行う。
+   */
+  revealEntry: (entry: MemoEntry) => void;
   toggleCharacterFilter: (panel: PanelId, characterId: string) => void;
   clearCharacterFilter: (panel: PanelId) => void;
   clearAllCharacterFilters: () => void;
@@ -76,6 +82,7 @@ const DEFAULT_LAYOUT: PanelLayoutConfig = {
 
 export const createUiSlice = (
   set: (fn: (s: StoreState) => Partial<StoreState>) => void,
+  get: () => StoreState,
 ): UiSlice => ({
   layout: DEFAULT_LAYOUT,
   activePanel: 'free',
@@ -113,6 +120,38 @@ export const createUiSlice = (
 
   setUncategorizedCollapsed: (panel, collapsed) =>
     set((s) => ({ uncategorizedCollapsed: { ...s.uncategorizedCollapsed, [panel]: collapsed } })),
+
+  revealEntry: (entry) => {
+    const state = get();
+    // 1. 所属グループ（折りたたみ）を展開して対象を可視化する
+    if (entry.panel === 'timeline') {
+      const g = entry.timelineGroupId
+        ? state.timelineGroups.find((tg) => tg.id === entry.timelineGroupId)
+        : undefined;
+      if (g?.collapsed) state.updateTimelineGroup(g.id, { collapsed: false });
+    } else if (entry.groupId) {
+      const g = state.memoGroups.find((mg) => mg.id === entry.groupId);
+      if (g?.collapsed) state.updateMemoGroup(g.id, { collapsed: false });
+    } else if (state.uncategorizedCollapsed[entry.panel]) {
+      set((s) => ({
+        uncategorizedCollapsed: { ...s.uncategorizedCollapsed, [entry.panel]: false },
+      }));
+    }
+    // 2. 干渉するキャラクターフィルターを解除（対象が現フィルターで非表示になる場合のみ）。
+    //    判定は MemoPanel / TimelinePanel と同じ predicate（タグ一致 or 本文にキャラ名）に揃える。
+    const filterIds = state.characterFilter[entry.panel];
+    if (filterIds.length > 0) {
+      const filterNames = state.characters
+        .filter((c) => filterIds.includes(c.id) && c.name.length > 0)
+        .map((c) => c.name);
+      const visible =
+        filterIds.some((id) => entry.characterTags.includes(id)) ||
+        filterNames.some((name) => entry.content.includes(name));
+      if (!visible) {
+        set((s) => ({ characterFilter: { ...s.characterFilter, [entry.panel]: [] } }));
+      }
+    }
+  },
 
   toggleCharacterFilter: (panel, characterId) =>
     set((s) => {
