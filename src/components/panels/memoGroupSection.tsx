@@ -1,20 +1,20 @@
 import { GroupHeader } from '@/components/common/groupHeader';
-import { SortableEntryList } from '@/components/entries/sortableEntryList';
+import { SortableEntryColumn } from '@/components/entries/dnd/sortableEntryColumn';
 import { ChevronDown } from '@/components/icons';
 import { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
+import { memoContainerId } from '@/lib/entryDnd';
 import { useStore } from '@/store';
-import type { MemoEntry, MemoGroup, PanelId } from '@/types/memo';
+import type { MemoEntry, MemoGroup } from '@/types/memo';
 
 interface MemoGroupSectionProps {
   group: MemoGroup | null; // null = 未分類
-  panel: PanelId;
+  panel: 'free' | 'personal';
   entries: MemoEntry[];
   accentColor: string;
   onToggleCollapse?: (id: string) => void;
   onRemove?: (id: string) => Promise<void>;
   onUpdate?: (id: string, patch: Partial<Pick<MemoGroup, 'label' | 'collapsed'>>) => Promise<void>;
-  onReorderEntries: (orderedIds: string[]) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   /** フィルター適用中など、並び替えを無効化したいとき true */
@@ -28,7 +28,6 @@ export function MemoGroupSection({
   onToggleCollapse,
   onRemove,
   onUpdate,
-  onReorderEntries,
   onMoveUp,
   onMoveDown,
   panel,
@@ -99,19 +98,21 @@ export function MemoGroupSection({
         />
       )}
 
-      {/* エントリリスト */}
-      {!collapsed &&
-        (entries.length > 0 ? (
-          <SortableEntryList
-            entries={entries}
-            onReorder={onReorderEntries}
-            disabled={dndDisabled}
-          />
-        ) : !isUncategorized ? (
-          <div className="text-text-faint px-3 py-3.5 text-center text-sm">
-            メモを追加してください
-          </div>
-        ) : null)}
+      {/* エントリリスト — コンテナ跨ぎ DnD のドロップ先（空グループも droppable） */}
+      {!collapsed && (entries.length > 0 || !isUncategorized) && (
+        <SortableEntryColumn
+          containerId={memoContainerId(panel, group?.id)}
+          entries={entries}
+          disabled={dndDisabled}
+          emptyPlaceholder={
+            !isUncategorized ? (
+              <div className="text-text-faint px-3 py-3.5 text-center text-sm">
+                メモを追加してください
+              </div>
+            ) : undefined
+          }
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import { EmptyState } from '@/components/common/emptyState';
+import { PanelDndBoundary } from '@/components/entries/dnd/entriesDndContext';
 import { EntryInput } from '@/components/entries/entryInput';
 import { TimelineGroupSection } from '@/components/panels/timelineGroupSection';
 import { useGroupSwap } from '@/hooks/useGroupSwap';
@@ -16,7 +17,6 @@ export function TimelinePanel() {
   const updateTimelineGroup = useStore((s) => s.updateTimelineGroup);
   const addTimelineGroup = useStore((s) => s.addTimelineGroup);
   const addToast = useStore((s) => s.addToast);
-  const reorderEntries = useStore((s) => s.reorderEntries);
   const reorderTimelineGroups = useStore((s) => s.reorderTimelineGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
   const filterIds = useStore((s) => s.characterFilter.timeline);
@@ -72,21 +72,22 @@ export function TimelinePanel() {
             }}
           />
         ) : (
-          groupedData.map(({ group, hourGroups, unknown }, i) => (
-            <TimelineGroupSection
-              key={group.id}
-              group={group}
-              hourGroups={hourGroups}
-              unknownEntries={unknown}
-              onToggleCollapse={toggleTimelineGroupCollapse}
-              onRemove={removeTimelineGroup}
-              onUpdate={updateTimelineGroup}
-              onReorderEntries={(ids) => reorderEntries('timeline', ids)}
-              onMoveUp={i > 0 ? () => swapGroup(i, -1) : undefined}
-              onMoveDown={i < timelineGroups.length - 1 ? () => swapGroup(i, 1) : undefined}
-              dndDisabled={isFiltering}
-            />
-          ))
+          <PanelDndBoundary>
+            {groupedData.map(({ group, hourGroups, unknown }, i) => (
+              <TimelineGroupSection
+                key={group.id}
+                group={group}
+                hourGroups={hourGroups}
+                unknownEntries={unknown}
+                onToggleCollapse={toggleTimelineGroupCollapse}
+                onRemove={removeTimelineGroup}
+                onUpdate={updateTimelineGroup}
+                onMoveUp={i > 0 ? () => swapGroup(i, -1) : undefined}
+                onMoveDown={i < timelineGroups.length - 1 ? () => swapGroup(i, 1) : undefined}
+                dndDisabled={isFiltering}
+              />
+            ))}
+          </PanelDndBoundary>
         )}
       </div>
       {inputPosition === 'bottom' && entryInput}

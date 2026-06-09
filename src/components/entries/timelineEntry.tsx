@@ -146,14 +146,20 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
   // 時刻列の共通スタイル
   const timeStyle: React.CSSProperties = {
     width: 'var(--tl-time-width)',
+    // 不明（時刻なし）エントリは span の中身が空で高さが 0 に潰れ、クリック判定が消える。
+    // 最小高さを与えて常にクリック可能な領域を確保する（時刻あり/なしで同じ高さに揃える）。
+    minHeight: 22,
     flexShrink: 0,
     boxSizing: 'border-box',
     fontFamily: 'var(--font-mono)',
-    fontSize: 14,
+    // 時刻列は幅 50px と狭い。14px だと "23:00"/"--:--" が収まらず折り返し（span）や
+    // クリップ（input）が起きるため、フォント・字間・パディングを詰めて 1 行に収める。
+    fontSize: 13,
     lineHeight: 1.2,
-    letterSpacing: '0.04em',
+    letterSpacing: 0,
+    whiteSpace: 'nowrap',
     textAlign: 'center',
-    padding: '2px 4px',
+    padding: '2px 3px',
     background: 'transparent',
     border: '1px solid transparent',
     borderRadius: 'var(--radius-sm)',
@@ -187,7 +193,8 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
           }}
           style={{ ...timeStyle, cursor: 'text' }}
         >
-          {hideTime ? '' : (entry.eventTime ?? '')}
+          {/* 時刻なしはホバー時に薄い '--:--' を出し、クリックで入力できることを示す */}
+          {hideTime ? '' : (entry.eventTime ?? (isHovered ? '--:--' : ''))}
         </span>
       ) : (
         <input

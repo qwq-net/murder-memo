@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 
+import { timelineFieldPatch } from '@/lib/entryPanelTransform';
 import { bulkPutEntries, deleteEntry, putEntry } from '@/lib/idb';
 import type { StoreState } from '@/store/index';
 import type { MemoEntry, PanelId } from '@/types/memo';
@@ -32,6 +33,28 @@ export interface EntriesSlice {
   setEntryGroup: (id: string, groupId: string | undefined) => Promise<void>;
   toggleCharacterTag: (entryId: string, characterId: string) => Promise<void>;
   reorderEntries: (panel: PanelId, orderedIds: string[]) => Promise<void>;
+  /**
+   * コンテナ跨ぎの DnD 移動を 1 アクションで原子的に確定する。
+   *
+   * パネル・メモグループ・タイムライングループ・時刻（時間帯）の変更と、移動先パネル内での
+   * 並び順（orderedIds）を同時に反映する。reorderEntries（並びのみ）/ setEntryGroup
+   * （同一パネルのグループのみ）/ moveEntryToPanel（パネルのみ・末尾固定）を統合した、
+   * DnD 専用の上位アクション。
+   *
+   * - panel/timeline 系フィールドの整合は timelineFieldPatch（lib/entryPanelTransform）に集約
+   * - orderedIds は「移動先パネルの全エントリ id を移動後の表示順に並べたもの」。sortOrder を
+   *   index で再採番する（reorderEntries と同じ契約。フィルタ中は DnD 無効なので部分集合は来ない）
+   * - 楽観更新し、IDB 保存失敗時は移動前へロールバック＋エラートースト
+   */
+  moveEntryAcrossContainers: (args: {
+    id: string;
+    panel: PanelId;
+    groupId?: string;
+    timelineGroupId?: string;
+    eventTime?: string;
+    eventTimeSortKey?: number;
+    orderedIds: string[];
+  }) => Promise<void>;
 }
 
 export const createEntriesSlice = (
@@ -134,21 +157,16 @@ export const createEntriesSlice = (
       .filter((e) => e.panel === panel && e.id !== id)
       .reduce((m, e) => Math.max(m, e.sortOrder), -1);
     const patch: Partial<MemoEntry> = { panel, sortOrder: maxOrder + 1, updatedAt: Date.now() };
+    // panel/timeline 系フィールドの整合は timelineFieldPatch に集約（moveEntryAcrossContainers と共用）。
+    // 「panel==='timeline' は timelineGroupId 必須・type='timeline'」「timeline 以外では timeline 系
+    // フィールドをクリア」を 1 回の更新で満たし、不可視孤児（timelineGroupId 欠落）を防ぐ。
+    Object.assign(patch, timelineFieldPatch(panel, { timelineGroupId: opts.timelineGroupId }, entry));
     if (panel === 'timeline') {
-      // タイムラインへ: type を timeline 化し所属グループを設定する。これで
-      // 「panel==='timeline' は timelineGroupId 必須」の不変条件を 1 回の更新で満たし、
-      // 旧来の「move → 別 update」2 段階による不可視孤児（timelineGroupId 欠落）を防ぐ。
-      // メモグループ参照はタイムラインでは無効なのでクリアする。
-      patch.type = 'timeline';
-      patch.timelineGroupId = opts.timelineGroupId;
+      // メモグループ参照はタイムラインでは無効なのでクリアする
       patch.groupId = undefined;
-    } else {
-      // タイムラインから離れる: グループ・時刻情報をクリア（移動先で無効なデータを残さない）
-      patch.timelineGroupId = undefined;
-      patch.eventTime = undefined;
-      patch.eventTimeSortKey = undefined;
+    } else if ('groupId' in opts) {
       // 呼び手が移動先メモグループを指定した場合のみ groupId を更新する（未指定なら保持）
-      if ('groupId' in opts) patch.groupId = opts.groupId;
+      patch.groupId = opts.groupId;
     }
     const updated = { ...entry, ...patch };
     // 楽観更新 → 失敗時は参照ごとロールバック＋エラートースト（updateEntry と同方式）
@@ -233,6 +251,78 @@ export const createEntriesSlice = (
       set(() => ({ entries: prev }));
       get().addToast('並び替えの保存に失敗しました', 'error');
       console.error('reorderEntries の保存に失敗しました', err);
+    }
+  },
+
+  /** {@inheritDoc EntriesSlice.moveEntryAcrossContainers} */
+  moveEntryAcrossContainers: async ({
+    id,
+    panel,
+    groupId,
+    timelineGroupId,
+    eventTime,
+    eventTimeSortKey,
+    orderedIds,
+  }) => {
+    const sessionId = get().activeSessionId;
+    if (!sessionId) return;
+    const prev = get().entries;
+    const entry = prev.find((e) => e.id === id);
+    if (!entry) return;
+    const now = Date.now();
+
+    // 対象エントリの属性 patch（panel/timeline 整合は timelineFieldPatch に集約）
+    const attrs: Partial<MemoEntry> = {
+      panel,
+      ...timelineFieldPatch(panel, { timelineGroupId, eventTime, eventTimeSortKey }, entry),
+      groupId: panel === 'timeline' ? undefined : groupId,
+    };
+
+    // orderedIds による sortOrder 再採番（移動先パネルのみ）。対象エントリには属性変更も合成する。
+    const orderIndex = new Map(orderedIds.map((eid, i) => [eid, i]));
+    const changed: MemoEntry[] = [];
+    const updated = prev.map((e) => {
+      if (e.id === id) {
+        const moved: MemoEntry = {
+          ...e,
+          ...attrs,
+          sortOrder: orderIndex.get(id) ?? e.sortOrder,
+          updatedAt: now,
+        };
+        // updatedAt を除いて実質変化がなければ据え置く（no-op で Undo 履歴を汚さない）
+        const unchanged =
+          moved.panel === e.panel &&
+          moved.groupId === e.groupId &&
+          moved.timelineGroupId === e.timelineGroupId &&
+          moved.eventTime === e.eventTime &&
+          moved.eventTimeSortKey === e.eventTimeSortKey &&
+          moved.sortOrder === e.sortOrder &&
+          moved.type === e.type;
+        if (unchanged) return e;
+        changed.push(moved);
+        return moved;
+      }
+      // 移動先パネルに属し orderedIds に含まれる他エントリの sortOrder を採番する
+      const idx = orderIndex.get(e.id);
+      if (idx !== undefined && e.panel === panel && e.sortOrder !== idx) {
+        const reordered = { ...e, sortOrder: idx, updatedAt: now };
+        changed.push(reordered);
+        return reordered;
+      }
+      return e;
+    });
+
+    // 実質変化が無ければ何もしない（参照を変えず Undo 履歴・IDB 書き込みを発生させない）
+    if (changed.length === 0) return;
+
+    // 楽観更新 → 失敗時は移動前へロールバック＋エラートースト（reorderEntries と同方式）
+    set(() => ({ entries: updated }));
+    try {
+      await bulkPutEntries(changed, sessionId);
+    } catch (err) {
+      set(() => ({ entries: prev }));
+      get().addToast('メモの移動に失敗しました', 'error');
+      console.error('moveEntryAcrossContainers の保存に失敗しました', err);
     }
   },
 });

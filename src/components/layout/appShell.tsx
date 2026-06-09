@@ -3,6 +3,7 @@ import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel
 import { ToastContainer } from '@/components/common/toast';
 import { WelcomeModal } from '@/components/common/welcomeModal';
 import { DeductionModal } from '@/components/deductions/deductionModal';
+import { EntriesDndContext } from '@/components/entries/dnd/entriesDndContext';
 import { useSelection } from '@/components/entries/selectionContext';
 import {
   ChevronLeft,
@@ -465,9 +466,14 @@ export function AppShell() {
           <MobileTabNav />
         </>
       ) : (
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <PanelContainer panels={orderedPanels} />
-        </div>
+        // デスクトップは全パネルを 1 つの DnD コンテキストで包み、カラム（パネル）間の
+        // エントリ移動も成立させる。モバイル（単一パネル表示）は各パネルが自前で
+        // コンテキストを張るため、ここでは包まない。
+        <EntriesDndContext>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <PanelContainer panels={orderedPanels} />
+          </div>
+        </EntriesDndContext>
       )}
 
       {/* Footer */}

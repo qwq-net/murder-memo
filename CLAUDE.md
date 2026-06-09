@@ -54,6 +54,16 @@ App → SelectionProvider → AppShell
   └── SettingsPanel（モーダル）
 ```
 
+#### エントリ DnD（コンテナ跨ぎ）
+
+エントリのドラッグ&ドロップは `src/components/entries/dnd/` に3層で分離する:
+
+- **EntriesDndContext**: `DndContext` + `DragOverlay` + sensors を持つ提供側。`closestCorners` で判定し、ドロップ確定を `planEntryMove`（純関数）に委ねて `moveEntryAcrossContainers` を呼ぶ。
+- **SortableEntryColumn**: 1 コンテナ（メモグループ / タイムラインの時間帯・不明）を表す droppable な列。`useDroppable` で**空コンテナにも落とせる**。`DndContext` は持たない。
+- **SortableEntryCard**: `useSortable` 対応カード（`React.memo`、Shift 複数選択と共存）。
+
+スコープは **デスクトップ=全パネルを 1 つの EntriesDndContext で包む**（AppShell の PanelContainer をラップ）ことでカラム（パネル）間移動も成立させ、**モバイル=各パネルが自前で EntriesDndContext を張る**。この切替は `PanelDndBoundary`（`useInEntriesDnd` で親コンテキストの有無を見て二重生成を防ぐ）が担う。フィルター中のパネルは「表示が部分集合」になり sortOrder が壊れるため、列を `disabled` にしてドラッグ開始を抑止し、確定側でも移動元・移動先パネルのフィルターを再チェックして弾く。
+
 ### カスタム Hooks（`src/hooks/`）
 
 | フック                      | 用途                                                                |
@@ -120,6 +130,7 @@ SVG アイコンは `icons/index.tsx` に集約。`size` と `className` props �
 - ヘッダーのボタンは `HeaderButton` コンポーネント（`src/components/layout/headerButton.tsx`）で統一。`btn-ghost` の対象外
 - 動的な色（ランタイムで変わる値）は `style` 属性を使用
 - `color-mix()` は可読性を優先して `style` 属性で記述
+- クリック可能にする要素が空になりうる場合（時刻なしエントリの時刻列など）は、幅だけでなく最小高さ（または中身）を与える（理由: flex アイテムは中身が空だと交差サイズ＝高さが 0 に潰れ、幅があってもクリック判定が消える。実例: `timelineEntry.tsx` の時刻列 `minHeight`）
 
 ## 開発原則
 
@@ -153,7 +164,8 @@ SVG アイコンは `icons/index.tsx` に集約。`size` と `className` props �
 
 - **タイムライン時刻**: `eventTime` と `eventTimeSortKey` は「両方設定 or 両方 undefined」で必ず整合する。保存は `src/lib/timeParser.ts` の `resolveEventTime` に集約し、不正時刻（範囲外の `25:00` 等）は保存しない（entryInput / timelineEntry の両経路で経由）。
 - **カスケード削除**: キャラクター削除（`removeCharacter`）は関連する相関図・推理メモ・エントリの `characterTags`・キャラクターフィルターからの参照も連動して掃除する。タイムライングループ削除は所属エントリごと削除、メモグループ削除は所属エントリを未分類化（エントリは残す）。これらのカスケード（characters / timeline / memo）は `src/lib/idb.ts` の単一トランザクションヘルパー（`removeCharacterCascade` / `deleteTimelineGroupCascade` / `reassignMemoGroupAndDelete`）に集約し、途中失敗で「参照だけ残る中途半端な状態」を作らない。ストア側は楽観更新し、失敗時は state を巻き戻してエラートーストを出す。
-- **楽観更新のロールバック**: `set` を先行させる更新（`addEntry` / `updateEntry` / `moveEntryToPanel` / `reclassify 相当` / `toggleCharacterTag` / `reorderEntries` とカスケード削除）は、IDB 書き込み失敗時に state を巻き戻す（参照ごと復元して Undo 履歴を汚さない）。`addEntry` は新規追加なので「追加分のみ id で除去」してから **再 throw** し、呼び手が後始末（画像 blob 削除等）できるようにする。
+- **楽観更新のロールバック**: `set` を先行させる更新（`addEntry` / `updateEntry` / `moveEntryToPanel` / `moveEntryAcrossContainers` / `reclassify 相当` / `toggleCharacterTag` / `reorderEntries` とカスケード削除）は、IDB 書き込み失敗時に state を巻き戻す（参照ごと復元して Undo 履歴を汚さない）。`addEntry` は新規追加なので「追加分のみ id で除去」してから **再 throw** し、呼び手が後始末（画像 blob 削除等）できるようにする。
+- **コンテナ跨ぎ DnD の原子確定**: ドラッグ&ドロップによるエントリ移動は `moveEntryAcrossContainers`（entries スライス）に集約する。パネル・メモグループ・タイムライングループ・時刻（時間帯）の変更と、移動先パネル内の並び順（`orderedIds` による sortOrder 再採番）を **1 アクション**で原子的に確定する（`reorderEntries` / `setEntryGroup` / `moveEntryToPanel` を統合した上位版。後者は右クリックメニュー移動・既存テスト用に温存）。panel/timeline 系フィールドの整合（`panel==='timeline'` は `timelineGroupId`+`type:'timeline'`、timeline 以外は timeline 系フィールドをクリア）は `src/lib/entryPanelTransform.ts` の `timelineFieldPatch` に集約し `moveEntryToPanel` と共用する。ドロップ確定の組み立て（移動先コンテナ解決・挿入位置・時刻継承）は純関数 `src/lib/entryDnd.ts` の `planEntryMove`（補助: `resolveDropTarget` / `computeReorderedIds` / コンテナ id 規約）と `src/lib/timelineDrop.ts` の `resolveInheritedEventTime`（隣接エントリの時刻を継承、不明列はクリア、`resolveEventTime` 経由で整合）に分離してテスト可能にする。実質変化が無いドロップは `set` せず Undo 履歴・IDB 書き込みを発生させない。
 - **画像 blob のライフサイクル（GC 方式）**: 画像 blob は state に本体を持たず `imageBlobKey` 参照のみ。エントリ/グループ/セッションの削除では blob を **ハード削除しない**（即削除すると Undo でエントリが復活したとき参照先を失う／複製で共有する blob を巻き添えにする）。参照されなくなった孤児 blob は、Undo 履歴が空で安全なアプリ初期化時（`initSessions`）に `cleanupOrphanImages` がまとめて回収する。`deleteSession`（セッションごと削除・非 Undo 対象）のみ即時に blob も削除する。`moveEntryToPanel` はパネル移動と所属グループ設定（timeline は `timelineGroupId` + `type:'timeline'`、メモは `groupId`）を 1 回の `putEntry` で原子的に確定する。
 
 ## パフォーマンス注意点

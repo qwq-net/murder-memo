@@ -1,9 +1,11 @@
+import { useDndContext } from '@dnd-kit/core';
+
 import { GroupHeader } from '@/components/common/groupHeader';
-import { SortableEntryList } from '@/components/entries/sortableEntryList';
+import { SortableEntryColumn } from '@/components/entries/dnd/sortableEntryColumn';
 import { HourDividerView } from '@/components/panels/hourDividerView';
 import { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
-import { clusterByEventTime } from '@/lib/grouping';
+import { timelineHourContainerId, timelineUnknownContainerId } from '@/lib/entryDnd';
 import type { MemoEntry, TimelineGroup } from '@/types/memo';
 
 // ─── グループセクション ──────────────────────────────────────────────────────
@@ -18,7 +20,6 @@ export interface TimelineGroupSectionProps {
     id: string,
     patch: Partial<Pick<TimelineGroup, 'label' | 'collapsed'>>,
   ) => Promise<void>;
-  onReorderEntries: (orderedIds: string[]) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   /** フィルター適用中など、並び替えを無効化したいとき true */
@@ -32,13 +33,18 @@ export function TimelineGroupSection({
   onToggleCollapse,
   onRemove,
   onUpdate,
-  onReorderEntries,
   onMoveUp,
   onMoveDown,
   dndDisabled,
 }: TimelineGroupSectionProps) {
   const entryCount =
     hourGroups.reduce((sum, hg) => sum + hg.entries.length, 0) + unknownEntries.length;
+
+  // ドラッグ中は「不明（時刻なし）」へのドロップ先を常時表示する（既存の不明エントリが無くても、
+  // 時刻をクリアして取り込めるように）。非ドラッグ時は不明エントリがある場合のみ表示する。
+  const { active } = useDndContext();
+  const isDragging = active != null && !dndDisabled;
+  const showUnknownZone = unknownEntries.length > 0 || isDragging;
 
   const labelEditor = useGroupLabelEditor({
     initialLabel: group.label,
@@ -105,38 +111,41 @@ export function TimelineGroupSection({
           </div>
 
           <div className="pl-1.5">
-            {/* 時間帯グループ — 並び替えは「同一時刻のエントリ間のみ」に制限する。
-                異なる時刻のエントリは時刻ソートで並びが戻るため、同時刻クラスタごとに
-                別の並び替え単位（SortableEntryList）に分割して異時刻ドラッグを成立させない。 */}
+            {/* 時間帯グループ — 時間帯（時単位）ごとに 1 つの droppable 列。別の時間帯へドロップ
+                すると隣接エントリの時刻を継承する（並び替え単位は時間帯全体）。連続する同時刻の
+                時刻ラベルは hideTimeDuplicates で省略表示する。 */}
             {hourGroups.map((hg) => (
               <div key={hg.hour}>
                 <HourDividerView label={hg.label} />
-                {clusterByEventTime(hg.entries).map((cluster) => (
-                  <SortableEntryList
-                    key={cluster[0].id}
-                    entries={cluster}
-                    onReorder={onReorderEntries}
-                    hideTimeDuplicates
-                    disabled={dndDisabled}
-                  />
-                ))}
+                <SortableEntryColumn
+                  containerId={timelineHourContainerId(group.id, hg.hour)}
+                  entries={hg.entries}
+                  hideTimeDuplicates
+                  disabled={dndDisabled}
+                />
               </div>
             ))}
 
-            {/* 不明グループ — DnDで並び替え可能 */}
-            {unknownEntries.length > 0 && (
+            {/* 不明グループ — 時刻なし。ドロップすると時刻がクリアされる。
+                ドラッグ中は不明エントリが無くてもドロップ先として表示する。 */}
+            {showUnknownZone && (
               <div>
-                <HourDividerView label="不明" />
-                <SortableEntryList
+                <HourDividerView label="不明" muted />
+                <SortableEntryColumn
+                  containerId={timelineUnknownContainerId(group.id)}
                   entries={unknownEntries}
-                  onReorder={onReorderEntries}
                   disabled={dndDisabled}
+                  emptyPlaceholder={
+                    <div className="text-text-faint px-3 py-3 text-center text-xs">
+                      ここへドロップで時刻なし
+                    </div>
+                  }
                 />
               </div>
             )}
 
-            {/* 空の場合 */}
-            {hourGroups.length === 0 && unknownEntries.length === 0 && (
+            {/* 完全に空 & 非ドラッグ時のみ案内を出す（ドラッグ中は上の不明ゾーンが受け皿になる） */}
+            {hourGroups.length === 0 && unknownEntries.length === 0 && !isDragging && (
               <div className="text-text-faint px-3 py-3.5 text-center text-sm">
                 メモを追加してください
               </div>

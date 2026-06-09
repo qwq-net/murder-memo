@@ -2,9 +2,10 @@
  * 自由メモ / 自分用メモ の共通パネルコンポーネント。
  * FreeMemoPanel と PersonalMemoPanel で90%同一だったロジックを統合。
  */
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { EmptyState } from '@/components/common/emptyState';
+import { PanelDndBoundary } from '@/components/entries/dnd/entriesDndContext';
 import { EntryInput } from '@/components/entries/entryInput';
 import { MemoGroupSection } from '@/components/panels/memoGroupSection';
 import { useGroupSwap } from '@/hooks/useGroupSwap';
@@ -26,7 +27,6 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
   const updateMemoGroup = useStore((s) => s.updateMemoGroup);
   const addMemoGroup = useStore((s) => s.addMemoGroup);
   const addToast = useStore((s) => s.addToast);
-  const reorderEntries = useStore((s) => s.reorderEntries);
   const reorderMemoGroups = useStore((s) => s.reorderMemoGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
   const filterIds = useStore((s) => s.characterFilter[panel]);
@@ -61,11 +61,6 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
     [entries, panelGroups],
   );
 
-  const handleReorder = useCallback(
-    (ids: string[]) => reorderEntries(panel, ids),
-    [reorderEntries, panel],
-  );
-
   const swapGroup = useGroupSwap(panelGroups, reorderMemoGroups);
 
   const hasGroups = panelGroups.length > 0;
@@ -91,44 +86,45 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
               addToast('グループを追加しました');
             }}
           />
-        ) : hasGroups ? (
-          <>
-            {groupedData.uncategorized.length > 0 && (
+        ) : (
+          <PanelDndBoundary>
+            {hasGroups ? (
+              <>
+                {groupedData.uncategorized.length > 0 && (
+                  <MemoGroupSection
+                    group={null}
+                    panel={panel}
+                    entries={groupedData.uncategorized}
+                    accentColor={accentColor}
+                    dndDisabled={isFiltering}
+                  />
+                )}
+                {groupedData.grouped.map(({ group, entries: groupEntries }, i) => (
+                  <MemoGroupSection
+                    key={group.id}
+                    group={group}
+                    panel={panel}
+                    entries={groupEntries}
+                    accentColor={accentColor}
+                    onToggleCollapse={toggleMemoGroupCollapse}
+                    onRemove={removeMemoGroup}
+                    onUpdate={updateMemoGroup}
+                    onMoveUp={i > 0 ? () => swapGroup(i, -1) : undefined}
+                    onMoveDown={i < panelGroups.length - 1 ? () => swapGroup(i, 1) : undefined}
+                    dndDisabled={isFiltering}
+                  />
+                ))}
+              </>
+            ) : (
               <MemoGroupSection
                 group={null}
                 panel={panel}
-                entries={groupedData.uncategorized}
+                entries={entries}
                 accentColor={accentColor}
-                onReorderEntries={handleReorder}
                 dndDisabled={isFiltering}
               />
             )}
-            {groupedData.grouped.map(({ group, entries: groupEntries }, i) => (
-              <MemoGroupSection
-                key={group.id}
-                group={group}
-                panel={panel}
-                entries={groupEntries}
-                accentColor={accentColor}
-                onToggleCollapse={toggleMemoGroupCollapse}
-                onRemove={removeMemoGroup}
-                onUpdate={updateMemoGroup}
-                onReorderEntries={handleReorder}
-                onMoveUp={i > 0 ? () => swapGroup(i, -1) : undefined}
-                onMoveDown={i < panelGroups.length - 1 ? () => swapGroup(i, 1) : undefined}
-                dndDisabled={isFiltering}
-              />
-            ))}
-          </>
-        ) : (
-          <MemoGroupSection
-            group={null}
-            panel={panel}
-            entries={entries}
-            accentColor={accentColor}
-            onReorderEntries={handleReorder}
-            dndDisabled={isFiltering}
-          />
+          </PanelDndBoundary>
         )}
       </div>
       {inputPosition === 'bottom' && entryInput}

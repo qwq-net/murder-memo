@@ -325,4 +325,133 @@ describe('entriesSlice', () => {
       expect(useStore.getState().entries.find((e) => e.id === 'a')?.groupId).toBe('g1');
     });
   });
+
+  describe('moveEntryAcrossContainers（コンテナ跨ぎ DnD の原子確定）', () => {
+    it('メモグループ間移動: groupId 変更 + orderedIds で sortOrder を再採番', async () => {
+      useStore.setState({
+        entries: [
+          makeEntry({ id: 'a', panel: 'free', groupId: 'g1', sortOrder: 0 }),
+          makeEntry({ id: 'b', panel: 'free', groupId: 'g2', sortOrder: 1 }),
+        ],
+      });
+
+      await useStore.getState().moveEntryAcrossContainers({
+        id: 'a',
+        panel: 'free',
+        groupId: 'g2',
+        orderedIds: ['b', 'a'],
+      });
+
+      const a = useStore.getState().entries.find((e) => e.id === 'a');
+      expect(a?.groupId).toBe('g2');
+      expect(a?.sortOrder).toBe(1);
+      expect(useStore.getState().entries.find((e) => e.id === 'b')?.sortOrder).toBe(0);
+    });
+
+    it('メモ → タイムライン移動: type/timelineGroupId/時刻を設定し groupId をクリア', async () => {
+      useStore.setState({
+        entries: [makeEntry({ id: 'a', panel: 'free', type: 'text', groupId: 'g1' })],
+      });
+
+      await useStore.getState().moveEntryAcrossContainers({
+        id: 'a',
+        panel: 'timeline',
+        timelineGroupId: 'tg-1',
+        eventTime: '13:00',
+        eventTimeSortKey: 780,
+        orderedIds: ['a'],
+      });
+
+      const a = useStore.getState().entries.find((e) => e.id === 'a');
+      expect(a?.panel).toBe('timeline');
+      expect(a?.type).toBe('timeline');
+      expect(a?.timelineGroupId).toBe('tg-1');
+      expect(a?.eventTime).toBe('13:00');
+      expect(a?.eventTimeSortKey).toBe(780);
+      expect(a?.groupId).toBeUndefined();
+    });
+
+    it('タイムライン → メモ移動: timeline 系フィールドを完全クリア', async () => {
+      useStore.setState({
+        entries: [
+          makeEntry({
+            id: 'a',
+            panel: 'timeline',
+            type: 'timeline',
+            timelineGroupId: 'tg-1',
+            eventTime: '13:00',
+            eventTimeSortKey: 780,
+          }),
+        ],
+      });
+
+      await useStore.getState().moveEntryAcrossContainers({
+        id: 'a',
+        panel: 'personal',
+        groupId: undefined,
+        orderedIds: ['a'],
+      });
+
+      const a = useStore.getState().entries.find((e) => e.id === 'a');
+      expect(a?.panel).toBe('personal');
+      expect(a?.timelineGroupId).toBeUndefined();
+      expect(a?.eventTime).toBeUndefined();
+      expect(a?.eventTimeSortKey).toBeUndefined();
+      // timeline を離れたら type も timeline を残さない（カードの左バー位置のズレ防止）
+      expect(a?.type).toBe('text');
+    });
+
+    it('実質変化が無ければ put されない（no-op で Undo を汚さない）', async () => {
+      useStore.setState({
+        entries: [makeEntry({ id: 'a', panel: 'free', groupId: 'g1', sortOrder: 0 })],
+      });
+
+      await useStore.getState().moveEntryAcrossContainers({
+        id: 'a',
+        panel: 'free',
+        groupId: 'g1',
+        orderedIds: ['a'],
+      });
+
+      expect(mockBulkPutEntries).not.toHaveBeenCalled();
+    });
+
+    it('bulkPutEntries が失敗したら移動前へロールバックする', async () => {
+      useStore.setState({
+        entries: [
+          makeEntry({ id: 'a', panel: 'free', groupId: 'g1', sortOrder: 0 }),
+          makeEntry({ id: 'b', panel: 'free', groupId: 'g2', sortOrder: 1 }),
+        ],
+      });
+      mockBulkPutEntries.mockRejectedValueOnce(new Error('IDB error'));
+
+      await useStore.getState().moveEntryAcrossContainers({
+        id: 'a',
+        panel: 'free',
+        groupId: 'g2',
+        orderedIds: ['b', 'a'],
+      });
+
+      const a = useStore.getState().entries.find((e) => e.id === 'a');
+      expect(a?.groupId).toBe('g1');
+      expect(a?.sortOrder).toBe(0);
+    });
+
+    it('activeSessionId が null なら何もしない', async () => {
+      useStore.setState({
+        activeSessionId: null,
+        entries: [makeEntry({ id: 'a', panel: 'free', groupId: 'g1' })],
+      });
+
+      await useStore.getState().moveEntryAcrossContainers({
+        id: 'a',
+        panel: 'free',
+        groupId: 'g2',
+        orderedIds: ['a'],
+      });
+
+      expect(mockBulkPutEntries).not.toHaveBeenCalled();
+      expect(useStore.getState().entries.find((e) => e.id === 'a')?.groupId).toBe('g1');
+    });
+  });
 });

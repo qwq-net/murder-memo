@@ -1,5 +1,5 @@
 import type { MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
-import { clusterByEventTime, groupEntriesByMemoGroup, groupEntriesByTimeline } from '../grouping';
+import { groupEntriesByMemoGroup, groupEntriesByTimeline } from '../grouping';
 
 // テスト用のエントリ生成ヘルパー
 function makeEntry(overrides: Partial<MemoEntry> & { id: string }): MemoEntry {
@@ -160,26 +160,3 @@ describe('groupEntriesByTimeline', () => {
   });
 });
 
-describe('clusterByEventTime', () => {
-  it('連続する同一 eventTimeSortKey ごとにクラスタ分割する', () => {
-    const entries = [
-      makeEntry({ id: 'a', eventTimeSortKey: 540 }), // 9:00
-      makeEntry({ id: 'b', eventTimeSortKey: 540 }), // 9:00
-      makeEntry({ id: 'c', eventTimeSortKey: 585 }), // 9:45
-    ];
-    const clusters = clusterByEventTime(entries);
-    expect(clusters.map((c) => c.map((e) => e.id))).toEqual([['a', 'b'], ['c']]);
-  });
-
-  it('空配列なら空のクラスタ列', () => {
-    expect(clusterByEventTime([])).toEqual([]);
-  });
-
-  it('全て異なる時刻なら 1 件ずつのクラスタ', () => {
-    const entries = [
-      makeEntry({ id: 'a', eventTimeSortKey: 540 }),
-      makeEntry({ id: 'b', eventTimeSortKey: 600 }),
-    ];
-    expect(clusterByEventTime(entries).map((c) => c.length)).toEqual([1, 1]);
-  });
-});
