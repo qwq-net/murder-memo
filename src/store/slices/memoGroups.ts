@@ -95,12 +95,18 @@ export const createMemoGroupsSlice = (
   },
 
   reorderMemoGroups: async (orderedIds) => {
+    // sortOrder が実際に変化したグループだけを IDB へ書き込む（free/personal 両パネル分を
+    // 毎回全件 put するのは無駄。reorderEntries と同じく変化分のみに絞る）。state は全件を反映。
+    const changed: MemoGroup[] = [];
     const updated = get().memoGroups.map((g) => {
       const idx = orderedIds.indexOf(g.id);
-      return idx === -1 ? g : { ...g, sortOrder: idx };
+      if (idx === -1 || g.sortOrder === idx) return g;
+      const next = { ...g, sortOrder: idx };
+      changed.push(next);
+      return next;
     });
     updated.sort((a, b) => a.sortOrder - b.sortOrder);
-    await bulkPutMemoGroups(updated);
+    await bulkPutMemoGroups(changed);
     set(() => ({ memoGroups: updated }));
   },
 

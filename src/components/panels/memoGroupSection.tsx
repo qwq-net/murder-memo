@@ -17,6 +17,8 @@ interface MemoGroupSectionProps {
   onReorderEntries: (orderedIds: string[]) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  /** フィルター適用中など、並び替えを無効化したいとき true */
+  dndDisabled?: boolean;
 }
 
 export function MemoGroupSection({
@@ -30,6 +32,7 @@ export function MemoGroupSection({
   onMoveUp,
   onMoveDown,
   panel,
+  dndDisabled,
 }: MemoGroupSectionProps) {
   const isUncategorized = group === null;
 
@@ -99,7 +102,11 @@ export function MemoGroupSection({
       {/* エントリリスト */}
       {!collapsed &&
         (entries.length > 0 ? (
-          <SortableEntryList entries={entries} onReorder={onReorderEntries} />
+          <SortableEntryList
+            entries={entries}
+            onReorder={onReorderEntries}
+            disabled={dndDisabled}
+          />
         ) : !isUncategorized ? (
           <div className="text-text-faint px-3 py-3.5 text-center text-sm">
             メモを追加してください

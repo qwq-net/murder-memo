@@ -24,9 +24,14 @@ export interface EntriesSlice {
     panel: PanelId,
     opts?: { timelineGroupId?: string; groupId?: string },
   ) => Promise<void>;
+  /**
+   * 同一パネル内でエントリの所属メモグループ（groupId。undefined で未分類）を変更する。
+   * 移動先グループの末尾へ置くため sortOrder を当該パネルの最大 +1 に採番する
+   * （据え置くと移動先での表示位置が旧 sortOrder 依存で不定になるため）。
+   */
+  setEntryGroup: (id: string, groupId: string | undefined) => Promise<void>;
   toggleCharacterTag: (entryId: string, characterId: string) => Promise<void>;
   reorderEntries: (panel: PanelId, orderedIds: string[]) => Promise<void>;
-  bulkLoadEntries: (entries: MemoEntry[], sessionId: string) => Promise<void>;
 }
 
 export const createEntriesSlice = (
@@ -123,7 +128,12 @@ export const createEntriesSlice = (
     const prev = get().entries;
     const entry = prev.find((e) => e.id === id);
     if (!entry) return;
-    const patch: Partial<MemoEntry> = { panel, updatedAt: Date.now() };
+    // 移動先パネルの末尾へ配置する（sortOrder を据え置くと移動先での表示位置が
+    // 旧 sortOrder 依存で不定になるため、移動先の最大 sortOrder + 1 を採番する）
+    const maxOrder = prev
+      .filter((e) => e.panel === panel && e.id !== id)
+      .reduce((m, e) => Math.max(m, e.sortOrder), -1);
+    const patch: Partial<MemoEntry> = { panel, sortOrder: maxOrder + 1, updatedAt: Date.now() };
     if (panel === 'timeline') {
       // タイムラインへ: type を timeline 化し所属グループを設定する。これで
       // 「panel==='timeline' は timelineGroupId 必須」の不変条件を 1 回の更新で満たし、
@@ -149,6 +159,26 @@ export const createEntriesSlice = (
       set(() => ({ entries: prev }));
       get().addToast('メモの移動に失敗しました', 'error');
       console.error('moveEntryToPanel の保存に失敗しました', err);
+    }
+  },
+
+  setEntryGroup: async (id, groupId) => {
+    const sessionId = get().activeSessionId;
+    if (!sessionId) return;
+    const prev = get().entries;
+    const entry = prev.find((e) => e.id === id);
+    if (!entry || entry.groupId === groupId) return;
+    const maxOrder = prev
+      .filter((e) => e.panel === entry.panel && e.id !== id)
+      .reduce((m, e) => Math.max(m, e.sortOrder), -1);
+    const updated = { ...entry, groupId, sortOrder: maxOrder + 1, updatedAt: Date.now() };
+    set((s) => ({ entries: s.entries.map((e) => (e.id === id ? updated : e)) }));
+    try {
+      await putEntry(updated, sessionId);
+    } catch (err) {
+      set(() => ({ entries: prev }));
+      get().addToast('グループの変更に失敗しました', 'error');
+      console.error('setEntryGroup の保存に失敗しました', err);
     }
   },
 
@@ -204,10 +234,5 @@ export const createEntriesSlice = (
       get().addToast('並び替えの保存に失敗しました', 'error');
       console.error('reorderEntries の保存に失敗しました', err);
     }
-  },
-
-  bulkLoadEntries: async (entries, sessionId) => {
-    await bulkPutEntries(entries, sessionId);
-    set(() => ({ entries }));
   },
 });

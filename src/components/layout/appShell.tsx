@@ -46,6 +46,12 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
   const updateTimelineGroup = useStore((s) => s.updateTimelineGroup);
   const uncategorizedCollapsed = useStore((s) => s.uncategorizedCollapsed[panelId] ?? false);
   const setUncategorizedCollapsed = useStore((s) => s.setUncategorizedCollapsed);
+  // 未分類セクションは「そのパネルに未分類エントリが存在する」ときだけ表示される。
+  // 存在しないのに折りたたみ状態を全開/全閉判定に含めると、ボタンの活性が実態とずれるため、
+  // 実際に未分類エントリがあるかで判定する（タイムラインは未分類概念が無いので常に false）。
+  const hasUncategorized = useStore((s) =>
+    panelId === 'timeline' ? false : s.entries.some((e) => e.panel === panelId && !e.groupId),
+  );
 
   const groups =
     panelId === 'timeline' ? timelineGroups : memoGroups.filter((g) => g.panel === panelId);
@@ -53,7 +59,6 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
   if (groups.length === 0) return null;
 
   // 未分類も含めた全体の折りたたみ状態を判定
-  const hasUncategorized = panelId !== 'timeline';
   const allCollapsed =
     groups.every((g) => g.collapsed) && (!hasUncategorized || uncategorizedCollapsed);
   const allExpanded =
@@ -361,7 +366,7 @@ export function AppShell() {
             </button>
             {/* New session */}
             <button
-              onClick={() => {
+              onClick={async () => {
                 const today = new Date();
                 const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
                 const baseName = `セッション ${dateStr}`;
@@ -373,9 +378,18 @@ export function AppShell() {
                 );
                 const name =
                   sameDate.length === 0 ? baseName : `${baseName}-${sameDate.length + 1}`;
+                // 作成は activeSessionId 切替で subscribe が pause→load→resume する。
+                // ただし作成自体（putSession）が失敗すると subscribe が走らず resume されないため、
+                // 失敗時はここで resume し、成功を確認してからトーストを出す（虚偽の成功通知を防ぐ）。
                 useStore.temporal.getState().pause();
-                createSession(name);
-                addToast('セッションを作成しました');
+                try {
+                  await createSession(name);
+                  addToast('セッションを作成しました');
+                } catch (err) {
+                  useStore.temporal.getState().resume();
+                  addToast('セッションの作成に失敗しました', 'error');
+                  console.error('セッション作成に失敗しました', err);
+                }
               }}
               title="新しいセッション"
               className="btn-ghost"

@@ -100,6 +100,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
                 entries={groupedData.uncategorized}
                 accentColor={accentColor}
                 onReorderEntries={handleReorder}
+                dndDisabled={isFiltering}
               />
             )}
             {groupedData.grouped.map(({ group, entries: groupEntries }, i) => (
@@ -115,6 +116,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
                 onReorderEntries={handleReorder}
                 onMoveUp={i > 0 ? () => swapGroup(i, -1) : undefined}
                 onMoveDown={i < panelGroups.length - 1 ? () => swapGroup(i, 1) : undefined}
+                dndDisabled={isFiltering}
               />
             ))}
           </>
@@ -125,6 +127,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
             entries={entries}
             accentColor={accentColor}
             onReorderEntries={handleReorder}
+            dndDisabled={isFiltering}
           />
         )}
       </div>

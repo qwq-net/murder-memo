@@ -145,7 +145,7 @@ SVG アイコンは `icons/index.tsx` に集約。`size` と `className` props �
   3. IndexedDB スキーマ変更時は `DB_VERSION` バンプ + upgrade 関数追加
   4. エクスポート → インポートのラウンドトリップで動作確認
 
-`importSession` は全 ID を新規採番し（元セッションと共存可）、書き込み途中で失敗したら `Promise.allSettled` 後に `deleteSession` で巻き戻す。`validateExport` は必須配列の要素の参照フィールドまで検証する。
+`importSession` は全 ID を新規採番し（元セッションと共存可）、書き込み途中で失敗したら `Promise.allSettled` 後に `deleteSession` で巻き戻す。`validateExport` は必須配列の要素の参照フィールドに加え、値域（`session.name` が文字列・`entry.panel` が既知 PanelId・`deduction.suspicionLevel` が 0〜3・`relation.label` が文字列）も検証する。インポート時はエントリの `eventTime`/`eventTimeSortKey` を `resolveEventTime` で再正規化し（不正な時刻ペアを永続化しない）、自己参照の相関図（from === to）は取り込まない。`getEntriesBySession` は内部フィールド `sessionId` を剥がして返す（エクスポート JSON へ漏出させない）。
 
 ## ドメイン整合性ルール
 

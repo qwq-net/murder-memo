@@ -3,6 +3,7 @@ import { SortableEntryList } from '@/components/entries/sortableEntryList';
 import { HourDividerView } from '@/components/panels/hourDividerView';
 import { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
+import { clusterByEventTime } from '@/lib/grouping';
 import type { MemoEntry, TimelineGroup } from '@/types/memo';
 
 // ─── グループセクション ──────────────────────────────────────────────────────
@@ -20,6 +21,8 @@ export interface TimelineGroupSectionProps {
   onReorderEntries: (orderedIds: string[]) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  /** フィルター適用中など、並び替えを無効化したいとき true */
+  dndDisabled?: boolean;
 }
 
 export function TimelineGroupSection({
@@ -32,6 +35,7 @@ export function TimelineGroupSection({
   onReorderEntries,
   onMoveUp,
   onMoveDown,
+  dndDisabled,
 }: TimelineGroupSectionProps) {
   const entryCount =
     hourGroups.reduce((sum, hg) => sum + hg.entries.length, 0) + unknownEntries.length;
@@ -101,15 +105,21 @@ export function TimelineGroupSection({
           </div>
 
           <div className="pl-1.5">
-            {/* 時間帯グループ — 同一時間帯内でDnDソート可能 */}
+            {/* 時間帯グループ — 並び替えは「同一時刻のエントリ間のみ」に制限する。
+                異なる時刻のエントリは時刻ソートで並びが戻るため、同時刻クラスタごとに
+                別の並び替え単位（SortableEntryList）に分割して異時刻ドラッグを成立させない。 */}
             {hourGroups.map((hg) => (
               <div key={hg.hour}>
                 <HourDividerView label={hg.label} />
-                <SortableEntryList
-                  entries={hg.entries}
-                  onReorder={onReorderEntries}
-                  hideTimeDuplicates
-                />
+                {clusterByEventTime(hg.entries).map((cluster) => (
+                  <SortableEntryList
+                    key={cluster[0].id}
+                    entries={cluster}
+                    onReorder={onReorderEntries}
+                    hideTimeDuplicates
+                    disabled={dndDisabled}
+                  />
+                ))}
               </div>
             ))}
 
@@ -117,7 +127,11 @@ export function TimelineGroupSection({
             {unknownEntries.length > 0 && (
               <div>
                 <HourDividerView label="不明" />
-                <SortableEntryList entries={unknownEntries} onReorder={onReorderEntries} />
+                <SortableEntryList
+                  entries={unknownEntries}
+                  onReorder={onReorderEntries}
+                  disabled={dndDisabled}
+                />
               </div>
             )}
 

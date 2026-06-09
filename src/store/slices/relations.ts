@@ -31,11 +31,16 @@ export const createRelationsSlice = (
 
   /**
    * 相関図の関係線を追加する。sortOrder は既存の最大+1、id / sessionId は自動付与。
-   * activeSessionId が無ければ throw する。IDB へ保存し、生成した関係を返す。
+   * activeSessionId が無ければ throw する。自己参照（from === to）も throw する
+   * （UI でも抑止済みだが、点に潰れる無意味な線を防ぐ防御。複数ラベルの同一ペアは許容）。
+   * IDB へ保存し、生成した関係を返す。
    */
   addRelation: async (partial) => {
     const { activeSessionId, relations } = get();
     if (!activeSessionId) throw new Error('No active session');
+    if (partial.fromCharacterId === partial.toCharacterId) {
+      throw new Error('自己参照の関係は作成できません');
+    }
 
     const maxOrder = relations.reduce((m, r) => Math.max(m, r.sortOrder), -1);
     const relation: CharacterRelation = {

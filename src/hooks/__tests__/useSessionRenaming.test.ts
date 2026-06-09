@@ -10,6 +10,16 @@ function makeSession(overrides: Partial<GameSession> & { id: string; name: strin
   };
 }
 
+/** keydown モック生成（nativeEvent.isComposing と blur 可能な target を持たせる） */
+function keyEvent(key: string, isComposing = false): React.KeyboardEvent {
+  return {
+    key,
+    shiftKey: false,
+    nativeEvent: { isComposing },
+    target: { blur: vi.fn() },
+  } as unknown as React.KeyboardEvent;
+}
+
 describe('useSessionRenaming', () => {
   const renameSession = vi.fn().mockResolvedValue(undefined);
   const sessions = [
@@ -59,9 +69,32 @@ describe('useSessionRenaming', () => {
       useSessionRenaming({ sessions, activeSessionId: 's1', renameSession }),
     );
     act(() => result.current.startRenaming());
-    act(() => result.current.handleKeyDown({ key: 'Escape' } as React.KeyboardEvent));
+    act(() => result.current.handleKeyDown(keyEvent('Escape')));
 
     expect(result.current.isRenaming).toBe(false);
+  });
+
+  it('handleKeyDown Enter（変換確定でない）で blur が呼ばれる', () => {
+    const { result } = renderHook(() =>
+      useSessionRenaming({ sessions, activeSessionId: 's1', renameSession }),
+    );
+    act(() => result.current.startRenaming());
+    const e = keyEvent('Enter');
+    act(() => result.current.handleKeyDown(e));
+
+    expect((e.target as unknown as { blur: ReturnType<typeof vi.fn> }).blur).toHaveBeenCalled();
+  });
+
+  // 回帰防止 (#10): IME 変換確定の Enter（isComposing=true）では blur（=保存）しない
+  it('handleKeyDown IME 変換中の Enter では blur しない', () => {
+    const { result } = renderHook(() =>
+      useSessionRenaming({ sessions, activeSessionId: 's1', renameSession }),
+    );
+    act(() => result.current.startRenaming());
+    const e = keyEvent('Enter', true);
+    act(() => result.current.handleKeyDown(e));
+
+    expect((e.target as unknown as { blur: ReturnType<typeof vi.fn> }).blur).not.toHaveBeenCalled();
   });
 
   it('activeSessionId が null の場合は handleBlur で何もしない', () => {

@@ -87,3 +87,27 @@ export function groupEntriesByTimeline(
     return { group, hourGroups, unknown };
   });
 }
+
+/**
+ * 時刻付きエントリ列を、連続する同一 eventTimeSortKey ごとのクラスタに分割する。
+ *
+ * タイムラインの手動並び替え（DnD）を「同一時刻のエントリ間のみ」に制限するために使う。
+ * タイムライン表示は eventTimeSortKey を第一キーにソートするため、異なる時刻のエントリを
+ * ドラッグしても並びは時刻順に戻り「無反応」に見える。クラスタごとに別の並び替え単位とすれば、
+ * 異時刻ドラッグ自体が成立せず、同一時刻内の sortOrder 並び替えだけが有効になる。
+ *
+ * 入力は eventTimeSortKey 昇順（同値は sortOrder 昇順）に整列済みである前提
+ * （{@link groupEntriesByTimeline} の hourGroups.entries がこの順序を満たす）。
+ */
+export function clusterByEventTime(entries: MemoEntry[]): MemoEntry[][] {
+  const clusters: MemoEntry[][] = [];
+  for (const e of entries) {
+    const last = clusters[clusters.length - 1];
+    if (last && last[0].eventTimeSortKey === e.eventTimeSortKey) {
+      last.push(e);
+    } else {
+      clusters.push([e]);
+    }
+  }
+  return clusters;
+}

@@ -43,9 +43,8 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
           if (hasTime) {
             ctx.updateEntry(entry.id, { eventTime: undefined, eventTimeSortKey: undefined });
           } else {
-            ctx.updateEntry(entry.id, {});
-            const { setFocusedEntry } = useStore.getState();
-            setFocusedEntry(entry.id);
+            // 編集状態にしつつ、本文ではなく時刻入力へフォーカスするよう要求する
+            useStore.getState().requestTimeEdit(entry.id);
           }
         },
       });

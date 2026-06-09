@@ -47,14 +47,27 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 /**
  * localStorage から設定を読み込む。
- * 保存値は DEFAULT_SETTINGS に上書きマージするため、新フィールド追加時も既定値で補完される。
+ * トップレベルは DEFAULT_SETTINGS に上書きマージし、新フィールド追加時も既定値で補完される。
+ * ネストした defaultCharacterDisplay は **パネルごとに** 既定値で補完する（浅いマージだと
+ * パネルキーが欠けた保存値で nested オブジェクトごと上書きされ、消費側
+ * `settings.defaultCharacterDisplay[panel].format` 参照が undefined アクセスでクラッシュするため）。
  * 値が無い・JSON 解析に失敗した場合は DEFAULT_SETTINGS をそのまま返す（壊れた設定でも落ちない）。
  */
 function readSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    const stored = JSON.parse(raw) as Partial<AppSettings>;
+    const storedDisplay: Partial<AppSettings['defaultCharacterDisplay']> =
+      stored.defaultCharacterDisplay ?? {};
+    const panels: PanelId[] = ['free', 'timeline', 'personal'];
+    const defaultCharacterDisplay = Object.fromEntries(
+      panels.map((p) => [
+        p,
+        { ...DEFAULT_SETTINGS.defaultCharacterDisplay[p], ...storedDisplay[p] },
+      ]),
+    ) as AppSettings['defaultCharacterDisplay'];
+    return { ...DEFAULT_SETTINGS, ...stored, defaultCharacterDisplay };
   } catch {
     return DEFAULT_SETTINGS;
   }

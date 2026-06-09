@@ -1,11 +1,6 @@
 import { nanoid } from 'nanoid';
 
-import {
-  bulkPutLinkKeywords,
-  deleteLinkKeyword,
-  getLinkKeywordsBySession,
-  putLinkKeyword,
-} from '@/lib/idb';
+import { deleteLinkKeyword, getLinkKeywordsBySession, putLinkKeyword } from '@/lib/idb';
 import type { StoreState } from '@/store/index';
 import type { LinkKeyword } from '@/types/memo';
 
@@ -20,8 +15,6 @@ export interface LinkKeywordsSlice {
    */
   addLinkKeywords: (words: string[]) => Promise<void>;
   removeLinkKeyword: (id: string) => Promise<void>;
-  /** インポート用一括投入 */
-  bulkLoadLinkKeywords: (keywords: LinkKeyword[], sessionId: string) => Promise<void>;
 }
 
 export const createLinkKeywordsSlice = (
@@ -63,10 +56,5 @@ export const createLinkKeywordsSlice = (
   removeLinkKeyword: async (id) => {
     await deleteLinkKeyword(id);
     set((s) => ({ linkKeywords: s.linkKeywords.filter((k) => k.id !== id) }));
-  },
-
-  bulkLoadLinkKeywords: async (keywords, sessionId) => {
-    await bulkPutLinkKeywords(keywords, sessionId);
-    set(() => ({ linkKeywords: keywords }));
   },
 });

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 
+import { isCancelEscape, isCommitEnter } from '@/lib/keyboardKeys';
 import { useStore } from '@/store';
 
 interface UseGroupLabelEditorParams {
@@ -44,8 +45,9 @@ export function useGroupLabelEditor({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') saveLabel();
-      if (e.key === 'Escape') cancelEditing();
+      // IME 変換確定の Enter で誤保存しないよう isCommitEnter で判定する
+      if (isCommitEnter(e)) saveLabel();
+      else if (isCancelEscape(e)) cancelEditing();
     },
     [saveLabel, cancelEditing],
   );

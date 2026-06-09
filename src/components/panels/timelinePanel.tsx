@@ -84,6 +84,7 @@ export function TimelinePanel() {
               onReorderEntries={(ids) => reorderEntries('timeline', ids)}
               onMoveUp={i > 0 ? () => swapGroup(i, -1) : undefined}
               onMoveDown={i < timelineGroups.length - 1 ? () => swapGroup(i, 1) : undefined}
+              dndDisabled={isFiltering}
             />
           ))
         )}

@@ -3,7 +3,6 @@ import { useCallback, useRef, useState } from 'react';
 import { useStore } from '@/store';
 
 interface UseEntryDraftParams<T extends Record<string, unknown>> {
-  entryId: string;
   currentValues: T;
   isEditing: boolean;
   onSave: (values: T) => void;

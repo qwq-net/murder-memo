@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { RelationDiagramSvgView } from '@/components/relations/relationDiagramSvgView';
 import { useStore } from '@/store';
@@ -6,6 +6,8 @@ import { useStore } from '@/store';
 const WORLD_SIZE = 320;
 const CX = WORLD_SIZE / 2;
 const CY = WORLD_SIZE / 2;
+/** SVG の実描画幅の上限（RelationDiagramSvgView の maxWidth と一致させること）。 */
+const SVG_MAX_WIDTH = WORLD_SIZE * 1.5;
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
@@ -35,12 +37,19 @@ export function RelationDiagramSvg() {
   const vx = CX - viewSize / 2 - pan.x;
   const vy = CY - viewSize / 2 - pan.y;
 
-  // ホイールズーム
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    setZoom((prev) =>
-      Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP))),
-    );
+  // ホイールズーム。React の onWheel は passive リスナーで登録され preventDefault が効かず
+  // 背面（モーダル本体）がスクロールしてしまうため、native の非 passive リスナーを手動登録する。
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setZoom((prev) =>
+        Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP))),
+      );
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
   // ドラッグパン
@@ -63,7 +72,10 @@ export function RelationDiagramSvg() {
     (e: React.PointerEvent) => {
       if (!dragRef.current || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      const scale = WORLD_SIZE / zoom / rect.width;
+      // SVG は width:100% かつ maxWidth でキャップされるため、コンテナ幅ではなく実描画幅で換算する
+      // （コンテナの方が広いとパンがポインタに遅れて追従するズレが生じる）。
+      const svgWidth = Math.min(rect.width, SVG_MAX_WIDTH);
+      const scale = WORLD_SIZE / zoom / svgWidth;
       setPan({
         x: dragRef.current.startPanX + (e.clientX - dragRef.current.startX) * scale,
         y: dragRef.current.startPanY + (e.clientY - dragRef.current.startY) * scale,
@@ -117,7 +129,6 @@ export function RelationDiagramSvg() {
       {/* SVG */}
       <div
         ref={containerRef}
-        onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

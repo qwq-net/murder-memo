@@ -72,6 +72,12 @@ export const createSessionsSlice = (
           const needsDemoRefresh = !existingDemo || existingDemo.demoVersion !== APP_VERSION;
 
           if (needsDemoRefresh) {
+            // 最終開封セッションが旧デモだったか（削除前に判定）。バージョン更新で旧デモが
+            // 別 ID の新デモに差し替わると、復元判定に失敗して最古セッションへ飛ばされるため、
+            // 後で新デモ ID へ張り替える。
+            const wasOnOldDemo =
+              !!existingDemo && localStorage.getItem(LAST_SESSION_KEY) === existingDemo.id;
+
             // 古いデモがあれば関連データごと削除
             if (existingDemo) {
               await deleteSession(existingDemo.id);
@@ -79,6 +85,10 @@ export const createSessionsSlice = (
             }
 
             demoData = await buildDemoSession();
+            // 旧デモを開いていたユーザーは新デモへ引き継ぐ（最古セッションへ飛ばさない）
+            if (wasOnOldDemo) {
+              localStorage.setItem(LAST_SESSION_KEY, demoData.session.id);
+            }
             // 各オブジェクトストアは独立しているため並列書き込み
             await Promise.all([
               putSession(demoData.session),

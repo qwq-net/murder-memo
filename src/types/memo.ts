@@ -1,10 +1,20 @@
 // ─── Entry Types ────────────────────────────────────────────────────────────
 
-export type MemoEntryType = 'text' | 'timeline' | 'character-info' | 'clue' | 'image';
+export type MemoEntryType = 'text' | 'timeline' | 'clue' | 'image';
 export type PanelId = 'free' | 'personal' | 'timeline';
 export type CharacterDisplayFormat = 'full' | 'badge' | 'text';
 export type CharacterDisplayVisibility = 'always' | 'minimal' | 'off';
 
+/**
+ * メモエントリ。`type` と `panel` に応じて使用するフィールドが変わるが、型では union として
+ * 表現せず optional フィールドの集合で持つ。以下の不変条件はコード（store / timeParser /
+ * grouping）とテストで保証する暗黙の契約である:
+ * - panel === 'timeline' のエントリは timelineGroupId を持つ（どの時間帯グループにも属さないと
+ *   タイムライン表示に現れない）。タイムライン以外へ移すと timeline 系フィールドはクリアされる。
+ * - eventTime と eventTimeSortKey は「両方設定 or 両方 undefined」で整合する（resolveEventTime 集約）。
+ * - type === 'image' のエントリは imageBlobKey を持つ（IndexedDB images ストアのキー）。
+ *   imageBlobKey は複数エントリで共有されうる（複製）。削除時のハード削除はせず GC で回収する。
+ */
 export interface MemoEntry {
   id: string;
   type: MemoEntryType;
@@ -22,9 +32,6 @@ export interface MemoEntry {
 
   // image用
   imageBlobKey?: string; // IndexedDB images store のキー
-
-  // character-info用
-  characterId?: string;
 
   // clue用
   importance?: 'low' | 'medium' | 'high';

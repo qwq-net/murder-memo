@@ -19,7 +19,6 @@ export interface CharactersSlice {
   updateCharacter: (id: string, patch: Partial<Character>) => Promise<void>;
   removeCharacter: (id: string) => Promise<void>;
   reorderCharacters: (orderedIds: string[]) => Promise<void>;
-  bulkLoadCharacters: (chars: Character[], sessionId: string) => Promise<void>;
 }
 
 export const createCharactersSlice = (
@@ -139,10 +138,5 @@ export const createCharactersSlice = (
     });
     await bulkPutCharacters(updated, sessionId);
     set(() => ({ characters: updated.sort((a, b) => a.sortOrder - b.sortOrder) }));
-  },
-
-  bulkLoadCharacters: async (chars, sessionId) => {
-    await bulkPutCharacters(chars, sessionId);
-    set(() => ({ characters: chars }));
   },
 });

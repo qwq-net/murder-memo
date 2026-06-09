@@ -53,6 +53,8 @@ export interface MenuContext {
     opts?: { timelineGroupId?: string; groupId?: string },
   ) => Promise<void>;
   updateEntry: (id: string, patch: Partial<MemoEntry>) => Promise<void>;
+  /** 同一パネル内のメモグループ変更（移動先グループ末尾へ配置） */
+  setEntryGroup: (id: string, groupId: string | undefined) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
   addEntry: (
     partial: Pick<MemoEntry, 'panel'> &
@@ -238,7 +240,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
             await forEntries(
               entries,
               async (entry) => {
-                if (entry.groupId) await ctx.updateEntry(entry.id, { groupId: undefined });
+                if (entry.groupId) await ctx.setEntryGroup(entry.id, undefined);
               },
               ctx,
               groupToast('未分類'),
@@ -255,7 +257,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
             await forEntries(
               entries,
               async (entry) => {
-                if (entry.groupId !== g.id) await ctx.updateEntry(entry.id, { groupId: g.id });
+                if (entry.groupId !== g.id) await ctx.setEntryGroup(entry.id, g.id);
               },
               ctx,
               groupToast(`「${g.label}」`),

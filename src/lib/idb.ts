@@ -278,9 +278,20 @@ export async function clearSessionData(id: string, keepImages = false): Promise<
 
 // ─── エントリ ────────────────────────────────────────────────────────────────
 
+/**
+ * セッションのエントリ一覧を返す。永続化用の内部フィールド sessionId は除去して返す
+ * （characters / link-keywords と同様）。これを残すと型に無いフィールドがメモリ上の
+ * MemoEntry に混入し、エクスポート JSON にも漏出するため剥がす。
+ */
 export async function getEntriesBySession(sessionId: string): Promise<MemoEntry[]> {
   const db = await getDb();
-  return db.getAllFromIndex('entries', 'by-session', sessionId);
+  const rows = await db.getAllFromIndex('entries', 'by-session', sessionId);
+  return rows.map((row) => {
+    // 永続化時に付与した内部フィールド sessionId を剥がす（型 MemoEntry には無い）
+    const { sessionId: _sid, ...e } = row as MemoEntry & { sessionId?: string };
+    void _sid;
+    return e as MemoEntry;
+  });
 }
 
 export async function putEntry(entry: MemoEntry, sessionId: string): Promise<void> {
@@ -658,5 +669,11 @@ export async function destroyDatabase(): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
+    // 他タブ等が DB 接続を保持していると削除がブロックされる。ここで resolve しないと
+    // Promise が永久にハングするため、警告を出して処理を進める（削除は接続解放後に完了する）。
+    req.onblocked = () => {
+      console.warn('データベース削除が他の接続にブロックされました（他タブを閉じると完了します）');
+      resolve();
+    };
   });
 }

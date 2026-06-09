@@ -269,5 +269,60 @@ describe('entriesSlice', () => {
 
       expect(useStore.getState().entries.find((e) => e.id === 'e1')?.panel).toBe('free');
     });
+
+    it('別パネルへ移動すると移動先パネルの末尾（最大 sortOrder + 1）に配置される', async () => {
+      useStore.setState({
+        entries: [
+          makeEntry({ id: 'p1', panel: 'personal', sortOrder: 0 }),
+          makeEntry({ id: 'p2', panel: 'personal', sortOrder: 1 }),
+          makeEntry({ id: 'f1', panel: 'free', sortOrder: 5 }),
+        ],
+      });
+
+      await useStore.getState().moveEntryToPanel('f1', 'personal');
+
+      // personal の最大 sortOrder(1) + 1 = 2 で末尾に付く
+      expect(useStore.getState().entries.find((e) => e.id === 'f1')?.sortOrder).toBe(2);
+    });
+  });
+
+  describe('setEntryGroup（同一パネル内グループ変更）', () => {
+    it('groupId を変更し、移動先で末尾になるよう sortOrder を再採番する', async () => {
+      useStore.setState({
+        entries: [
+          makeEntry({ id: 'a', panel: 'free', groupId: 'g1', sortOrder: 0 }),
+          makeEntry({ id: 'b', panel: 'free', groupId: 'g2', sortOrder: 3 }),
+          makeEntry({ id: 'c', panel: 'free', groupId: undefined, sortOrder: 1 }),
+        ],
+      });
+
+      await useStore.getState().setEntryGroup('c', 'g1');
+
+      const moved = useStore.getState().entries.find((e) => e.id === 'c');
+      expect(moved?.groupId).toBe('g1');
+      // パネル内最大 sortOrder(3) + 1 = 4 で末尾配置
+      expect(moved?.sortOrder).toBe(4);
+    });
+
+    it('同じ groupId への変更は no-op（put されない）', async () => {
+      useStore.setState({
+        entries: [makeEntry({ id: 'a', panel: 'free', groupId: 'g1', sortOrder: 0 })],
+      });
+
+      await useStore.getState().setEntryGroup('a', 'g1');
+
+      expect(mockPutEntry).not.toHaveBeenCalled();
+    });
+
+    it('putEntry が失敗したらロールバックする', async () => {
+      useStore.setState({
+        entries: [makeEntry({ id: 'a', panel: 'free', groupId: 'g1', sortOrder: 0 })],
+      });
+      mockPutEntry.mockRejectedValueOnce(new Error('IDB error'));
+
+      await useStore.getState().setEntryGroup('a', 'g2');
+
+      expect(useStore.getState().entries.find((e) => e.id === 'a')?.groupId).toBe('g1');
+    });
   });
 });

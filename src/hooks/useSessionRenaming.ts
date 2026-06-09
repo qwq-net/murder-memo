@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 
+import { isCancelEscape, isCommitEnter } from '@/lib/keyboardKeys';
 import { useStore } from '@/store';
 import type { GameSession } from '@/types/memo';
 
@@ -29,17 +30,22 @@ export function useSessionRenaming({
 
   const handleBlur = useCallback(() => {
     const trimmed = renameValue.trim();
-    if (trimmed && activeSessionId) {
-      renameSession(activeSessionId, trimmed);
-      useStore.getState().addToast('セッション名を変更しました');
-    }
     setIsRenaming(false);
+    if (!trimmed || !activeSessionId) return;
+    // 保存成功を待ってからトースト。失敗時は虚偽の成功通知を出さずエラー通知する
+    renameSession(activeSessionId, trimmed)
+      .then(() => useStore.getState().addToast('セッション名を変更しました'))
+      .catch((err) => {
+        useStore.getState().addToast('セッション名の変更に失敗しました', 'error');
+        console.error('セッション名の変更に失敗しました', err);
+      });
   }, [renameValue, activeSessionId, renameSession]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    // IME 変換確定の Enter で誤って blur（=保存）しないよう isCommitEnter で判定する
+    if (isCommitEnter(e)) {
       (e.target as HTMLInputElement).blur();
-    } else if (e.key === 'Escape') {
+    } else if (isCancelEscape(e)) {
       setIsRenaming(false);
     }
   }, []);

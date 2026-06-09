@@ -10,6 +10,7 @@ import { useStore } from '@/store';
 export function useMenuContext(onDone?: () => void): MenuContext {
   const moveEntryToPanel = useStore((s) => s.moveEntryToPanel);
   const updateEntry = useStore((s) => s.updateEntry);
+  const setEntryGroup = useStore((s) => s.setEntryGroup);
   const deleteEntry = useStore((s) => s.deleteEntry);
   const addEntry = useStore((s) => s.addEntry);
   const toggleCharacterTag = useStore((s) => s.toggleCharacterTag);
@@ -35,6 +36,7 @@ export function useMenuContext(onDone?: () => void): MenuContext {
     () => ({
       moveEntryToPanel,
       updateEntry,
+      setEntryGroup,
       deleteEntry,
       addEntry,
       toggleCharacterTag,
@@ -48,6 +50,7 @@ export function useMenuContext(onDone?: () => void): MenuContext {
     [
       moveEntryToPanel,
       updateEntry,
+      setEntryGroup,
       deleteEntry,
       addEntry,
       toggleCharacterTag,

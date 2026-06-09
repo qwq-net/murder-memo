@@ -25,7 +25,6 @@ describe('useEntryDraft', () => {
   it('初期 draft が currentValues と一致する', () => {
     const { result } = renderHook(() =>
       useEntryDraft<DraftValues>({
-        entryId: 'e1',
         currentValues: { content: 'hello' },
         isEditing: false,
         onSave,
@@ -37,7 +36,6 @@ describe('useEntryDraft', () => {
   it('setDraft で部分更新できる', () => {
     const { result } = renderHook(() =>
       useEntryDraft<DraftValues>({
-        entryId: 'e1',
         currentValues: { content: 'hello' },
         isEditing: true,
         onSave,
@@ -51,7 +49,6 @@ describe('useEntryDraft', () => {
     const { result, rerender } = renderHook(
       ({ currentValues, isEditing }: { currentValues: DraftValues; isEditing: boolean }) =>
         useEntryDraft<DraftValues>({
-          entryId: 'e1',
           currentValues,
           isEditing,
           onSave,
@@ -68,7 +65,6 @@ describe('useEntryDraft', () => {
     const { result, rerender } = renderHook(
       ({ currentValues, isEditing }: { currentValues: DraftValues; isEditing: boolean }) =>
         useEntryDraft<DraftValues>({
-          entryId: 'e1',
           currentValues,
           isEditing,
           onSave,
@@ -84,7 +80,6 @@ describe('useEntryDraft', () => {
   it('handleBlur で onSave が呼ばれる', () => {
     const { result } = renderHook(() =>
       useEntryDraft<DraftValues>({
-        entryId: 'e1',
         currentValues: { content: 'hello' },
         isEditing: true,
         onSave,
@@ -99,7 +94,6 @@ describe('useEntryDraft', () => {
   it('handleEscape 後の handleBlur では onSave が呼ばれない', () => {
     const { result } = renderHook(() =>
       useEntryDraft<DraftValues>({
-        entryId: 'e1',
         currentValues: { content: 'hello' },
         isEditing: true,
         onSave,
@@ -115,7 +109,6 @@ describe('useEntryDraft', () => {
   it('handleEscape で draft がリセットされる', () => {
     const { result } = renderHook(() =>
       useEntryDraft<DraftValues>({
-        entryId: 'e1',
         currentValues: { content: 'original' },
         isEditing: true,
         onSave,

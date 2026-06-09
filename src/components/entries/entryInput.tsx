@@ -6,6 +6,7 @@ import { useImagePicker } from '@/components/layout/imagePickerContext';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useTimeInput } from '@/hooks/useTimeInput';
+import { isCommitEnter } from '@/lib/keyboardKeys';
 import { resolveEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
@@ -146,7 +147,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         if (inputRef.current) resizeInput(inputRef.current);
       }}
       onTextKeyDown={(e) => {
-        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+        if (isCommitEnter(e)) {
           e.preventDefault();
           submit();
         }
@@ -161,7 +162,7 @@ export function EntryInput({ panel }: EntryInputProps) {
       onTimeKeyDown={
         isTimeline
           ? (e) => {
-              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+              if (isCommitEnter(e)) {
                 e.preventDefault();
                 inputRef.current?.focus();
               }

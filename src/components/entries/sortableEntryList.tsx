@@ -28,6 +28,11 @@ interface SortableEntryListProps {
   onReorder: (orderedIds: string[]) => void;
   /** 連続する同時刻エントリの時刻ラベルを省略する（タイムラインの時間帯グループ用） */
   hideTimeDuplicates?: boolean;
+  /**
+   * 並び替えを無効化する。キャラクターフィルター適用中など「表示が全体の部分集合」のときに true にする。
+   * 部分集合の id だけで reorderEntries を呼ぶと、非表示エントリと sortOrder が衝突して全体順序が壊れるため。
+   */
+  disabled?: boolean;
 }
 
 const dropAnimation: DropAnimation = {
@@ -40,6 +45,7 @@ export function SortableEntryList({
   entries,
   onReorder,
   hideTimeDuplicates,
+  disabled = false,
 }: SortableEntryListProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeEntry = activeId ? (entries.find((e) => e.id === activeId) ?? null) : null;
@@ -59,6 +65,7 @@ export function SortableEntryList({
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
+    if (disabled) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = entries.findIndex((e) => e.id === active.id);
@@ -81,6 +88,7 @@ export function SortableEntryList({
             key={entry.id}
             entry={entry}
             allIds={allIds}
+            disabled={disabled}
             hideTime={hideTimeDuplicates && i > 0 && entry.eventTime === entries[i - 1].eventTime}
           />
         ))}
@@ -107,13 +115,16 @@ const SortableEntryCard = memo(function SortableEntryCard({
   entry,
   allIds,
   hideTime,
+  disabled,
 }: {
   entry: MemoEntry;
   allIds: string[];
   hideTime?: boolean;
+  disabled?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: entry.id,
+    disabled,
   });
   const { isSelected, handleSelect, hasSelection, clearSelection } = useSelection();
   const selected = isSelected(entry.id);

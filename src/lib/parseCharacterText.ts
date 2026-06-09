@@ -76,22 +76,32 @@ export function parseCharacterText(
 /**
  * テキスト中の `[キーワード]` パターンを検出し、
  * text / search-link の粗セグメント列に分割する。
- * 空ブラケット `[]` はプレーンテキストとして扱う。
+ * 空ブラケット `[]` や空白のみ `[   ]` はプレーンテキストとして扱う。
+ *
+ * キーワードは前後の空白を trim する。これにより `[ 凶器 ]` の検索リンク表示・検索クエリが、
+ * 自動辞書登録（linkKeywords.ts `extractBracketedWords` も trim 済み）と一致する
+ * （trim の有無で「表示・検索は空白付き、辞書は trim 済み」と食い違うのを防ぐ）。
  */
 function splitBySearchLinks(text: string): TextSegment[] {
   const result: TextSegment[] = [];
   // `[テキスト]` 抽出用の正規表現。
   // 同じパターンが `linkKeywords.ts` の `BRACKET_PATTERN` にも存在する（自動辞書登録用）。
-  // パターンを変更する場合は両方更新すること。
+  // パターンと「trim + 空白のみ除外」の後処理を変更する場合は両方更新すること。
   const re = /\[([^[\]]+)\]/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
   while ((match = re.exec(text)) !== null) {
+    const keyword = match[1].trim();
     if (match.index > lastIndex) {
       result.push({ type: 'text', content: text.slice(lastIndex, match.index) });
     }
-    result.push({ type: 'search-link', keyword: match[1] });
+    if (keyword) {
+      result.push({ type: 'search-link', keyword });
+    } else {
+      // 空白のみの [   ] は検索リンクにせずプレーンテキストとして残す
+      result.push({ type: 'text', content: match[0] });
+    }
     lastIndex = re.lastIndex;
   }
 

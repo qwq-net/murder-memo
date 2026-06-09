@@ -227,6 +227,38 @@ describe('validateExport', () => {
     });
     expect(validateExport(data)).toBe(true);
   });
+
+  // 値域チェック（不正値の取り込み防止）
+  it('session.name が文字列でないと false (#29)', () => {
+    const data = makeValidExport();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (data.session as any).name = undefined;
+    expect(validateExport(data)).toBe(false);
+  });
+
+  it('entry.panel が不正な値だと false (#50)', () => {
+    const data = makeValidExport({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      entries: [{ id: 'e1', panel: 'bogus', characterTags: [] } as any],
+    });
+    expect(validateExport(data)).toBe(false);
+  });
+
+  it('deduction.suspicionLevel が範囲外(0-3)だと false (#23)', () => {
+    const data = makeValidExport({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      deductions: [{ id: 'd1', characterId: 'c1', suspicionLevel: 9 } as any],
+    });
+    expect(validateExport(data)).toBe(false);
+  });
+
+  it('relation.label が文字列でないと false (#23)', () => {
+    const data = makeValidExport({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      relations: [{ id: 'r1', fromCharacterId: 'c1', toCharacterId: 'c1' } as any],
+    });
+    expect(validateExport(data)).toBe(false);
+  });
 });
 
 // ─── マイグレーション (v1 → v2 linkKeywords 追加) ────────────────────────────

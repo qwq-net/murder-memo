@@ -116,6 +116,57 @@ describe('importSession', () => {
     expect(chars[0].showInEntries).toBe(true);
   });
 
+  // 回帰防止 (#30): 不正な時刻ペアは resolveEventTime を通して整合化される
+  it('不正な eventTime のエントリは eventTime/eventTimeSortKey が両方 undefined に正規化される', async () => {
+    const data = makeExport({
+      entries: [
+        {
+          id: 'old-e1',
+          type: 'timeline',
+          content: '不正時刻',
+          panel: 'timeline',
+          characterTags: [],
+          createdAt: 0,
+          updatedAt: 0,
+          sortOrder: 0,
+          eventTime: '25:00', // 範囲外
+          eventTimeSortKey: 1500,
+        },
+      ] as unknown as MurderMemoExport['entries'],
+    });
+
+    await importSession(fakeFile(data));
+
+    const [entries] = mockBulkPutEntries.mock.calls[0];
+    expect(entries[0].eventTime).toBeUndefined();
+    expect(entries[0].eventTimeSortKey).toBeUndefined();
+  });
+
+  it('正しい eventTime は補完済み文字列と分換算キーに正規化される', async () => {
+    const data = makeExport({
+      entries: [
+        {
+          id: 'old-e1',
+          type: 'timeline',
+          content: '正常時刻',
+          panel: 'timeline',
+          characterTags: [],
+          createdAt: 0,
+          updatedAt: 0,
+          sortOrder: 0,
+          eventTime: '9:05',
+          eventTimeSortKey: 545,
+        },
+      ] as unknown as MurderMemoExport['entries'],
+    });
+
+    await importSession(fakeFile(data));
+
+    const [entries] = mockBulkPutEntries.mock.calls[0];
+    expect(entries[0].eventTime).toBe('9:05');
+    expect(entries[0].eventTimeSortKey).toBe(545);
+  });
+
   it('書き込み失敗時は deleteSession でロールバックし、例外を再送出する', async () => {
     mockBulkPutEntries.mockRejectedValueOnce(new Error('quota exceeded'));
 

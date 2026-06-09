@@ -10,6 +10,7 @@ import { useAutoRegisterLinkKeywords } from '@/hooks/useAutoRegisterLinkKeywords
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useCaretPosition } from '@/hooks/useCaretPosition';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
+import { isCancelEscape, isCommitEnter } from '@/lib/keyboardKeys';
 import { detectInlineCharacterIds } from '@/lib/parseCharacterText';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
@@ -77,7 +78,6 @@ export function EntryContent({
     handleEscape: draftEscape,
     resetGuards,
   } = useEntryDraft({
-    entryId: entry.id,
     currentValues: { content: entry.content },
     isEditing,
     onSave: (values) => {
@@ -133,17 +133,16 @@ export function EntryContent({
     (e: React.KeyboardEvent) => {
       // 編集中のキーイベントが dnd-kit の KeyboardSensor に到達するのを防止
       e.stopPropagation();
-      if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      if (isCommitEnter(e)) {
         e.preventDefault();
         inputRef.current?.blur();
-      }
-      if (e.key === 'Escape') {
+      } else if (isCancelEscape(e)) {
+        // IME 変換中の Escape は変換キャンセルとして消費させる（編集破棄しない）
         e.preventDefault();
         draftEscape();
         onEscape?.();
         inputRef.current?.blur();
-      }
-      if (e.key === 'Tab') {
+      } else if (e.key === 'Tab') {
         e.preventDefault();
       }
     },

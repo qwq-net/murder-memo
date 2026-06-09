@@ -25,6 +25,11 @@ export interface UiSlice {
   isSettingsOpen: boolean;
   isSessionSwitcherOpen: boolean;
   focusedEntryId: string | null;
+  /**
+   * 「時刻を設定」等で編集に入る際、本文ではなく時刻入力へフォーカスしたいエントリ ID。
+   * TimelineEntry が編集開始時にこれを見て時刻入力へフォーカスし、消費後にクリアする。
+   */
+  timeEditRequestId: string | null;
   /** 未分類グループの折りたたみ状態（パネル別） */
   uncategorizedCollapsed: Record<string, boolean>;
   /** キャラクターフィルター（パネル別、選択中のキャラクター ID 配列） */
@@ -52,6 +57,10 @@ export interface UiSlice {
   setSettingsOpen: (open: boolean) => void;
   setSessionSwitcherOpen: (open: boolean) => void;
   setFocusedEntry: (id: string | null) => void;
+  /** 指定エントリを編集状態にし、時刻入力へフォーカスするよう要求する（時刻トグルメニュー用） */
+  requestTimeEdit: (id: string) => void;
+  /** 時刻フォーカス要求を消費済みにする */
+  clearTimeEditRequest: () => void;
   setUncategorizedCollapsed: (panel: string, collapsed: boolean) => void;
   /**
    * 指定エントリを画面上で可視状態にする（検索結果クリック時のスクロール前準備）。
@@ -87,6 +96,7 @@ export const createUiSlice = (
   layout: DEFAULT_LAYOUT,
   activePanel: 'free',
   highlightCharacterId: null,
+  timeEditRequestId: null,
   isSessionReady: false,
   isCharacterSetupOpen: false,
   isSettingsOpen: false,
@@ -117,6 +127,10 @@ export const createUiSlice = (
   setSessionSwitcherOpen: (open) => set(() => ({ isSessionSwitcherOpen: open })),
 
   setFocusedEntry: (id) => set(() => ({ focusedEntryId: id })),
+
+  requestTimeEdit: (id) => set(() => ({ focusedEntryId: id, timeEditRequestId: id })),
+
+  clearTimeEditRequest: () => set(() => ({ timeEditRequestId: null })),
 
   setUncategorizedCollapsed: (panel, collapsed) =>
     set((s) => ({ uncategorizedCollapsed: { ...s.uncategorizedCollapsed, [panel]: collapsed } })),

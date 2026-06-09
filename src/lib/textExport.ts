@@ -12,6 +12,14 @@ function buildCharMap(characters: Character[]): Map<string, string> {
 }
 
 /**
+ * グループラベルを Markdown 見出し（`### ...`）用に1行へ正規化する。
+ * ラベルに改行が含まれると見出しが多行化して構造が崩れるため、改行は空白に畳む。
+ */
+function headingLabel(label: string): string {
+  return label.replace(/[\r\n]+/g, ' ').trim();
+}
+
+/**
  * エントリ1件を Markdown のリスト行 `- ...` に変換する。
  * - タイムラインのエントリは先頭に時刻（未設定は "??:??"）を付ける
  * - 画像エントリは "[画像] キャプション"（キャプション無しは "[画像]"）。本文の改行は " / " に畳む
@@ -69,7 +77,7 @@ function formatPanel(
     for (const group of sorted) {
       const groupEntries = panelEntries.filter((e) => e.timelineGroupId === group.id);
       if (groupEntries.length === 0) continue;
-      lines.push(`### ${group.label}`);
+      lines.push(`### ${headingLabel(group.label)}`);
       // 時刻順ソート
       const timeSorted = [...groupEntries].sort(
         (a, b) => (a.eventTimeSortKey ?? Infinity) - (b.eventTimeSortKey ?? Infinity),
@@ -88,7 +96,7 @@ function formatPanel(
     for (const group of panelGroups) {
       const groupEntries = panelEntries.filter((e) => e.groupId === group.id);
       if (groupEntries.length === 0) continue;
-      lines.push(`### ${group.label}`);
+      lines.push(`### ${headingLabel(group.label)}`);
       for (const entry of groupEntries) {
         lines.push(formatEntry(entry, charMap));
       }

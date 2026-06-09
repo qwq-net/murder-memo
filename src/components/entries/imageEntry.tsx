@@ -7,6 +7,7 @@ import { useAutoRegisterLinkKeywords } from '@/hooks/useAutoRegisterLinkKeywords
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
 import { useImageBlob } from '@/hooks/useImageBlob';
+import { isCancelEscape, isCommitEnter } from '@/lib/keyboardKeys';
 import { detectInlineCharacterIds } from '@/lib/parseCharacterText';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
@@ -69,7 +70,6 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
     handleEscape: draftEscape,
     resetGuards,
   } = useEntryDraft({
-    entryId: entry.id,
     currentValues: { content: entry.content },
     isEditing,
     onSave: (values) => {
@@ -100,16 +100,15 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
     (e: React.KeyboardEvent) => {
       // dnd-kit の KeyboardSensor に到達するのを防止
       e.stopPropagation();
-      if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      if (isCommitEnter(e)) {
         e.preventDefault();
         inputRef.current?.blur();
-      }
-      if (e.key === 'Escape') {
+      } else if (isCancelEscape(e)) {
+        // IME 変換中の Escape は変換キャンセルとして消費させる（編集破棄しない）
         e.preventDefault();
         draftEscape();
         inputRef.current?.blur();
-      }
-      if (e.key === 'Tab') {
+      } else if (e.key === 'Tab') {
         e.preventDefault();
       }
     },

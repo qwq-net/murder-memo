@@ -3,10 +3,11 @@
  * 時刻は常に input で表示し、フォーカス時にスタイルが変わる。
  * テキスト編集は EntryContent に、画像は ImageEntry にそれぞれ委譲する。
  */
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import { EntryContent } from '@/components/entries/entryContent';
 import { ImageEntry } from '@/components/entries/imageEntry';
+import { isCancelEscape, isCommitEnter } from '@/lib/keyboardKeys';
 import { normalizeTimeInput, resolveEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
@@ -21,6 +22,8 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
   const updateEntry = useStore((s) => s.updateEntry);
   const focusedEntryId = useStore((s) => s.focusedEntryId);
   const setFocusedEntry = useStore((s) => s.setFocusedEntry);
+  const timeEditRequestId = useStore((s) => s.timeEditRequestId);
+  const clearTimeEditRequest = useStore((s) => s.clearTimeEditRequest);
 
   const isEditing = focusedEntryId === entry.id;
   const isImage = !!entry.imageBlobKey;
@@ -28,6 +31,8 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
   const containerRef = useRef<HTMLDivElement>(null);
   // EntryContent が公開する本文ドラフト確定関数（編集終了時に本文＋時刻をまとめて保存するため）
   const contentCommitRef = useRef<(() => void) | null>(null);
+  // 時刻 input の DOM 参照（「時刻を設定」メニューからの編集開始時にフォーカスするため）
+  const timeInputRef = useRef<HTMLInputElement | null>(null);
   /**
    * 時刻 span クリックで編集に入った場合 true（textarea ではなく time input にフォーカスする）。
    * autoFocus 属性で render 中に参照するため state で管理する。
@@ -40,6 +45,16 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
     setPrevTimeSync({ eventTime: entry.eventTime, isEditing });
     if (!isEditing) setDraftTime(entry.eventTime ?? '');
   }
+
+  // 「時刻を設定」メニュー等からの時刻フォーカス要求を消費する。編集に入った際、本文ではなく
+  // 時刻入力へ DOM フォーカスを移す（state を介さず DOM 直接操作。useLayoutEffect なので
+  // EntryContent の textarea 自動フォーカス（子の layout effect）の後に走り、最終的に時刻入力が勝つ）。
+  useLayoutEffect(() => {
+    if (isEditing && timeEditRequestId === entry.id) {
+      timeInputRef.current?.focus();
+      clearTimeEditRequest();
+    }
+  }, [isEditing, timeEditRequestId, entry.id, clearTimeEditRequest]);
 
   // 時刻保存
   const saveTime = useCallback(() => {
@@ -107,7 +122,7 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
   const handleTimeKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       e.stopPropagation();
-      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+      if (isCommitEnter(e)) {
         e.preventDefault();
         if (isImage) {
           (e.target as HTMLInputElement).blur();
@@ -115,13 +130,12 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
           // テキストエントリ: textarea にフォーカス移動
           containerRef.current?.querySelector('textarea')?.focus();
         }
-      }
-      if (e.key === 'Escape') {
+      } else if (isCancelEscape(e)) {
+        // IME 変換中の Escape は変換キャンセルとして消費させる
         e.preventDefault();
         setDraftTime(entry.eventTime ?? '');
         (e.target as HTMLInputElement).blur();
-      }
-      if (e.key === 'Tab' && !isImage) {
+      } else if (e.key === 'Tab' && !isImage) {
         e.preventDefault();
         containerRef.current?.querySelector('textarea')?.focus();
       }
@@ -179,6 +193,7 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
         <input
           autoFocus={focusTime}
           ref={(el) => {
+            timeInputRef.current = el;
             if (el && focusTime) {
               el.focus();
               // フォーカスを当てた直後にフラグを下ろす（1 回のみ発火させる）

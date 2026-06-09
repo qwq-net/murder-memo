@@ -20,8 +20,13 @@ import {
   putImage,
   putSession,
 } from '@/lib/idb';
+import { resolveEventTime } from '@/lib/timeParser';
 import type { ExportedImage, GameSession, LinkKeyword, MurderMemoExport } from '@/types/memo';
 import { EXPORT_VERSION } from '@/types/memo';
+
+/** インポート受け入れ時に妥当性チェックする既知の値域。 */
+const VALID_PANELS: readonly string[] = ['free', 'personal', 'timeline'];
+const VALID_SUSPICION_LEVELS: readonly number[] = [0, 1, 2, 3];
 
 // ─── マイグレーション ────────────────────────────────────────────────────────
 //
@@ -93,7 +98,13 @@ export function validateExport(data: any): data is MurderMemoExport {
   if (typeof data.version !== 'number' || data.version < 1 || data.version > EXPORT_VERSION)
     return false;
   if (typeof data.exportedAt !== 'number') return false;
-  if (data.session == null || typeof data.session.id !== 'string') return false;
+  // session は id と name（ダウンロード名・表示名に使う）が文字列であること
+  if (
+    data.session == null ||
+    typeof data.session.id !== 'string' ||
+    typeof data.session.name !== 'string'
+  )
+    return false;
   if (!Array.isArray(data.entries)) return false;
   if (!Array.isArray(data.characters)) return false;
   if (!Array.isArray(data.timelineGroups)) return false;
@@ -101,10 +112,14 @@ export function validateExport(data: any): data is MurderMemoExport {
   if (!Array.isArray(data.images)) return false;
 
   // 必須配列の要素検証（import が前提とする参照フィールドの有無）
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (
     !data.entries.every(
-      (e: any) => e != null && typeof e.id === 'string' && Array.isArray(e.characterTags),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (e: any) =>
+        e != null &&
+        typeof e.id === 'string' &&
+        Array.isArray(e.characterTags) &&
+        VALID_PANELS.includes(e.panel),
     )
   )
     return false;
@@ -117,7 +132,11 @@ export function validateExport(data: any): data is MurderMemoExport {
     if (
       !data.deductions.every(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (d: any) => d != null && typeof d.id === 'string' && typeof d.characterId === 'string',
+        (d: any) =>
+          d != null &&
+          typeof d.id === 'string' &&
+          typeof d.characterId === 'string' &&
+          VALID_SUSPICION_LEVELS.includes(d.suspicionLevel),
       )
     )
       return false;
@@ -131,7 +150,8 @@ export function validateExport(data: any): data is MurderMemoExport {
           r != null &&
           typeof r.id === 'string' &&
           typeof r.fromCharacterId === 'string' &&
-          typeof r.toCharacterId === 'string',
+          typeof r.toCharacterId === 'string' &&
+          typeof r.label === 'string',
       )
     )
       return false;
@@ -256,6 +276,24 @@ export function downloadJson(data: MurderMemoExport): void {
 
 // ─── インポート ──────────────────────────────────────────────────────────────
 
+/**
+ * インポートされたエントリの eventTime / eventTimeSortKey の整合を再保証する。
+ * resolveEventTime を通し「両方妥当な値 or 両方 undefined」に正規化する
+ * （CLAUDE.md の不変条件。インポート経路でも resolveEventTime に集約し、片方だけ・範囲外の
+ * 不正な時刻ペアが永続化されるのを防ぐ）。
+ */
+function normalizeImportedEventTime(e: { eventTime?: unknown }): {
+  eventTime: string | undefined;
+  eventTimeSortKey: number | undefined;
+} {
+  if (typeof e.eventTime !== 'string' || e.eventTime.trim() === '') {
+    return { eventTime: undefined, eventTimeSortKey: undefined };
+  }
+  const r = resolveEventTime(e.eventTime);
+  if (!r.valid) return { eventTime: undefined, eventTimeSortKey: undefined };
+  return { eventTime: r.eventTime, eventTimeSortKey: r.eventTimeSortKey };
+}
+
 /** base64 文字列を Blob に変換 */
 function base64ToBlob(base64: string, mimeType: string): Blob {
   const bin = atob(base64);
@@ -341,15 +379,16 @@ export async function importSession(file: File): Promise<GameSession> {
     sessionId: newSession.id,
   }));
 
-  // エントリ（参照 ID を書き換え）
+  // エントリ（参照 ID を書き換え）。eventTime/eventTimeSortKey は resolveEventTime で
+  // 整合を再保証し、不正な時刻ペア（片方だけ・範囲外）が永続化されるのを防ぐ。
   const newEntries = data.entries.map((e) => ({
     ...e,
     id: remap(e.id),
     characterTags: e.characterTags.map((cid) => remap(cid)),
     timelineGroupId: e.timelineGroupId ? remap(e.timelineGroupId) : undefined,
     groupId: e.groupId ? remap(e.groupId) : undefined,
-    characterId: e.characterId ? remap(e.characterId) : undefined,
     imageBlobKey: e.imageBlobKey ? remap(e.imageBlobKey) : undefined,
+    ...normalizeImportedEventTime(e),
   }));
 
   // 推理メモ（optional — v1 エクスポートには含まれない場合がある）
@@ -360,14 +399,16 @@ export async function importSession(file: File): Promise<GameSession> {
     characterId: remap(d.characterId),
   }));
 
-  // 相関図（optional）
-  const newRelations = (data.relations ?? []).map((r) => ({
-    ...r,
-    id: remap(r.id),
-    sessionId: newSession.id,
-    fromCharacterId: remap(r.fromCharacterId),
-    toCharacterId: remap(r.toCharacterId),
-  }));
+  // 相関図（optional）。自己参照（from === to）は点に潰れる無意味な線なので取り込まない
+  const newRelations = (data.relations ?? [])
+    .filter((r) => r.fromCharacterId !== r.toCharacterId)
+    .map((r) => ({
+      ...r,
+      id: remap(r.id),
+      sessionId: newSession.id,
+      fromCharacterId: remap(r.fromCharacterId),
+      toCharacterId: remap(r.toCharacterId),
+    }));
 
   // リンクキーワード辞書（optional — v2 で追加）
   // id は外部から参照されないため、ID リマップではなく新規 nanoid 発行で十分
