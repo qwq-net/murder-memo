@@ -64,10 +64,13 @@ export function EntriesDndContext({ children }: { children: React.ReactNode }) {
     });
     if (!move) return;
 
-    // フィルタ中（移動元 or 移動先パネル）は確定しない（部分集合での sortOrder 破壊を防ぐ）
+    // フィルタ中（移動元 or 移動先パネル）は確定しない（部分集合での sortOrder 破壊を防ぐ）。
+    // キャラクター・重要度いずれのフィルタも対象に含める。
     if (
       state.characterFilter[activeEntry.panel].length > 0 ||
-      state.characterFilter[move.panel].length > 0
+      state.characterFilter[move.panel].length > 0 ||
+      state.importanceFilter[activeEntry.panel].length > 0 ||
+      state.importanceFilter[move.panel].length > 0
     ) {
       return;
     }

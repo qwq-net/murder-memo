@@ -139,10 +139,12 @@ useStore.subscribe(
       loadRelations,
       loadLinkKeywords,
       clearAllCharacterFilters,
+      clearAllImportanceFilters,
       setSessionReady,
       addToast,
     } = useStore.getState();
     clearAllCharacterFilters();
+    clearAllImportanceFilters();
     // ロード完了まで UI をローディング表示に切り替える（中途半端なデータでの操作を防ぐ）
     setSessionReady(false);
     // ロード中は履歴記録を停止（ロード操作自体を undo できないように）

@@ -16,6 +16,7 @@ import { EntryStatesPreview } from '@/components/guide/previews/EntryStatesPrevi
 import { FreeMemoPreview } from '@/components/guide/previews/FreeMemoPreview';
 import { GroupHeaderStatesPreview } from '@/components/guide/previews/GroupHeaderStatesPreview';
 import { ImageEntryPreview } from '@/components/guide/previews/ImageEntryPreview';
+import { ImportanceFilterBarPreview } from '@/components/guide/previews/ImportanceFilterBarPreview';
 import { ImportanceVariantsPreview } from '@/components/guide/previews/ImportanceVariantsPreview';
 import { InlineCharacterPreview } from '@/components/guide/previews/InlineCharacterPreview';
 import { LinkListPreview } from '@/components/guide/previews/LinkListPreview';
@@ -436,7 +437,10 @@ export default function GuidePage() {
                       key: 'Shift + クリック',
                       value: '範囲選択 / 追加選択。選択済みのカードを Shift + クリックすると解除',
                     },
-                    { key: 'ドラッグ', value: '並び替え・移動（下記「ドラッグで並び替え・移動」を参照）' },
+                    {
+                      key: 'ドラッグ',
+                      value: '並び替え・移動（下記「ドラッグで並び替え・移動」を参照）',
+                    },
                     {
                       key: '右クリック',
                       value: 'コンテキストメニュー（下記）',
@@ -707,6 +711,14 @@ export default function GuidePage() {
                 <PreviewFrame>
                   <CharacterFilterBarPreview />
                 </PreviewFrame>
+                <Paragraph>
+                  各パネルの色丸の隣には重要度（高 / 中 / 低）の絞り込みセグメントが並びます。
+                  選んだ重要度のメモだけを表示でき（複数選択可）、登場人物フィルターと
+                  組み合わせると「この人物の重要な手がかりだけ」をひと目で見直せます。
+                </Paragraph>
+                <PreviewFrame>
+                  <ImportanceFilterBarPreview />
+                </PreviewFrame>
               </SubFeature>
             </Section>
 
@@ -720,7 +732,14 @@ export default function GuidePage() {
               <SubFeature title="横断検索">
                 <Paragraph>
                   検索結果は最大 50 件まで表示され、各結果をクリックすると該当メモに飛びます。
-                  検索対象はテキスト・タイムラインのメモ本文で、画像メモのキャプションは対象外です。
+                  検索対象はメモ本文に加え、タグ付けした登場人物の名前・所属グループ名も含みます
+                  （画像メモのキャプションは対象外）。本文以外で一致した場合は、結果に一致理由
+                  （人物名やグループ名）がチップで添えられます。
+                </Paragraph>
+                <Paragraph>
+                  スペースで区切って複数のキーワードを入れると、そのすべてを含むメモだけに
+                  絞り込めます（AND 検索）。各キーワードは本文・人物名・グループ名のいずれかに
+                  当てはまれば一致とみなされます。
                 </Paragraph>
                 <PreviewFrame>
                   <SearchOverlayPreview />

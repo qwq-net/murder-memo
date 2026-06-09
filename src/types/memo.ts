@@ -2,6 +2,7 @@
 
 export type MemoEntryType = 'text' | 'timeline' | 'clue' | 'image';
 export type PanelId = 'free' | 'personal' | 'timeline';
+export type ImportanceLevel = 'low' | 'medium' | 'high';
 export type CharacterDisplayFormat = 'full' | 'badge' | 'text';
 export type CharacterDisplayVisibility = 'always' | 'minimal' | 'off';
 
@@ -34,7 +35,7 @@ export interface MemoEntry {
   imageBlobKey?: string; // IndexedDB images store のキー
 
   // clue用
-  importance?: 'low' | 'medium' | 'high';
+  importance?: ImportanceLevel;
 
   // free / personal グループ用（任意）
   groupId?: string; // MemoGroup.id

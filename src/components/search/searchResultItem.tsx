@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 
+import { buildSnippetSegments } from '@/lib/searchHighlight';
 import type { MemoEntry, PanelId } from '@/types/memo';
 
 const PANEL_ACCENT: Record<PanelId, string> = {
@@ -8,60 +9,30 @@ const PANEL_ACCENT: Record<PanelId, string> = {
   timeline: 'var(--panel-timeline-accent)',
 };
 
-/** マッチ箇所を <mark> でハイライトしたスニペットを生成 */
-function buildSnippet(content: string, query: string): React.ReactNode[] {
-  const lower = content.toLowerCase();
-  const q = query.toLowerCase();
-  const firstIdx = lower.indexOf(q);
-  if (firstIdx === -1) return [content.slice(0, 120)];
-
-  // マッチ周辺 ~120 文字を切り出す
-  const contextRadius = 50;
-  const start = Math.max(0, firstIdx - contextRadius);
-  const end = Math.min(content.length, firstIdx + query.length + contextRadius);
-  const slice = content.slice(start, end);
-  const prefix = start > 0 ? '…' : '';
-  const suffix = end < content.length ? '…' : '';
-
-  // スライス内のマッチ箇所をすべてハイライト
-  const sliceLower = slice.toLowerCase();
-  const nodes: React.ReactNode[] = [];
-  let cursor = 0;
-  let matchIdx = sliceLower.indexOf(q, cursor);
-
-  if (prefix) nodes.push(prefix);
-
-  while (matchIdx !== -1) {
-    if (matchIdx > cursor) {
-      nodes.push(slice.slice(cursor, matchIdx));
-    }
-    nodes.push(<mark key={matchIdx}>{slice.slice(matchIdx, matchIdx + query.length)}</mark>);
-    cursor = matchIdx + query.length;
-    matchIdx = sliceLower.indexOf(q, cursor);
-  }
-
-  if (cursor < slice.length) {
-    nodes.push(slice.slice(cursor));
-  }
-
-  if (suffix) nodes.push(suffix);
-
-  return nodes;
-}
-
 interface SearchResultItemProps {
   entry: MemoEntry;
-  query: string;
+  /** ハイライト対象キーワード（小文字・スペース分解済み） */
+  terms: string[];
+  /** 本文以外（タグ）で一致したキャラクター名 */
+  matchedCharacterNames: string[];
+  /** 本文以外（所属グループ名）で一致したグループ名 */
+  matchedGroupLabel: string | null;
   onSelect: (entry: MemoEntry) => void;
 }
 
 export const SearchResultItem = memo(function SearchResultItem({
   entry,
-  query,
+  terms,
+  matchedCharacterNames,
+  matchedGroupLabel,
   onSelect,
 }: SearchResultItemProps) {
-  const snippet = useMemo(() => buildSnippet(entry.content, query), [entry.content, query]);
+  const segments = useMemo(
+    () => buildSnippetSegments(entry.content, terms),
+    [entry.content, terms],
+  );
   const accent = PANEL_ACCENT[entry.panel];
+  const hasContext = matchedCharacterNames.length > 0 || !!matchedGroupLabel;
 
   return (
     <button
@@ -73,9 +44,34 @@ export const SearchResultItem = memo(function SearchResultItem({
         className="shrink-0 self-stretch rounded-sm"
         style={{ width: 3, background: accent, opacity: 0.6 }}
       />
-      {/* テキストスニペット */}
-      <span className="text-text-secondary min-w-0 text-sm leading-[1.6] break-all whitespace-pre-wrap">
-        {snippet}
+      {/* テキストスニペット + 一致理由 */}
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="text-text-secondary text-sm leading-[1.6] break-all whitespace-pre-wrap">
+          {segments.map((seg, i) =>
+            seg.highlighted ? <mark key={i}>{seg.text}</mark> : <span key={i}>{seg.text}</span>,
+          )}
+        </span>
+        {hasContext && (
+          <span className="flex flex-wrap items-center gap-1">
+            {matchedGroupLabel && (
+              <span
+                className="text-text-muted inline-flex items-center rounded-sm px-1.5 py-0.5 text-[11px]"
+                style={{ background: 'var(--bg-active)' }}
+              >
+                {matchedGroupLabel}
+              </span>
+            )}
+            {matchedCharacterNames.map((name) => (
+              <span
+                key={name}
+                className="text-text-muted inline-flex items-center rounded-sm px-1.5 py-0.5 text-[11px]"
+                style={{ background: 'var(--bg-active)' }}
+              >
+                @{name}
+              </span>
+            ))}
+          </span>
+        )}
       </span>
     </button>
   );

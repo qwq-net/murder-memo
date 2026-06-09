@@ -9,6 +9,7 @@ import { PanelDndBoundary } from '@/components/entries/dnd/entriesDndContext';
 import { EntryInput } from '@/components/entries/entryInput';
 import { MemoGroupSection } from '@/components/panels/memoGroupSection';
 import { useGroupSwap } from '@/hooks/useGroupSwap';
+import { filterEntries, isFilterActive, resolveCharacterNames } from '@/lib/entryFilter';
 import { groupEntriesByMemoGroup } from '@/lib/grouping';
 import { useStore } from '@/store';
 
@@ -30,6 +31,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
   const reorderMemoGroups = useStore((s) => s.reorderMemoGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
   const filterIds = useStore((s) => s.characterFilter[panel]);
+  const importanceLevels = useStore((s) => s.importanceFilter[panel]);
 
   const panelGroups = useMemo(
     () => memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder),
@@ -38,23 +40,22 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
 
   // フィルター対象キャラクターの名前リスト（テキスト中の名前でも一致させるため）
   const filterCharNames = useMemo(
-    () =>
-      allCharacters.filter((c) => filterIds.includes(c.id) && c.name.length > 0).map((c) => c.name),
+    () => resolveCharacterNames(allCharacters, filterIds),
     [allCharacters, filterIds],
   );
 
+  const criteria = useMemo(
+    () => ({ characterIds: filterIds, characterNames: filterCharNames, importanceLevels }),
+    [filterIds, filterCharNames, importanceLevels],
+  );
+
   const entries = useMemo(() => {
-    let result = allEntries.filter((e) => e.panel === panel);
-    if (filterIds.length > 0) {
-      // characterTags による手動タグ、またはテキスト中にキャラ名が含まれるエントリを対象とする
-      result = result.filter(
-        (e) =>
-          filterIds.some((id) => e.characterTags.includes(id)) ||
-          filterCharNames.some((name) => e.content.includes(name)),
-      );
-    }
-    return result.sort((a, b) => a.sortOrder - b.sortOrder);
-  }, [allEntries, panel, filterIds, filterCharNames]);
+    const result = filterEntries(
+      allEntries.filter((e) => e.panel === panel),
+      criteria,
+    );
+    return [...result].sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [allEntries, panel, criteria]);
 
   const groupedData = useMemo(
     () => groupEntriesByMemoGroup(entries, panelGroups),
@@ -64,7 +65,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
   const swapGroup = useGroupSwap(panelGroups, reorderMemoGroups);
 
   const hasGroups = panelGroups.length > 0;
-  const isFiltering = filterIds.length > 0;
+  const isFiltering = isFilterActive(criteria);
   const isEmpty = entries.length === 0 && !hasGroups && !isFiltering;
 
   const entryInput = <EntryInput panel={panel} />;

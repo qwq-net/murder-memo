@@ -1,7 +1,13 @@
+import { matchesEntryFilter, resolveCharacterNames } from '@/lib/entryFilter';
 import type { StoreState } from '@/store/index';
-import type { MemoEntry, PanelId, PanelLayoutConfig } from '@/types/memo';
+import type { ImportanceLevel, MemoEntry, PanelId, PanelLayoutConfig } from '@/types/memo';
 
 const EMPTY_FILTER: Record<PanelId, string[]> = { free: [], personal: [], timeline: [] };
+const EMPTY_IMPORTANCE_FILTER: Record<PanelId, ImportanceLevel[]> = {
+  free: [],
+  personal: [],
+  timeline: [],
+};
 
 // ─── トースト ─────────────────────────────────────────────────────────────────
 
@@ -34,6 +40,8 @@ export interface UiSlice {
   uncategorizedCollapsed: Record<string, boolean>;
   /** キャラクターフィルター（パネル別、選択中のキャラクター ID 配列） */
   characterFilter: Record<PanelId, string[]>;
+  /** 重要度フィルター（パネル別、表示する重要度レベル配列。空＝絞り込みなし） */
+  importanceFilter: Record<PanelId, ImportanceLevel[]>;
   /** アクティブなトースト通知 */
   toasts: ToastItem[];
   /** ウェルカムモーダルの表示状態 */
@@ -71,6 +79,9 @@ export interface UiSlice {
   toggleCharacterFilter: (panel: PanelId, characterId: string) => void;
   clearCharacterFilter: (panel: PanelId) => void;
   clearAllCharacterFilters: () => void;
+  toggleImportanceFilter: (panel: PanelId, level: ImportanceLevel) => void;
+  clearImportanceFilter: (panel: PanelId) => void;
+  clearAllImportanceFilters: () => void;
   /** 指定キャラを全パネルのフィルターから除去する（キャラ削除時のダングリング参照クリーンアップ用） */
   removeCharacterFromFilters: (characterId: string) => void;
   addToast: (message: string, type?: ToastType) => void;
@@ -104,6 +115,7 @@ export const createUiSlice = (
   focusedEntryId: null,
   uncategorizedCollapsed: {},
   characterFilter: { ...EMPTY_FILTER },
+  importanceFilter: { ...EMPTY_IMPORTANCE_FILTER },
   toasts: [],
   isWelcomeOpen: false,
   isSearchOpen: false,
@@ -151,18 +163,32 @@ export const createUiSlice = (
         uncategorizedCollapsed: { ...s.uncategorizedCollapsed, [entry.panel]: false },
       }));
     }
-    // 2. 干渉するキャラクターフィルターを解除（対象が現フィルターで非表示になる場合のみ）。
-    //    判定は MemoPanel / TimelinePanel と同じ predicate（タグ一致 or 本文にキャラ名）に揃える。
+    // 2. 干渉するフィルターを解除（対象が現フィルターで非表示になる場合のみ）。
+    //    判定は MemoPanel / TimelinePanel と同じ predicate（entryFilter）に揃える。
+    //    キャラ・重要度それぞれ独立に、対象を隠している側のみクリアする。
     const filterIds = state.characterFilter[entry.panel];
+    const importanceLevels = state.importanceFilter[entry.panel];
+    const filterNames = resolveCharacterNames(state.characters, filterIds);
+
     if (filterIds.length > 0) {
-      const filterNames = state.characters
-        .filter((c) => filterIds.includes(c.id) && c.name.length > 0)
-        .map((c) => c.name);
-      const visible =
-        filterIds.some((id) => entry.characterTags.includes(id)) ||
-        filterNames.some((name) => entry.content.includes(name));
-      if (!visible) {
+      const visibleByChar = matchesEntryFilter(entry, {
+        characterIds: filterIds,
+        characterNames: filterNames,
+        importanceLevels: [],
+      });
+      if (!visibleByChar) {
         set((s) => ({ characterFilter: { ...s.characterFilter, [entry.panel]: [] } }));
+      }
+    }
+
+    if (importanceLevels.length > 0) {
+      const visibleByImportance = matchesEntryFilter(entry, {
+        characterIds: [],
+        characterNames: [],
+        importanceLevels,
+      });
+      if (!visibleByImportance) {
+        set((s) => ({ importanceFilter: { ...s.importanceFilter, [entry.panel]: [] } }));
       }
     }
   },
@@ -180,6 +206,21 @@ export const createUiSlice = (
     set((s) => ({ characterFilter: { ...s.characterFilter, [panel]: [] } })),
 
   clearAllCharacterFilters: () => set(() => ({ characterFilter: { ...EMPTY_FILTER } })),
+
+  toggleImportanceFilter: (panel, level) =>
+    set((s) => {
+      const current = s.importanceFilter[panel];
+      const next = current.includes(level)
+        ? current.filter((l) => l !== level)
+        : [...current, level];
+      return { importanceFilter: { ...s.importanceFilter, [panel]: next } };
+    }),
+
+  clearImportanceFilter: (panel) =>
+    set((s) => ({ importanceFilter: { ...s.importanceFilter, [panel]: [] } })),
+
+  clearAllImportanceFilters: () =>
+    set(() => ({ importanceFilter: { ...EMPTY_IMPORTANCE_FILTER } })),
 
   removeCharacterFromFilters: (characterId) =>
     set((s) => ({

@@ -4,6 +4,7 @@ import { ToastContainer } from '@/components/common/toast';
 import { WelcomeModal } from '@/components/common/welcomeModal';
 import { DeductionModal } from '@/components/deductions/deductionModal';
 import { EntriesDndContext } from '@/components/entries/dnd/entriesDndContext';
+import { ImportanceFilterBar } from '@/components/entries/importanceFilterBar';
 import { useSelection } from '@/components/entries/selectionContext';
 import {
   ChevronLeft,
@@ -168,6 +169,7 @@ export function AppShell() {
         actions={
           <>
             <CharacterFilterBar panelId={id} />
+            <ImportanceFilterBar panelId={id} />
             <GroupCollapseActions panelId={id} />
           </>
         }

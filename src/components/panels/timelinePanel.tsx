@@ -5,6 +5,7 @@ import { PanelDndBoundary } from '@/components/entries/dnd/entriesDndContext';
 import { EntryInput } from '@/components/entries/entryInput';
 import { TimelineGroupSection } from '@/components/panels/timelineGroupSection';
 import { useGroupSwap } from '@/hooks/useGroupSwap';
+import { filterEntries, isFilterActive, resolveCharacterNames } from '@/lib/entryFilter';
 import { groupEntriesByTimeline } from '@/lib/grouping';
 import { useStore } from '@/store';
 
@@ -20,28 +21,29 @@ export function TimelinePanel() {
   const reorderTimelineGroups = useStore((s) => s.reorderTimelineGroups);
   const inputPosition = useStore((s) => s.settings.inputPosition);
   const filterIds = useStore((s) => s.characterFilter.timeline);
+  const importanceLevels = useStore((s) => s.importanceFilter.timeline);
 
   const swapGroup = useGroupSwap(timelineGroups, reorderTimelineGroups);
 
   // フィルター対象キャラクターの名前リスト（テキスト中の名前でも一致させるため）
   const filterCharNames = useMemo(
-    () =>
-      allCharacters.filter((c) => filterIds.includes(c.id) && c.name.length > 0).map((c) => c.name),
+    () => resolveCharacterNames(allCharacters, filterIds),
     [allCharacters, filterIds],
   );
 
-  const timelineEntries = useMemo(() => {
-    let result = allEntries.filter((e) => e.panel === 'timeline');
-    if (filterIds.length > 0) {
-      // characterTags による手動タグ、またはテキスト中にキャラ名が含まれるエントリを対象とする
-      result = result.filter(
-        (e) =>
-          filterIds.some((id) => e.characterTags.includes(id)) ||
-          filterCharNames.some((name) => e.content.includes(name)),
-      );
-    }
-    return result;
-  }, [allEntries, filterIds, filterCharNames]);
+  const criteria = useMemo(
+    () => ({ characterIds: filterIds, characterNames: filterCharNames, importanceLevels }),
+    [filterIds, filterCharNames, importanceLevels],
+  );
+
+  const timelineEntries = useMemo(
+    () =>
+      filterEntries(
+        allEntries.filter((e) => e.panel === 'timeline'),
+        criteria,
+      ),
+    [allEntries, criteria],
+  );
 
   const groupedData = useMemo(
     () => groupEntriesByTimeline(timelineEntries, timelineGroups),
@@ -49,7 +51,7 @@ export function TimelinePanel() {
   );
 
   const isEmpty = timelineGroups.length === 0;
-  const isFiltering = filterIds.length > 0;
+  const isFiltering = isFilterActive(criteria);
   const isFilteredEmpty = isFiltering && timelineEntries.length === 0 && !isEmpty;
 
   const entryInput = <EntryInput panel="timeline" />;

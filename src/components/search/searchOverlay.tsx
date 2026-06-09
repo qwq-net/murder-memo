@@ -5,6 +5,7 @@ import { SearchOverlayShellView } from '@/components/search/searchOverlayShellVi
 import { SearchResultItem } from '@/components/search/searchResultItem';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { navigateToEntry } from '@/lib/entryNavigation';
+import { searchEntries, tokenizeQuery } from '@/lib/entrySearch';
 import { useStore } from '@/store';
 import type { MemoEntry, PanelId } from '@/types/memo';
 
@@ -28,6 +29,9 @@ export function SearchOverlay() {
   const setSearchOpen = useStore((s) => s.setSearchOpen);
   const searchInitialQuery = useStore((s) => s.searchInitialQuery);
   const entries = useStore((s) => s.entries);
+  const characters = useStore((s) => s.characters);
+  const timelineGroups = useStore((s) => s.timelineGroups);
+  const memoGroups = useStore((s) => s.memoGroups);
   const order = useStore((s) => s.layout.order);
   const setActivePanel = useStore((s) => s.setActivePanel);
   const revealEntry = useStore((s) => s.revealEntry);
@@ -73,36 +77,25 @@ export function SearchOverlay() {
   const close = useCallback(() => setSearchOpen(false), [setSearchOpen]);
   useEscapeKey(close, isOpen);
 
-  // 検索結果をパネル順にグループ化
-  const grouped = useMemo(() => {
-    if (!debouncedQuery) return [];
-    const q = debouncedQuery.toLowerCase();
-    let count = 0;
+  // 検索結果をパネル順にグループ化（複数キーワード AND・本文/キャラ名/グループ名対象）
+  const grouped = useMemo(
+    () =>
+      searchEntries(debouncedQuery, {
+        entries,
+        characters,
+        timelineGroups,
+        memoGroups,
+        order,
+        maxResults: MAX_RESULTS,
+      }),
+    [debouncedQuery, entries, characters, timelineGroups, memoGroups, order],
+  );
 
-    const groups: { panel: PanelId; entries: MemoEntry[] }[] = [];
-
-    for (const panelId of order) {
-      if (count >= MAX_RESULTS) break;
-      const matched: MemoEntry[] = [];
-      for (const e of entries) {
-        if (count >= MAX_RESULTS) break;
-        if (e.panel !== panelId) continue;
-        if (e.type === 'image') continue;
-        if (e.content.toLowerCase().includes(q)) {
-          matched.push(e);
-          count++;
-        }
-      }
-      if (matched.length > 0) {
-        groups.push({ panel: panelId, entries: matched });
-      }
-    }
-
-    return groups;
-  }, [debouncedQuery, entries, order]);
+  // ハイライト用のキーワード配列（searchEntries と同じ分解規則）
+  const terms = useMemo(() => tokenizeQuery(debouncedQuery), [debouncedQuery]);
 
   const totalCount = useMemo(
-    () => grouped.reduce((sum, g) => sum + g.entries.length, 0),
+    () => grouped.reduce((sum, g) => sum + g.matches.length, 0),
     [grouped],
   );
 
@@ -172,15 +165,17 @@ export function SearchOverlay() {
                   }}
                 />
                 {PANEL_TITLES[group.panel]}
-                <span className="text-text-muted ml-1 font-normal">{group.entries.length}件</span>
+                <span className="text-text-muted ml-1 font-normal">{group.matches.length}件</span>
               </div>
 
               {/* エントリ一覧 */}
-              {group.entries.map((entry) => (
+              {group.matches.map((match) => (
                 <SearchResultItem
-                  key={entry.id}
-                  entry={entry}
-                  query={debouncedQuery}
+                  key={match.entry.id}
+                  entry={match.entry}
+                  terms={terms}
+                  matchedCharacterNames={match.matchedCharacterNames}
+                  matchedGroupLabel={match.matchedGroupLabel}
                   onSelect={handleSelect}
                 />
               ))}

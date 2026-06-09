@@ -6,6 +6,7 @@ import {
 } from '@/components/guide/previews/sampleData';
 import { SearchOverlayShellView } from '@/components/search/searchOverlayShellView';
 import { SearchResultItem } from '@/components/search/searchResultItem';
+import { tokenizeQuery } from '@/lib/entrySearch';
 import type { MemoEntry, PanelId } from '@/types/memo';
 
 const PANEL_TITLES: Record<PanelId, string> = {
@@ -72,7 +73,9 @@ export function SearchOverlayPreview() {
             <SearchResultItem
               key={entry.id}
               entry={entry}
-              query={query}
+              terms={tokenizeQuery(query)}
+              matchedCharacterNames={[]}
+              matchedGroupLabel={null}
               onSelect={() => undefined}
             />
           ))}

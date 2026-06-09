@@ -277,9 +277,10 @@ export const createSessionsSlice = (
         linkKeywords: [],
       }));
 
-      // 削除済みキャラを指すフィルターが残らないようクリアする
+      // 全エントリ消滅に合わせて絞り込み（キャラ・重要度）もリセットする
       // （同一セッションに留まるため switchSession の subscribe は走らない）
       get().clearAllCharacterFilters();
+      get().clearAllImportanceFilters();
     },
   };
 };
