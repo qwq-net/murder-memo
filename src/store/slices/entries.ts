@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 
 import { timelineFieldPatch } from '@/lib/entryPanelTransform';
 import { bulkPutEntries, deleteEntry, putEntry } from '@/lib/idb';
+import { captureSessionRollback } from '@/lib/optimisticRollback';
 import type { StoreState } from '@/store/index';
 import type { MemoEntry, PanelId } from '@/types/memo';
 
@@ -97,7 +98,12 @@ export const createEntriesSlice = (
     try {
       await putEntry(entry, sessionId);
     } catch (err) {
-      set((s) => ({ entries: s.entries.filter((e) => e.id !== entry.id) }));
+      // セッションが切り替わっていなければ追加分のみ除去する。切替済みなら state は既に
+      // 新セッションのデータで追加分は存在せず、filter は無駄な新配列参照を作って
+      // 切替直後の Undo 履歴を汚すだけなので触らない（captureSessionRollback と同方針）
+      if (get().activeSessionId === sessionId) {
+        set((s) => ({ entries: s.entries.filter((e) => e.id !== entry.id) }));
+      }
       get().addToast('メモの追加に失敗しました', 'error');
       console.error('addEntry の保存に失敗しました', err);
       throw err;
@@ -116,14 +122,16 @@ export const createEntriesSlice = (
     const prev = get().entries;
     const entry = prev.find((e) => e.id === id);
     if (!entry) return;
+    const rollback = captureSessionRollback(get, set, { entries: prev });
     const updated = { ...entry, ...patch, updatedAt: Date.now() };
     set((s) => ({ entries: s.entries.map((e) => (e.id === id ? updated : e)) }));
     try {
       await putEntry(updated, sessionId);
     } catch (err) {
       // 保存失敗時は元の配列参照ごと復元する（reorderEntries と同方式。
-      // メモリと IDB の乖離を防ぎ、参照比較の Undo 履歴も汚さない）
-      set(() => ({ entries: prev }));
+      // メモリと IDB の乖離を防ぎ、参照比較の Undo 履歴も汚さない）。
+      // await 中にセッション切替が完了していた場合は巻き戻さない（captureSessionRollback 参照）
+      rollback();
       get().addToast('メモの保存に失敗しました', 'error');
       console.error('updateEntry の保存に失敗しました', err);
     }
@@ -160,7 +168,10 @@ export const createEntriesSlice = (
     // panel/timeline 系フィールドの整合は timelineFieldPatch に集約（moveEntryAcrossContainers と共用）。
     // 「panel==='timeline' は timelineGroupId 必須・type='timeline'」「timeline 以外では timeline 系
     // フィールドをクリア」を 1 回の更新で満たし、不可視孤児（timelineGroupId 欠落）を防ぐ。
-    Object.assign(patch, timelineFieldPatch(panel, { timelineGroupId: opts.timelineGroupId }, entry));
+    Object.assign(
+      patch,
+      timelineFieldPatch(panel, { timelineGroupId: opts.timelineGroupId }, entry),
+    );
     if (panel === 'timeline') {
       // メモグループ参照はタイムラインでは無効なのでクリアする
       patch.groupId = undefined;
@@ -170,11 +181,12 @@ export const createEntriesSlice = (
     }
     const updated = { ...entry, ...patch };
     // 楽観更新 → 失敗時は参照ごとロールバック＋エラートースト（updateEntry と同方式）
+    const rollback = captureSessionRollback(get, set, { entries: prev });
     set((s) => ({ entries: s.entries.map((e) => (e.id === id ? updated : e)) }));
     try {
       await putEntry(updated, sessionId);
     } catch (err) {
-      set(() => ({ entries: prev }));
+      rollback();
       get().addToast('メモの移動に失敗しました', 'error');
       console.error('moveEntryToPanel の保存に失敗しました', err);
     }
@@ -190,11 +202,12 @@ export const createEntriesSlice = (
       .filter((e) => e.panel === entry.panel && e.id !== id)
       .reduce((m, e) => Math.max(m, e.sortOrder), -1);
     const updated = { ...entry, groupId, sortOrder: maxOrder + 1, updatedAt: Date.now() };
+    const rollback = captureSessionRollback(get, set, { entries: prev });
     set((s) => ({ entries: s.entries.map((e) => (e.id === id ? updated : e)) }));
     try {
       await putEntry(updated, sessionId);
     } catch (err) {
-      set(() => ({ entries: prev }));
+      rollback();
       get().addToast('グループの変更に失敗しました', 'error');
       console.error('setEntryGroup の保存に失敗しました', err);
     }
@@ -210,11 +223,12 @@ export const createEntriesSlice = (
       ? entry.characterTags.filter((t) => t !== characterId)
       : [...entry.characterTags, characterId];
     const updated = { ...entry, characterTags: tags, updatedAt: Date.now() };
+    const rollback = captureSessionRollback(get, set, { entries: prev });
     set((s) => ({ entries: s.entries.map((e) => (e.id === entryId ? updated : e)) }));
     try {
       await putEntry(updated, sessionId);
     } catch (err) {
-      set(() => ({ entries: prev }));
+      rollback();
       get().addToast('関連人物の更新に失敗しました', 'error');
       console.error('toggleCharacterTag の保存に失敗しました', err);
     }
@@ -242,13 +256,14 @@ export const createEntriesSlice = (
       return reordered;
     });
     // 同期的にstate更新 → DnDオーバーレイが正しい位置にアニメーションする
+    const rollback = captureSessionRollback(get, set, { entries: prev });
     set(() => ({ entries: updated }));
     // 対象パネルのエントリだけを IndexedDB に書き込む
     try {
       await bulkPutEntries(changedEntries, sessionId);
     } catch (err) {
       // 保存失敗時は並び替え前の状態へ戻す（メモリと IDB の乖離を防ぐ）
-      set(() => ({ entries: prev }));
+      rollback();
       get().addToast('並び替えの保存に失敗しました', 'error');
       console.error('reorderEntries の保存に失敗しました', err);
     }
@@ -316,11 +331,12 @@ export const createEntriesSlice = (
     if (changed.length === 0) return;
 
     // 楽観更新 → 失敗時は移動前へロールバック＋エラートースト（reorderEntries と同方式）
+    const rollback = captureSessionRollback(get, set, { entries: prev });
     set(() => ({ entries: updated }));
     try {
       await bulkPutEntries(changed, sessionId);
     } catch (err) {
-      set(() => ({ entries: prev }));
+      rollback();
       get().addToast('メモの移動に失敗しました', 'error');
       console.error('moveEntryAcrossContainers の保存に失敗しました', err);
     }

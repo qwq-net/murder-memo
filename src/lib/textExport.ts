@@ -1,3 +1,4 @@
+import { memoGroupsForPanel } from '@/lib/grouping';
 import type { Character, MemoEntry, MemoGroup, PanelId, TimelineGroup } from '@/types/memo';
 
 const PANEL_LABELS: Record<PanelId, string> = {
@@ -88,9 +89,7 @@ function formatPanel(
     }
   } else {
     // メモグループ順
-    const panelGroups = memoGroups
-      .filter((g) => g.panel === panel)
-      .sort((a, b) => a.sortOrder - b.sortOrder);
+    const panelGroups = memoGroupsForPanel(memoGroups, panel);
 
     // グループありエントリ
     for (const group of panelGroups) {

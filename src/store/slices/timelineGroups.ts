@@ -6,6 +6,7 @@ import {
   getTimelineGroupsBySession,
   putTimelineGroup,
 } from '@/lib/idb';
+import { captureSessionRollback } from '@/lib/optimisticRollback';
 import type { StoreState } from '@/store/index';
 import type { TimelineGroup } from '@/types/memo';
 
@@ -74,6 +75,12 @@ export const createTimelineGroupsSlice = (
     const prevGroups = get().timelineGroups;
     const entryIds = prevEntries.filter((e) => e.timelineGroupId === id).map((e) => e.id);
     const removedIds = new Set(entryIds);
+    // 失敗時は参照ごと巻き戻す。await 中にセッション切替が完了していたら放棄する
+    // （captureSessionRollback 参照。旧スナップショットで新セッションを上書きしない）
+    const rollback = captureSessionRollback(get, set, {
+      entries: prevEntries,
+      timelineGroups: prevGroups,
+    });
     set((s) => ({
       entries: s.entries.filter((e) => !removedIds.has(e.id)),
       timelineGroups: s.timelineGroups.filter((g) => g.id !== id),
@@ -81,7 +88,7 @@ export const createTimelineGroupsSlice = (
     try {
       await deleteTimelineGroupCascade(id, entryIds);
     } catch (err) {
-      set(() => ({ entries: prevEntries, timelineGroups: prevGroups }));
+      rollback();
       get().addToast('グループの削除に失敗しました', 'error');
       console.error('removeTimelineGroup の保存に失敗しました', err);
     }

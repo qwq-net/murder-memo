@@ -36,6 +36,12 @@ vi.mock('@/lib/idb', () => ({
   getEntriesBySession: vi.fn().mockResolvedValue([]),
   getTimelineGroupsBySession: vi.fn().mockResolvedValue([]),
   getMemoGroupsBySession: vi.fn().mockResolvedValue([]),
+  // セッション切替（store/index.ts の activeSessionId subscribe）が呼ぶ残りのローダー群。
+  // 競合ロールバックのテストで実際に切替を発火させるため揃えておく
+  getCharactersBySession: vi.fn().mockResolvedValue([]),
+  getDeductionsBySession: vi.fn().mockResolvedValue([]),
+  getRelationsBySession: vi.fn().mockResolvedValue([]),
+  getLinkKeywordsBySession: vi.fn().mockResolvedValue([]),
 }));
 
 import { useStore } from '@/store/index';
@@ -209,6 +215,76 @@ describe('グループ削除のドメインルール', () => {
       expect(mockReassignMemoGroupAndDelete).not.toHaveBeenCalled();
       expect(useStore.getState().memoGroups).toEqual([mg]);
       expect(useStore.getState().entries[0].groupId).toBe('mg-1');
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  /**
+   * IDB 書き込み失敗時のロールバックと、await 中にセッション切替が完了した場合の
+   * 巻き戻し放棄（captureSessionRollback。src/lib/optimisticRollback.ts 参照）を保証する。
+   */
+  describe('カスケード削除のロールバック（セッション切替との競合安全）', () => {
+    afterEach(async () => {
+      // 切替テスト後は session-test に戻し、リロード完了を待ってから次のテストへ
+      // （待たないと非同期の loadEntries([]) が後続テストの state を上書きしてフレークする）。
+      // 切替していないテストでは subscribe が発火せず isSessionReady が立たないため何もしない
+      if (useStore.getState().activeSessionId !== 'session-test') {
+        useStore.setState({ activeSessionId: 'session-test' });
+        await vi.waitFor(() => expect(useStore.getState().isSessionReady).toBe(true));
+      }
+    });
+
+    it('removeTimelineGroup: 失敗したら削除前へ参照ごと巻き戻す', async () => {
+      const prevEntries = [makeEntry({ id: 'e1', panel: 'timeline', timelineGroupId: 'tg-1' })];
+      const prevGroups = [makeTimelineGroup({ id: 'tg-1' })];
+      useStore.setState({ entries: prevEntries, timelineGroups: prevGroups });
+      mockDeleteTimelineGroupCascade.mockRejectedValueOnce(new Error('IDB error'));
+
+      await useStore.getState().removeTimelineGroup('tg-1');
+
+      expect(useStore.getState().entries).toBe(prevEntries);
+      expect(useStore.getState().timelineGroups).toBe(prevGroups);
+    });
+
+    it('removeMemoGroup: 失敗したら未分類化前へ参照ごと巻き戻す', async () => {
+      const prevEntries = [makeEntry({ id: 'e1', panel: 'free', groupId: 'mg-1' })];
+      const prevGroups = [makeMemoGroup({ id: 'mg-1', panel: 'free' })];
+      useStore.setState({ entries: prevEntries, memoGroups: prevGroups });
+      mockReassignMemoGroupAndDelete.mockRejectedValueOnce(new Error('IDB error'));
+
+      await useStore.getState().removeMemoGroup('mg-1');
+
+      expect(useStore.getState().entries).toBe(prevEntries);
+      expect(useStore.getState().memoGroups).toBe(prevGroups);
+    });
+
+    it('removeTimelineGroup: 失敗の確定がセッション切替後なら巻き戻さない', async () => {
+      useStore.setState({
+        entries: [makeEntry({ id: 'e1', panel: 'timeline', timelineGroupId: 'tg-1' })],
+        timelineGroups: [makeTimelineGroup({ id: 'tg-1' })],
+      });
+      let reject!: (e: Error) => void;
+      mockDeleteTimelineGroupCascade.mockImplementationOnce(
+        () =>
+          new Promise((_, rej) => {
+            reject = rej;
+          }),
+      );
+
+      const pending = useStore.getState().removeTimelineGroup('tg-1');
+
+      // await 中にセッション切替が完了する（subscribe のリロードが新セッションのデータを投入）
+      useStore.setState({ activeSessionId: 'session-2' });
+      await vi.waitFor(() => expect(useStore.getState().isSessionReady).toBe(true));
+      const loadedEntries = useStore.getState().entries;
+      const loadedGroups = useStore.getState().timelineGroups;
+
+      reject(new Error('IDB error'));
+      await pending;
+
+      // 旧セッションのスナップショットで上書きされない
+      expect(useStore.getState().entries).toBe(loadedEntries);
+      expect(useStore.getState().timelineGroups).toBe(loadedGroups);
     });
   });
 });

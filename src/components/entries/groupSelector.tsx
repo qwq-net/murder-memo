@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
 import { GroupSelectorView } from '@/components/entries/groupSelectorView';
+import { memoGroupsForPanel } from '@/lib/grouping';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 
@@ -30,8 +31,7 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
 
   const groups = useMemo(() => {
     if (isTimeline) return timelineGroups;
-    if (isMemoPanel)
-      return memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder);
+    if (isMemoPanel) return memoGroupsForPanel(memoGroups, panel);
     return [];
   }, [isTimeline, isMemoPanel, timelineGroups, memoGroups, panel]);
 

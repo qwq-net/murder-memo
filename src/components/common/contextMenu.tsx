@@ -8,6 +8,8 @@ import {
   useState,
 } from 'react';
 
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+
 // ─── 型定義 ─────────────────────────────────────────────────────────────────
 
 export interface ContextMenuItem {
@@ -201,16 +203,13 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   }, [onClose]);
 
   // ── Escape ──
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (openIndex !== null) setOpenIndex(null);
-        else onClose();
-      }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose, openIndex]);
+  // useEscapeKey のスタックに乗せることで、モーダル上で開いた場合も ESC は最前面の
+  // このメニューだけを閉じる（独自リスナーだとモーダル側と同時に閉じてしまう）。
+  // サブメニュー展開中はサブメニューのみ閉じ、メニュー本体は維持する
+  useEscapeKey(() => {
+    if (openIndex !== null) setOpenIndex(null);
+    else onClose();
+  });
 
   // ── Safe Triangle: pointermove ──
   useEffect(() => {
@@ -452,10 +451,20 @@ const SubMenu = forwardRef<HTMLDivElement, SubMenuProps>(function SubMenu(
     el.style.top = `${y}px`;
 
     const sub = el.getBoundingClientRect();
+    const pad = 4; // 画面端からの最小マージン
 
-    // 下はみ出し補正
+    // 上下はみ出し補正
     if (sub.bottom > window.innerHeight) {
-      el.style.top = `${Math.max(4, window.innerHeight - sub.height - 4)}px`;
+      el.style.top = `${Math.max(pad, window.innerHeight - sub.height - pad)}px`;
+    } else if (sub.top < pad) {
+      el.style.top = `${pad}px`;
+    }
+
+    // 左右はみ出し補正（左フリップ時の実幅超過や狭いウィンドウで起きる）
+    if (sub.left < pad) {
+      el.style.left = `${pad}px`;
+    } else if (sub.right > window.innerWidth) {
+      el.style.left = `${Math.max(pad, window.innerWidth - sub.width - pad)}px`;
     }
 
     // 確定位置で Safe Triangle をセット

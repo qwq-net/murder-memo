@@ -140,11 +140,14 @@ useStore.subscribe(
       loadLinkKeywords,
       clearAllCharacterFilters,
       clearAllImportanceFilters,
+      clearSearchInitialQuery,
       setSessionReady,
       addToast,
     } = useStore.getState();
+    // セッション固有の UI 状態（フィルター・検索初期クエリ）を持ち越さない
     clearAllCharacterFilters();
     clearAllImportanceFilters();
+    clearSearchInitialQuery();
     // ロード完了まで UI をローディング表示に切り替える（中途半端なデータでの操作を防ぐ）
     setSessionReady(false);
     // ロード中は履歴記録を停止（ロード操作自体を undo できないように）

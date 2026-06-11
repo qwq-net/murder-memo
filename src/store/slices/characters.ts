@@ -6,6 +6,7 @@ import {
   putCharacter,
   removeCharacterCascade,
 } from '@/lib/idb';
+import { captureSessionRollback } from '@/lib/optimisticRollback';
 import type { StoreState } from '@/store/index';
 import type { Character } from '@/types/memo';
 
@@ -106,6 +107,10 @@ export const createCharactersSlice = (
       }));
     const entryUpdateById = new Map(entryUpdates.map((e) => [e.id, e]));
 
+    // 失敗時は参照ごと巻き戻す。await 中にセッション切替が完了していたら放棄する
+    // （captureSessionRollback 参照。旧スナップショットで新セッションを上書きしない）
+    const rollback = captureSessionRollback(get, set, prev);
+
     set((s) => ({
       characters: s.characters.filter((c) => c.id !== id),
       relations: s.relations.filter((r) => !relationIdSet.has(r.id)),
@@ -119,7 +124,7 @@ export const createCharactersSlice = (
         sessionId,
       );
     } catch (err) {
-      set(() => prev);
+      rollback();
       get().addToast('登場人物の削除に失敗しました', 'error');
       console.error('removeCharacter の保存に失敗しました', err);
       return;

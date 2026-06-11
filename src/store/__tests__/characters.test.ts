@@ -17,6 +17,13 @@ vi.mock('@/lib/idb', () => ({
   bulkPutCharacters: (...args: unknown[]) => mockBulkPutCharacters(...args),
   getCharactersBySession: vi.fn().mockResolvedValue([]),
   getEntriesBySession: vi.fn().mockResolvedValue([]),
+  // セッション切替（store/index.ts の activeSessionId subscribe）が呼ぶ残りのローダー群。
+  // 競合ロールバックのテストで実際に切替を発火させるため揃えておく
+  getTimelineGroupsBySession: vi.fn().mockResolvedValue([]),
+  getMemoGroupsBySession: vi.fn().mockResolvedValue([]),
+  getDeductionsBySession: vi.fn().mockResolvedValue([]),
+  getRelationsBySession: vi.fn().mockResolvedValue([]),
+  getLinkKeywordsBySession: vi.fn().mockResolvedValue([]),
 }));
 
 import { useStore } from '@/store/index';
@@ -229,6 +236,66 @@ describe('charactersSlice', () => {
       expect(filter.free).toEqual([]);
       expect(filter.personal).toEqual(['bob']);
       expect(filter.timeline).toEqual([]);
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  /**
+   * IDB 書き込み失敗時のロールバックと、await 中にセッション切替が完了した場合の
+   * 巻き戻し放棄（captureSessionRollback。src/lib/optimisticRollback.ts 参照）を保証する。
+   */
+  describe('removeCharacter のロールバック（セッション切替との競合安全）', () => {
+    afterEach(async () => {
+      // 切替テスト後は session-test に戻し、リロード完了を待ってから次のテストへ。
+      // 切替していないテストでは subscribe が発火せず isSessionReady が立たないため何もしない
+      if (useStore.getState().activeSessionId !== 'session-test') {
+        useStore.setState({ activeSessionId: 'session-test' });
+        await vi.waitFor(() => expect(useStore.getState().isSessionReady).toBe(true));
+      }
+    });
+
+    it('失敗したら削除前へ参照ごと巻き戻す（characters / relations / entries）', async () => {
+      const prevCharacters = [makeCharacter({ id: 'c1' })];
+      const prevRelations = [makeRelation({ fromCharacterId: 'c1', toCharacterId: 'c2' })];
+      const prevEntries = [makeEntry({ id: 'e1', characterTags: ['c1'] })];
+      useStore.setState({
+        characters: prevCharacters,
+        relations: prevRelations,
+        entries: prevEntries,
+      });
+      mockRemoveCharacterCascade.mockRejectedValueOnce(new Error('IDB error'));
+
+      await useStore.getState().removeCharacter('c1');
+
+      expect(useStore.getState().characters).toBe(prevCharacters);
+      expect(useStore.getState().relations).toBe(prevRelations);
+      expect(useStore.getState().entries).toBe(prevEntries);
+    });
+
+    it('失敗の確定がセッション切替後なら巻き戻さない', async () => {
+      useStore.setState({ characters: [makeCharacter({ id: 'c1' })] });
+      let reject!: (e: Error) => void;
+      mockRemoveCharacterCascade.mockImplementationOnce(
+        () =>
+          new Promise((_, rej) => {
+            reject = rej;
+          }),
+      );
+
+      const pending = useStore.getState().removeCharacter('c1');
+
+      // await 中にセッション切替が完了する（subscribe のリロードが新セッションのデータを投入）
+      useStore.setState({ activeSessionId: 'session-2' });
+      await vi.waitFor(() => expect(useStore.getState().isSessionReady).toBe(true));
+      const loadedCharacters = useStore.getState().characters;
+      const loadedEntries = useStore.getState().entries;
+
+      reject(new Error('IDB error'));
+      await pending;
+
+      // 旧セッションのスナップショットで上書きされない
+      expect(useStore.getState().characters).toBe(loadedCharacters);
+      expect(useStore.getState().entries).toBe(loadedEntries);
     });
   });
 });

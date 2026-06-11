@@ -327,6 +327,22 @@ describe('validateExport (linkKeywords は optional)', () => {
     };
     expect(validateExport(v1Data)).toBe(true);
   });
+
+  it('linkKeyword の keyword が文字列でないと false', () => {
+    const data = makeValidExport({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      linkKeywords: [{ id: 'k1', keyword: 123, createdAt: 0 } as any],
+    });
+    expect(validateExport(data)).toBe(false);
+  });
+
+  it('linkKeyword の createdAt が数値でないと false（import がそのまま永続化するため）', () => {
+    const data = makeValidExport({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      linkKeywords: [{ id: 'k1', keyword: 'X', createdAt: '2024' } as any],
+    });
+    expect(validateExport(data)).toBe(false);
+  });
 });
 
 // ─── formatBytes ────────────────────────────────────────────────────────────

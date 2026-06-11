@@ -90,6 +90,8 @@ export interface UiSlice {
   setSearchOpen: (open: boolean) => void;
   /** 初期クエリを指定して検索オーバーレイを開く */
   openSearchWith: (query: string) => void;
+  /** 検索の初期クエリをクリアする（セッション切替時に前セッションのクエリを持ち越さないため） */
+  clearSearchInitialQuery: () => void;
   setDeductionOpen: (open: boolean) => void;
   setRelationDiagramOpen: (open: boolean) => void;
   setLinkListOpen: (open: boolean) => void;
@@ -244,6 +246,8 @@ export const createUiSlice = (
   setSearchOpen: (open) => set(() => ({ isSearchOpen: open })),
 
   openSearchWith: (query) => set(() => ({ isSearchOpen: true, searchInitialQuery: query })),
+
+  clearSearchInitialQuery: () => set(() => ({ searchInitialQuery: '' })),
 
   setDeductionOpen: (open) => set(() => ({ isDeductionOpen: open })),
 

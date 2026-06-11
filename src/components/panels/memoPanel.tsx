@@ -10,7 +10,7 @@ import { EntryInput } from '@/components/entries/entryInput';
 import { MemoGroupSection } from '@/components/panels/memoGroupSection';
 import { useGroupSwap } from '@/hooks/useGroupSwap';
 import { filterEntries, isFilterActive, resolveCharacterNames } from '@/lib/entryFilter';
-import { groupEntriesByMemoGroup } from '@/lib/grouping';
+import { groupEntriesByMemoGroup, memoGroupsForPanel } from '@/lib/grouping';
 import { useStore } from '@/store';
 
 interface MemoPanelProps {
@@ -33,10 +33,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
   const filterIds = useStore((s) => s.characterFilter[panel]);
   const importanceLevels = useStore((s) => s.importanceFilter[panel]);
 
-  const panelGroups = useMemo(
-    () => memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder),
-    [memoGroups, panel],
-  );
+  const panelGroups = useMemo(() => memoGroupsForPanel(memoGroups, panel), [memoGroups, panel]);
 
   // フィルター対象キャラクターの名前リスト（テキスト中の名前でも一致させるため）
   const filterCharNames = useMemo(

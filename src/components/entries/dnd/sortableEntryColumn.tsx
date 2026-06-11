@@ -69,9 +69,7 @@ export function SortableEntryColumn({
             entry={entry}
             allIds={allIds}
             disabled={disabled}
-            hideTime={
-              hideTimeDuplicates && i > 0 && entry.eventTime === entries[i - 1].eventTime
-            }
+            hideTime={hideTimeDuplicates && i > 0 && entry.eventTime === entries[i - 1].eventTime}
           />
         ))}
         {entries.length === 0 && emptyPlaceholder}

@@ -11,16 +11,26 @@ const mockPutEntry = vi.fn().mockResolvedValue(undefined);
 const mockDeleteEntry = vi.fn().mockResolvedValue(undefined);
 const mockDeleteImage = vi.fn().mockResolvedValue(undefined);
 const mockBulkPutEntries = vi.fn().mockResolvedValue(undefined);
+const mockGetEntriesBySession = vi.fn().mockResolvedValue([]);
 
 vi.mock('@/lib/idb', () => ({
   putEntry: (...args: unknown[]) => mockPutEntry(...args),
   deleteEntry: (...args: unknown[]) => mockDeleteEntry(...args),
   deleteImage: (...args: unknown[]) => mockDeleteImage(...args),
   bulkPutEntries: (...args: unknown[]) => mockBulkPutEntries(...args),
-  getEntriesBySession: vi.fn().mockResolvedValue([]),
+  getEntriesBySession: (...args: unknown[]) => mockGetEntriesBySession(...args),
+  // セッション切替（store/index.ts の activeSessionId subscribe）が呼ぶローダー群。
+  // 競合ロールバックのテストで実際に切替を発火させるため、全ローダーを揃えておく
+  getCharactersBySession: vi.fn().mockResolvedValue([]),
+  getTimelineGroupsBySession: vi.fn().mockResolvedValue([]),
+  getMemoGroupsBySession: vi.fn().mockResolvedValue([]),
+  getDeductionsBySession: vi.fn().mockResolvedValue([]),
+  getRelationsBySession: vi.fn().mockResolvedValue([]),
+  getLinkKeywordsBySession: vi.fn().mockResolvedValue([]),
 }));
 
 import { useStore } from '@/store/index';
+import type { MemoEntry } from '@/types/memo';
 import { makeEntry } from './helpers';
 
 describe('entriesSlice', () => {
@@ -452,6 +462,117 @@ describe('entriesSlice', () => {
 
       expect(mockBulkPutEntries).not.toHaveBeenCalled();
       expect(useStore.getState().entries.find((e) => e.id === 'a')?.groupId).toBe('g1');
+    });
+  });
+
+  /**
+   * IDB 書き込みの await 中にセッション切替が完了した場合、失敗時ロールバックは
+   * 旧セッションのスナップショットで新セッションの entries を上書きしてはならない
+   * （captureSessionRollback による巻き戻し放棄。src/lib/optimisticRollback.ts 参照）。
+   */
+  describe('セッション切替と競合する楽観更新ロールバック', () => {
+    /** セッション切替を発火させ、subscribe のリロード完了（isSessionReady）まで待つ */
+    async function switchSessionAndWaitReload(sessionId: string, loadedEntries: MemoEntry[]) {
+      mockGetEntriesBySession.mockResolvedValueOnce(loadedEntries);
+      useStore.setState({ activeSessionId: sessionId });
+      await vi.waitFor(() => expect(useStore.getState().isSessionReady).toBe(true));
+    }
+
+    afterEach(async () => {
+      // 後続テストの beforeEach が再び切替（subscribe 発火）を起こさないよう session-test に
+      // 戻し、リロード完了を待ってから次へ進む（待たないと非同期の loadEntries([]) が
+      // 後続テストの entries を上書きしてフレークする）。
+      // 切替していないテストでは subscribe が発火せず isSessionReady が立たないため何もしない
+      if (useStore.getState().activeSessionId !== 'session-test') {
+        useStore.setState({ activeSessionId: 'session-test' });
+        await vi.waitFor(() => expect(useStore.getState().isSessionReady).toBe(true));
+      }
+    });
+
+    it('updateEntry: 失敗の確定が切替後なら旧データで巻き戻さない', async () => {
+      useStore.setState({ entries: [makeEntry({ id: 'old-1', content: '旧セッション' })] });
+      let rejectPut!: (e: Error) => void;
+      mockPutEntry.mockImplementationOnce(
+        () =>
+          new Promise((_, rej) => {
+            rejectPut = rej;
+          }),
+      );
+
+      const pending = useStore.getState().updateEntry('old-1', { content: '編集中' });
+
+      // await 中にセッション切替が完了する（subscribe のリロードが新セッションのデータを投入）
+      await switchSessionAndWaitReload('session-2', [makeEntry({ id: 'new-1' })]);
+      const loaded = useStore.getState().entries;
+
+      rejectPut(new Error('IDB error'));
+      await pending;
+
+      // ロールバックは放棄され、新セッションのデータが参照ごと保持される
+      expect(useStore.getState().entries).toBe(loaded);
+      expect(useStore.getState().entries[0].id).toBe('new-1');
+    });
+
+    it('moveEntryAcrossContainers: 失敗の確定が切替後なら巻き戻さない', async () => {
+      useStore.setState({
+        entries: [
+          makeEntry({ id: 'a', panel: 'free', groupId: 'g1', sortOrder: 0 }),
+          makeEntry({ id: 'b', panel: 'free', groupId: 'g2', sortOrder: 1 }),
+        ],
+      });
+      let rejectBulk!: (e: Error) => void;
+      mockBulkPutEntries.mockImplementationOnce(
+        () =>
+          new Promise((_, rej) => {
+            rejectBulk = rej;
+          }),
+      );
+
+      const pending = useStore.getState().moveEntryAcrossContainers({
+        id: 'a',
+        panel: 'free',
+        groupId: 'g2',
+        orderedIds: ['b', 'a'],
+      });
+
+      await switchSessionAndWaitReload('session-2', [makeEntry({ id: 'new-1', panel: 'free' })]);
+      const loaded = useStore.getState().entries;
+
+      rejectBulk(new Error('IDB error'));
+      await pending;
+
+      expect(useStore.getState().entries).toBe(loaded);
+    });
+
+    it('addEntry: 失敗の確定が切替後なら新セッションの entries に触れない（throw は維持）', async () => {
+      let rejectPut!: (e: Error) => void;
+      mockPutEntry.mockImplementationOnce(
+        () =>
+          new Promise((_, rej) => {
+            rejectPut = rej;
+          }),
+      );
+
+      const pending = useStore.getState().addEntry({ panel: 'free', content: '追加' });
+
+      await switchSessionAndWaitReload('session-2', [makeEntry({ id: 'new-1' })]);
+      const loaded = useStore.getState().entries;
+
+      rejectPut(new Error('IDB error'));
+      await expect(pending).rejects.toThrow('IDB error');
+
+      // 追加分の除去 filter が走らず、新セッションの配列参照が保たれる
+      expect(useStore.getState().entries).toBe(loaded);
+    });
+
+    it('切替が無ければ従来どおり参照ごと巻き戻す（既存挙動の不変確認）', async () => {
+      const original = [makeEntry({ id: 'e1', content: '元の内容' })];
+      useStore.setState({ entries: original });
+      mockPutEntry.mockRejectedValueOnce(new Error('IDB error'));
+
+      await useStore.getState().updateEntry('e1', { content: '編集' });
+
+      expect(useStore.getState().entries).toBe(original);
     });
   });
 });

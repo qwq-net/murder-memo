@@ -4,6 +4,7 @@
  */
 
 import type { ContextMenuEntry } from '@/components/common/contextMenu';
+import { memoGroupsForPanel } from '@/lib/grouping';
 import type {
   Character,
   CharacterDisplayFormat,
@@ -231,7 +232,8 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
     });
 
     if (panel === 'free' || panel === 'personal') {
-      const panelGroups = ctx.memoGroups.filter((g) => g.panel === panel);
+      // パネル表示と同じ並び（sortOrder 昇順）でサブメニューに出す
+      const panelGroups = memoGroupsForPanel(ctx.memoGroups, panel);
 
       if (isBulk || entries[0].groupId) {
         sub.push({

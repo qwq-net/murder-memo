@@ -6,6 +6,7 @@ import { useImagePicker } from '@/components/layout/imagePickerContext';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useTimeInput } from '@/hooks/useTimeInput';
+import { memoGroupsForPanel } from '@/lib/grouping';
 import { isCommitEnter } from '@/lib/keyboardKeys';
 import { resolveEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
@@ -48,8 +49,7 @@ export function EntryInput({ panel }: EntryInputProps) {
 
   const groups = useMemo(() => {
     if (isTimeline) return timelineGroups;
-    if (isMemoPanel)
-      return memoGroups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder);
+    if (isMemoPanel) return memoGroupsForPanel(memoGroups, panel);
     return [];
   }, [isTimeline, isMemoPanel, timelineGroups, memoGroups, panel]);
 

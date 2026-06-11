@@ -1,4 +1,4 @@
-import type { DBSchema, IDBPDatabase } from 'idb';
+import type { DBSchema, IDBPDatabase, IDBPTransaction, StoreValue } from 'idb';
 import { openDB } from 'idb';
 
 import type {
@@ -66,6 +66,65 @@ interface MurderMemoDB extends DBSchema {
   };
 }
 
+// ─── セッション配下ストアの単一定義 ──────────────────────────────────────────
+
+/**
+ * by-session インデックスを持つ（images を除く）全ストア名。セッション配下データの「単一の真実」。
+ *
+ * 新しい per-session ストアを追加するときはまずここに追加すること。SESSION_STORE_META →
+ * SessionStateElement → SessionReplacement（→ undoSync.ts の書き戻しリテラル）の順に
+ * 不足がコンパイルエラーで連鎖検出され、「Undo/Redo のたびにデータが失われる」事故
+ * （CLAUDE.md「Undo/Redo と IDB 同期の不変条件」参照）を型レベルで防ぐ。
+ */
+const SESSION_STORES = [
+  'entries',
+  'characters',
+  'timeline-groups',
+  'memo-groups',
+  'deductions',
+  'relations',
+  'link-keywords',
+] as const;
+
+type SessionStoreName = (typeof SESSION_STORES)[number];
+
+/**
+ * ストア名（ケバブケース）→ アプリ層メタ情報の対応表。
+ *
+ * - stateKey: SessionReplacement / store state 上のフィールド名（キャメルケース）
+ * - attachSessionId: put 時に内部フィールド sessionId を付与するか。アプリ層の型が sessionId を
+ *   持たない entries / characters / link-keywords は true、要素自身が sessionId を保持する
+ *   timeline-groups / memo-groups / deductions / relations は false
+ *
+ * satisfies により SESSION_STORES とのキーの過不足はコンパイルエラーで検出される。
+ */
+const SESSION_STORE_META = {
+  entries: { stateKey: 'entries', attachSessionId: true },
+  characters: { stateKey: 'characters', attachSessionId: true },
+  'timeline-groups': { stateKey: 'timelineGroups', attachSessionId: false },
+  'memo-groups': { stateKey: 'memoGroups', attachSessionId: false },
+  deductions: { stateKey: 'deductions', attachSessionId: false },
+  relations: { stateKey: 'relations', attachSessionId: false },
+  'link-keywords': { stateKey: 'linkKeywords', attachSessionId: true },
+} as const satisfies Record<SessionStoreName, { stateKey: string; attachSessionId: boolean }>;
+
+type SessionStateKey = (typeof SESSION_STORE_META)[SessionStoreName]['stateKey'];
+
+/**
+ * stateKey ごとのアプリ層要素型（内部フィールド sessionId は含めない）。
+ * DBSchema から導出すると characters 等の `& { sessionId }` を剥がす型操作が必要になり
+ * 読みにくくなるため、手書きの対応表とする（META に行を足すと索引エラーで追加漏れを検出できる）。
+ */
+interface SessionStateElement {
+  entries: MemoEntry;
+  characters: Character;
+  timelineGroups: TimelineGroup;
+  memoGroups: MemoGroup;
+  deductions: CharacterDeduction;
+  relations: CharacterRelation;
+  linkKeywords: LinkKeyword;
+}
+
 const DB_NAME = 'murder-memo';
 const DB_VERSION = 6;
 
@@ -122,6 +181,11 @@ export function getDb(): Promise<IDBPDatabase<MurderMemoDB>> {
           linkKeywordsStore.createIndex('by-session', 'sessionId');
         }
       },
+    }).catch((err) => {
+      // 失敗した Promise をキャッシュしたままにすると、一時的なエラー（ブラウザの IDB ロックや
+      // ストレージ逼迫等）でもリロードまで全 DB 操作が復旧不能になる。リセットして次回リトライ可能にする
+      dbPromise = null;
+      throw err;
     });
   }
   return dbPromise;
@@ -139,71 +203,52 @@ export async function putSession(session: GameSession): Promise<void> {
   await db.put('sessions', session);
 }
 
+/** deleteSession / clearSessionData が共有するトランザクション型（同じストア集合を開く）。 */
+type SessionWipeTx = IDBPTransaction<
+  MurderMemoDB,
+  (SessionStoreName | 'sessions' | 'images')[],
+  'readwrite'
+>;
+
+/**
+ * セッション配下の全レコード（SESSION_STORES）をトランザクション内で削除する内部ヘルパー。
+ * deleteImages=true ならエントリが参照する画像 blob も併せて削除する。
+ * sessions レコード本体は触らない（削除するかどうかは呼び手の責務）。
+ */
+async function wipeSessionStores(
+  tx: SessionWipeTx,
+  sessionId: string,
+  deleteImages: boolean,
+): Promise<void> {
+  // entries だけは画像 blob の連動削除のためレコード本体（imageBlobKey）を読む
+  const entries = await tx.objectStore('entries').index('by-session').getAll(sessionId);
+  for (const entry of entries) {
+    await tx.objectStore('entries').delete(entry.id);
+    if (deleteImages && entry.imageBlobKey) {
+      await tx.objectStore('images').delete(entry.imageBlobKey);
+    }
+  }
+
+  // 残りのストアは主キーだけで削除できる
+  for (const store of SESSION_STORES) {
+    if (store === 'entries') continue;
+    const keys = await tx.objectStore(store).index('by-session').getAllKeys(sessionId);
+    await Promise.all(keys.map((k) => tx.objectStore(store).delete(k)));
+  }
+}
+
 /**
  * セッションと、それに紐づく全データを単一トランザクションで削除する。
  *
- * 対象: sessions レコード本体 + by-session を持つ全ストア（entries / characters /
- * timeline-groups / memo-groups / deductions / relations / link-keywords）+
+ * 対象: sessions レコード本体 + by-session を持つ全ストア（SESSION_STORES）+
  * エントリが参照する images。
  * 単一トランザクションのため途中で失敗すれば全体がロールバックされ、部分削除は残らない。
  * セッション枠を残して中身だけ空にしたい場合は clearSessionData を使う。
  */
 export async function deleteSession(id: string): Promise<void> {
   const db = await getDb();
-  const tx = db.transaction(
-    [
-      'sessions',
-      'entries',
-      'characters',
-      'timeline-groups',
-      'memo-groups',
-      'deductions',
-      'relations',
-      'link-keywords',
-      'images',
-    ],
-    'readwrite',
-  );
-
-  // セッションに紐づくエントリ・キャラクター・タイムライングループ・画像を一括削除
-  const entries = await tx.objectStore('entries').index('by-session').getAll(id);
-  for (const entry of entries) {
-    await tx.objectStore('entries').delete(entry.id);
-    if (entry.imageBlobKey) {
-      await tx.objectStore('images').delete(entry.imageBlobKey);
-    }
-  }
-
-  const chars = await tx.objectStore('characters').index('by-session').getAll(id);
-  for (const char of chars) {
-    await tx.objectStore('characters').delete(char.id);
-  }
-
-  const groups = await tx.objectStore('timeline-groups').index('by-session').getAll(id);
-  for (const group of groups) {
-    await tx.objectStore('timeline-groups').delete(group.id);
-  }
-
-  const memoGroups = await tx.objectStore('memo-groups').index('by-session').getAll(id);
-  for (const mg of memoGroups) {
-    await tx.objectStore('memo-groups').delete(mg.id);
-  }
-
-  const deductions = await tx.objectStore('deductions').index('by-session').getAll(id);
-  for (const d of deductions) {
-    await tx.objectStore('deductions').delete(d.id);
-  }
-
-  const relations = await tx.objectStore('relations').index('by-session').getAll(id);
-  for (const r of relations) {
-    await tx.objectStore('relations').delete(r.id);
-  }
-
-  const linkKeywords = await tx.objectStore('link-keywords').index('by-session').getAll(id);
-  for (const kw of linkKeywords) {
-    await tx.objectStore('link-keywords').delete(kw.id);
-  }
-
+  const tx = db.transaction([...SESSION_STORES, 'sessions', 'images'], 'readwrite');
+  await wipeSessionStores(tx, id, true);
   await tx.objectStore('sessions').delete(id);
   await tx.done;
 }
@@ -221,58 +266,10 @@ export async function deleteSession(id: string): Promise<void> {
  */
 export async function clearSessionData(id: string, keepImages = false): Promise<void> {
   const db = await getDb();
-  const tx = db.transaction(
-    [
-      'entries',
-      'characters',
-      'timeline-groups',
-      'memo-groups',
-      'deductions',
-      'relations',
-      'link-keywords',
-      'images',
-    ],
-    'readwrite',
-  );
-
-  const entries = await tx.objectStore('entries').index('by-session').getAll(id);
-  for (const entry of entries) {
-    await tx.objectStore('entries').delete(entry.id);
-    if (!keepImages && entry.imageBlobKey) {
-      await tx.objectStore('images').delete(entry.imageBlobKey);
-    }
-  }
-
-  const chars = await tx.objectStore('characters').index('by-session').getAll(id);
-  for (const char of chars) {
-    await tx.objectStore('characters').delete(char.id);
-  }
-
-  const groups = await tx.objectStore('timeline-groups').index('by-session').getAll(id);
-  for (const group of groups) {
-    await tx.objectStore('timeline-groups').delete(group.id);
-  }
-
-  const memoGroups = await tx.objectStore('memo-groups').index('by-session').getAll(id);
-  for (const mg of memoGroups) {
-    await tx.objectStore('memo-groups').delete(mg.id);
-  }
-
-  const deductions = await tx.objectStore('deductions').index('by-session').getAll(id);
-  for (const d of deductions) {
-    await tx.objectStore('deductions').delete(d.id);
-  }
-
-  const relations = await tx.objectStore('relations').index('by-session').getAll(id);
-  for (const r of relations) {
-    await tx.objectStore('relations').delete(r.id);
-  }
-
-  const linkKeywords = await tx.objectStore('link-keywords').index('by-session').getAll(id);
-  for (const kw of linkKeywords) {
-    await tx.objectStore('link-keywords').delete(kw.id);
-  }
-
+  // sessions ストアはロックするだけで触らない（wipeSessionStores と tx 型を共有するための
+  // 割り切り。ローカル単一ユーザーの IDB なので余分なロックの実害はない）
+  const tx = db.transaction([...SESSION_STORES, 'sessions', 'images'], 'readwrite');
+  await wipeSessionStores(tx, id, !keepImages);
   await tx.done;
 }
 
@@ -499,27 +496,12 @@ export async function bulkPutLinkKeywords(
 // 恒久乖離する。データ整合性が要のアプリのため、複数ストアにまたがる更新・カスケード削除は
 // ここに集約し「単一トランザクションで全部成功 or 全部ロールバック」を保証する。
 
-/** {@link replaceSessionData} に渡すセッション配下データ一式（state の TrackedState + linkKeywords）。 */
-export interface SessionReplacement {
-  entries: MemoEntry[];
-  characters: Character[];
-  timelineGroups: TimelineGroup[];
-  memoGroups: MemoGroup[];
-  deductions: CharacterDeduction[];
-  relations: CharacterRelation[];
-  linkKeywords: LinkKeyword[];
-}
-
-/** by-session を持つ（images 以外の）全ストア名。 */
-const SESSION_STORES = [
-  'entries',
-  'characters',
-  'timeline-groups',
-  'memo-groups',
-  'deductions',
-  'relations',
-  'link-keywords',
-] as const;
+/**
+ * {@link replaceSessionData} に渡すセッション配下データ一式（state の TrackedState + linkKeywords）。
+ * フィールドは SESSION_STORE_META の stateKey から導出されるため、新ストア追加時に
+ * ここへの追加漏れはコンパイルエラーになる（ファイル冒頭「セッション配下ストアの単一定義」参照）。
+ */
+export type SessionReplacement = { [K in SessionStateKey]: SessionStateElement[K][] };
 
 /**
  * 対象セッション配下の 7 ストア（by-session を持つ全ストア。images を除く）を
@@ -547,17 +529,24 @@ export async function replaceSessionData(
     await Promise.all(keys.map((k) => tx.objectStore(store).delete(k)));
   }
 
-  await Promise.all([
-    ...data.entries.map((e) =>
-      tx.objectStore('entries').put({ ...e, sessionId } as MemoEntry & { sessionId: string }),
-    ),
-    ...data.characters.map((c) => tx.objectStore('characters').put({ ...c, sessionId })),
-    ...data.timelineGroups.map((g) => tx.objectStore('timeline-groups').put(g)),
-    ...data.memoGroups.map((g) => tx.objectStore('memo-groups').put(g)),
-    ...data.deductions.map((d) => tx.objectStore('deductions').put(d)),
-    ...data.relations.map((r) => tx.objectStore('relations').put(r)),
-    ...data.linkKeywords.map((kw) => tx.objectStore('link-keywords').put({ ...kw, sessionId })),
-  ]);
+  // META 駆動の書き戻し。store ⇔ stateKey の値型相関は META で固定しているが、union 越しの
+  // 相関を TS は推論できないため put の引数のみキャストで割り切る（手書き列挙に戻すと
+  // 「ストア追加時に書き戻し行を忘れてもコンパイルが通る」ため、ループ化のほうが安全）
+  for (const store of SESSION_STORES) {
+    const { stateKey, attachSessionId } = SESSION_STORE_META[store];
+    await Promise.all(
+      data[stateKey].map((row) =>
+        tx
+          .objectStore(store)
+          .put(
+            (attachSessionId ? { ...row, sessionId } : row) as StoreValue<
+              MurderMemoDB,
+              SessionStoreName
+            >,
+          ),
+      ),
+    );
+  }
 
   await tx.done;
 }

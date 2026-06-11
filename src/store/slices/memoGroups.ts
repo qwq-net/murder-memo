@@ -6,6 +6,7 @@ import {
   putMemoGroup,
   reassignMemoGroupAndDelete,
 } from '@/lib/idb';
+import { captureSessionRollback } from '@/lib/optimisticRollback';
 import type { StoreState } from '@/store/index';
 import type { MemoGroup } from '@/types/memo';
 
@@ -81,6 +82,12 @@ export const createMemoGroupsSlice = (
       .filter((e) => e.groupId === id)
       .map((e) => ({ ...e, groupId: undefined, updatedAt: now }));
     const reassignedById = new Map(reassigned.map((e) => [e.id, e]));
+    // 失敗時は参照ごと巻き戻す。await 中にセッション切替が完了していたら放棄する
+    // （captureSessionRollback 参照。旧スナップショットで新セッションを上書きしない）
+    const rollback = captureSessionRollback(get, set, {
+      entries: prevEntries,
+      memoGroups: prevGroups,
+    });
     set((s) => ({
       entries: s.entries.map((e) => reassignedById.get(e.id) ?? e),
       memoGroups: s.memoGroups.filter((g) => g.id !== id),
@@ -88,7 +95,7 @@ export const createMemoGroupsSlice = (
     try {
       await reassignMemoGroupAndDelete(id, reassigned, sessionId);
     } catch (err) {
-      set(() => ({ entries: prevEntries, memoGroups: prevGroups }));
+      rollback();
       get().addToast('グループの削除に失敗しました', 'error');
       console.error('removeMemoGroup の保存に失敗しました', err);
     }

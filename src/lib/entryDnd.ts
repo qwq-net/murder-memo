@@ -54,7 +54,8 @@ export function parseContainerId(id: string): ParsedContainer | null {
   if (id.startsWith('tl:')) {
     // tl:${timelineGroupId}:hour:${hour} | tl:${timelineGroupId}:unknown
     const unknownMatch = id.match(/^tl:(.+):unknown$/);
-    if (unknownMatch) return { kind: 'timeline', timelineGroupId: unknownMatch[1], hour: 'unknown' };
+    if (unknownMatch)
+      return { kind: 'timeline', timelineGroupId: unknownMatch[1], hour: 'unknown' };
     const hourMatch = id.match(/^tl:(.+):hour:(\d+)$/);
     if (hourMatch) {
       return { kind: 'timeline', timelineGroupId: hourMatch[1], hour: parseInt(hourMatch[2], 10) };

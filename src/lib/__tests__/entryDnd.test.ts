@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { MemoEntry, TimelineGroup } from '@/types/memo';
 import {
   computeReorderedIds,
   entryContainerId,
@@ -10,7 +11,6 @@ import {
   timelineHourContainerId,
   timelineUnknownContainerId,
 } from '../entryDnd';
-import type { MemoEntry, TimelineGroup } from '@/types/memo';
 
 function entry(o: Partial<MemoEntry> & Pick<MemoEntry, 'id'>): MemoEntry {
   return {
@@ -67,9 +67,9 @@ describe('コンテナ id の生成・解析', () => {
         entry({ id: 'b', panel: 'timeline', timelineGroupId: 'tg-1', eventTimeSortKey: 800 }),
       ),
     ).toBe(timelineHourContainerId('tg-1', 13));
-    expect(
-      entryContainerId(entry({ id: 'c', panel: 'timeline', timelineGroupId: 'tg-1' })),
-    ).toBe(timelineUnknownContainerId('tg-1'));
+    expect(entryContainerId(entry({ id: 'c', panel: 'timeline', timelineGroupId: 'tg-1' }))).toBe(
+      timelineUnknownContainerId('tg-1'),
+    );
   });
 });
 

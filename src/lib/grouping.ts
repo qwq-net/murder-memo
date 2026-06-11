@@ -1,5 +1,5 @@
 import { getHourKey, getHourLabel } from '@/lib/timeParser';
-import type { MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
+import type { MemoEntry, MemoGroup, PanelId, TimelineGroup } from '@/types/memo';
 
 // ─── 型定義 ───────────────────────────────────────────────────────────────────
 
@@ -18,6 +18,18 @@ export interface TimelineGroupedResult {
   group: TimelineGroup;
   hourGroups: HourGroup[];
   unknown: MemoEntry[];
+}
+
+// ─── メモグループの表示順 ─────────────────────────────────────────────────────
+
+/**
+ * 指定パネルに属するメモグループを表示順（sortOrder 昇順）で返す。
+ * パネル表示・入力フォームのセレクタ・右クリックメニュー・テキスト出力で並び順が
+ * 食い違わないよう、パネル別のメモグループ取得は必ずこれを経由する。
+ * （timeline を渡した場合は常に空配列。メモグループは free / personal のみ）
+ */
+export function memoGroupsForPanel(groups: MemoGroup[], panel: PanelId): MemoGroup[] {
+  return groups.filter((g) => g.panel === panel).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 // ─── メモパネル用グループ分け ─────────────────────────────────────────────────

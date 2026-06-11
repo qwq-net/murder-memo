@@ -1,6 +1,6 @@
+import { registerSW } from 'virtual:pwa-register';
 import type { RouteRecord } from 'vite-react-ssg';
 import { ViteReactSSG } from 'vite-react-ssg';
-import { registerSW } from 'virtual:pwa-register';
 import routes from '~react-pages';
 
 import './index.css';

@@ -1,5 +1,5 @@
 import type { MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
-import { groupEntriesByMemoGroup, groupEntriesByTimeline } from '../grouping';
+import { groupEntriesByMemoGroup, groupEntriesByTimeline, memoGroupsForPanel } from '../grouping';
 
 // テスト用のエントリ生成ヘルパー
 function makeEntry(overrides: Partial<MemoEntry> & { id: string }): MemoEntry {
@@ -35,6 +35,34 @@ function makeTlGroup(overrides: Partial<TimelineGroup> & { id: string }): Timeli
     ...overrides,
   };
 }
+
+// ─── memoGroupsForPanel ───────────────────────────────────────────────────────
+
+describe('memoGroupsForPanel', () => {
+  it('指定パネルのグループのみを sortOrder 昇順で返す', () => {
+    const groups = [
+      makeGroup({ id: 'g1', panel: 'free', sortOrder: 2 }),
+      makeGroup({ id: 'g2', panel: 'personal', sortOrder: 0 }),
+      makeGroup({ id: 'g3', panel: 'free', sortOrder: 1 }),
+    ];
+    expect(memoGroupsForPanel(groups, 'free').map((g) => g.id)).toEqual(['g3', 'g1']);
+    expect(memoGroupsForPanel(groups, 'personal').map((g) => g.id)).toEqual(['g2']);
+  });
+
+  it('元の配列を変更しない（非破壊）', () => {
+    const groups = [
+      makeGroup({ id: 'g1', panel: 'free', sortOrder: 1 }),
+      makeGroup({ id: 'g2', panel: 'free', sortOrder: 0 }),
+    ];
+    memoGroupsForPanel(groups, 'free');
+    expect(groups.map((g) => g.id)).toEqual(['g1', 'g2']);
+  });
+
+  it('timeline を渡すと空配列を返す（メモグループは free / personal のみ）', () => {
+    const groups = [makeGroup({ id: 'g1', panel: 'free' })];
+    expect(memoGroupsForPanel(groups, 'timeline')).toEqual([]);
+  });
+});
 
 // ─── groupEntriesByMemoGroup ──────────────────────────────────────────────────
 
@@ -159,4 +187,3 @@ describe('groupEntriesByTimeline', () => {
     expect(result[0].unknown).toHaveLength(0);
   });
 });
-

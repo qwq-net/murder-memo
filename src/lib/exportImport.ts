@@ -158,8 +158,13 @@ export function validateExport(data: any): data is MurderMemoExport {
   }
   if (data.linkKeywords != null) {
     if (!Array.isArray(data.linkKeywords)) return false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!data.linkKeywords.every((k: any) => k != null && typeof k.keyword === 'string'))
+    // createdAt は importSession がそのまま永続化するため、型まで検証する
+    if (
+      !data.linkKeywords.every(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (k: any) => k != null && typeof k.keyword === 'string' && typeof k.createdAt === 'number',
+      )
+    )
       return false;
   }
   return true;

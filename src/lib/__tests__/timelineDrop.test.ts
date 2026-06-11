@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveInheritedEventTime } from '../timelineDrop';
 import type { MemoEntry } from '@/types/memo';
+import { resolveInheritedEventTime } from '../timelineDrop';
 
 function tlEntry(eventTime: string | undefined): MemoEntry {
   return {
