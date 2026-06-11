@@ -147,6 +147,41 @@ describe('formatSessionAsText', () => {
     expect(result).toContain('- ??:?? 停電発生');
   });
 
+  it('どのグループにも属さないタイムラインエントリは「未分類」として出力される', () => {
+    const tlGroups = [makeTlGroup({ id: 'tg1', label: '当日' })];
+    const entries = [
+      makeEntry({
+        id: 'e1',
+        content: '通常メモ',
+        panel: 'timeline',
+        timelineGroupId: 'tg1',
+        eventTime: '12:30',
+        eventTimeSortKey: 750,
+      }),
+      // 実在しないグループを参照する孤児（インポートデータ等由来）— 出力から漏らさない
+      makeEntry({
+        id: 'e2',
+        content: '孤児メモ',
+        panel: 'timeline',
+        timelineGroupId: 'deleted-group',
+        eventTime: '9:00',
+        eventTimeSortKey: 540,
+      }),
+    ];
+    const result = formatSessionAsText('テスト', entries, [], tlGroups, [], [...defaultOrder]);
+    expect(result).toContain('### 未分類');
+    expect(result).toContain('- 9:00 孤児メモ');
+  });
+
+  it('孤児エントリが無ければ「未分類」見出しは出力されない', () => {
+    const tlGroups = [makeTlGroup({ id: 'tg1', label: '当日' })];
+    const entries = [
+      makeEntry({ id: 'e1', content: '通常メモ', panel: 'timeline', timelineGroupId: 'tg1' }),
+    ];
+    const result = formatSessionAsText('テスト', entries, [], tlGroups, [], [...defaultOrder]);
+    expect(result).not.toContain('### 未分類');
+  });
+
   it('タイムラインは時刻順でソートされる', () => {
     const tlGroups = [makeTlGroup({ id: 'tg1', label: '当日' })];
     const entries = [

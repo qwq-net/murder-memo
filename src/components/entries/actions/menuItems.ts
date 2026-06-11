@@ -218,7 +218,16 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
     if (panel === 'free' || panel === 'personal') {
       return ctx.memoGroups.filter((g) => g.panel === panel).length > 0;
     }
-    if (panel === 'timeline') return ctx.timelineGroups.length > 1;
+    if (panel === 'timeline') {
+      // 通常は移動先候補が複数ある場合のみ出すが、どのグループにも属さない孤児
+      // （インポートデータ等由来。タイムラインの「未分類」に表示される）の救出時は
+      // グループが 1 つでも出す（出さないと移動経路が無くなる）
+      const groupIds = new Set(ctx.timelineGroups.map((g) => g.id));
+      const hasUnassigned = entries.some(
+        (e) => !e.timelineGroupId || !groupIds.has(e.timelineGroupId),
+      );
+      return ctx.timelineGroups.length > 1 || (ctx.timelineGroups.length > 0 && hasUnassigned);
+    }
     return false;
   })();
 

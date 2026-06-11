@@ -1,4 +1,4 @@
-import { memoGroupsForPanel } from '@/lib/grouping';
+import { memoGroupsForPanel, unassignedTimelineEntries } from '@/lib/grouping';
 import type { Character, MemoEntry, MemoGroup, PanelId, TimelineGroup } from '@/types/memo';
 
 const PANEL_LABELS: Record<PanelId, string> = {
@@ -84,6 +84,15 @@ function formatPanel(
         (a, b) => (a.eventTimeSortKey ?? Infinity) - (b.eventTimeSortKey ?? Infinity),
       );
       for (const entry of timeSorted) {
+        lines.push(formatEntry(entry, charMap));
+      }
+    }
+    // どのグループにも属さない孤児エントリ（タイムラインパネルの「未分類」と同じ受け皿）。
+    // グループ一致のみで列挙すると孤児が出力から漏れるため、末尾にまとめて出す
+    const unassigned = unassignedTimelineEntries(panelEntries, timelineGroups);
+    if (unassigned.length > 0) {
+      lines.push('### 未分類');
+      for (const entry of unassigned) {
         lines.push(formatEntry(entry, charMap));
       }
     }

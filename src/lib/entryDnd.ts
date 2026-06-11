@@ -32,6 +32,16 @@ export function timelineUnknownContainerId(timelineGroupId: string): string {
   return `tl:${timelineGroupId}:unknown`;
 }
 
+/**
+ * タイムラインの「未分類」（どのグループにも属さない孤児エントリ）列の id。
+ *
+ * 意図的に parseContainerId の命名規約（`memo:` / `tl:` プレフィックス）に一致させない:
+ * 未分類はドロップ先として無効（孤児を意図的に作らせない）で、列はカードのドラッグ
+ * **元**としてのみ機能する。万一この id がドロップ解決に渡っても parse が null を返し
+ * no-op になる（entryDnd.test.ts で保証）。
+ */
+export const TIMELINE_UNASSIGNED_CONTAINER_ID = 'timeline-unassigned';
+
 export type ParsedContainer =
   | { kind: 'memo'; panel: MemoPanel; groupId: string | undefined }
   | { kind: 'timeline'; timelineGroupId: string; hour: number | 'unknown' };

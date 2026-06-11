@@ -54,6 +54,31 @@ export function groupEntriesByMemoGroup(
 // ─── タイムラインパネル用グループ分け ─────────────────────────────────────────
 
 /**
+ * どのタイムライングループにも属さないタイムラインエントリ（孤児）を表示用に返す。
+ * timelineGroupId が未設定、または実在しないグループを指すエントリが対象。
+ *
+ * 通常のアプリ操作では発生しないが、インポートデータや過去の不具合で生じた孤児を
+ * 不可視にしないための受け皿（メモパネルの「未分類」と同じ防御思想。
+ * groupEntriesByTimeline はグループ一致のみで列挙するため、これが無いと孤児は
+ * パネルにもテキスト出力にも一切現れず、削除も移動もできなくなる）。
+ *
+ * 並びは時刻昇順（時刻なしは末尾）、同位は sortOrder 昇順。
+ */
+export function unassignedTimelineEntries(
+  entries: MemoEntry[],
+  timelineGroups: TimelineGroup[],
+): MemoEntry[] {
+  const groupIds = new Set(timelineGroups.map((g) => g.id));
+  return entries
+    .filter((e) => !e.timelineGroupId || !groupIds.has(e.timelineGroupId))
+    .sort(
+      (a, b) =>
+        (a.eventTimeSortKey ?? Infinity) - (b.eventTimeSortKey ?? Infinity) ||
+        a.sortOrder - b.sortOrder,
+    );
+}
+
+/**
  * タイムラインエントリを TimelineGroup → 時間帯（時単位）の2階層でグループ化する。
  *
  * - 戻り値は timelineGroups と同じ並び・同じ件数。該当エントリが0件のグループも要素として残る

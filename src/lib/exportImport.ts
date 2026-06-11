@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 
+import { timelineFieldPatch } from '@/lib/entryPanelTransform';
 import {
   bulkPutCharacters,
   bulkPutDeductions,
@@ -384,29 +385,65 @@ export async function importSession(file: File): Promise<GameSession> {
     sessionId: newSession.id,
   }));
 
-  // エントリ（参照 ID を書き換え）。eventTime/eventTimeSortKey は resolveEventTime で
-  // 整合を再保証し、不正な時刻ペア（片方だけ・範囲外）が永続化されるのを防ぐ。
+  // ── 参照整合の正規化用 ID セット ──
+  // remap は未知の旧 ID に対しても新 ID を発番してしまうため、エクスポート内に実体が無い
+  // ダングリング参照（手編集・過去バージョンの不具合由来）をそのまま remap すると
+  // 「どこからも辿れないゴミ参照」や「どのグループにも属さない孤児エントリ」が永続化される。
+  // 参照フィールドは「実体が存在する場合のみ remap、無ければ落とす」に統一する
+  const characterIds = new Set(data.characters.map((c) => c.id));
+  const timelineGroupIds = new Set(data.timelineGroups.map((g) => g.id));
+  const memoGroupIds = new Set(data.memoGroups.map((g) => g.id));
+
+  // エントリ（参照 ID を書き換え）。
+  // - eventTime/eventTimeSortKey は resolveEventTime で整合を再保証し、不正な時刻ペア
+  //   （片方だけ・範囲外）が永続化されるのを防ぐ
+  // - panel と timeline 系フィールド（type / timelineGroupId / eventTime / eventTimeSortKey）の
+  //   整合は、アプリ内のパネル移動と同じ timelineFieldPatch に集約する（timeline 以外の
+  //   パネルに timeline 系フィールドを持ち込まない）
+  // - 参照先グループが実在しない timeline エントリは timelineGroupId 未設定に倒す
+  //   （タイムラインパネルの「未分類」に表示され、ユーザーが振り分け直せる）
   const newEntries = data.entries.map((e) => ({
     ...e,
     id: remap(e.id),
-    characterTags: e.characterTags.map((cid) => remap(cid)),
-    timelineGroupId: e.timelineGroupId ? remap(e.timelineGroupId) : undefined,
-    groupId: e.groupId ? remap(e.groupId) : undefined,
+    characterTags: e.characterTags.filter((cid) => characterIds.has(cid)).map((cid) => remap(cid)),
+    groupId:
+      e.panel !== 'timeline' && e.groupId && memoGroupIds.has(e.groupId)
+        ? remap(e.groupId)
+        : undefined,
     imageBlobKey: e.imageBlobKey ? remap(e.imageBlobKey) : undefined,
-    ...normalizeImportedEventTime(e),
+    ...timelineFieldPatch(
+      e.panel,
+      {
+        timelineGroupId:
+          e.timelineGroupId && timelineGroupIds.has(e.timelineGroupId)
+            ? remap(e.timelineGroupId)
+            : undefined,
+        ...normalizeImportedEventTime(e),
+      },
+      e,
+    ),
   }));
 
-  // 推理メモ（optional — v1 エクスポートには含まれない場合がある）
-  const newDeductions = (data.deductions ?? []).map((d) => ({
-    ...d,
-    id: remap(d.id),
-    sessionId: newSession.id,
-    characterId: remap(d.characterId),
-  }));
+  // 推理メモ（optional — v1 エクスポートには含まれない場合がある）。
+  // 実在しないキャラクターを指すものは表示も削除もできないゴミになるため取り込まない
+  const newDeductions = (data.deductions ?? [])
+    .filter((d) => characterIds.has(d.characterId))
+    .map((d) => ({
+      ...d,
+      id: remap(d.id),
+      sessionId: newSession.id,
+      characterId: remap(d.characterId),
+    }));
 
-  // 相関図（optional）。自己参照（from === to）は点に潰れる無意味な線なので取り込まない
+  // 相関図（optional）。自己参照（from === to）は点に潰れる無意味な線なので取り込まない。
+  // 実在しないキャラクターを端点に持つ線も描画不能なため取り込まない
   const newRelations = (data.relations ?? [])
-    .filter((r) => r.fromCharacterId !== r.toCharacterId)
+    .filter(
+      (r) =>
+        r.fromCharacterId !== r.toCharacterId &&
+        characterIds.has(r.fromCharacterId) &&
+        characterIds.has(r.toCharacterId),
+    )
     .map((r) => ({
       ...r,
       id: remap(r.id),

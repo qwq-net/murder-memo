@@ -16,6 +16,12 @@ interface SortableEntryColumnProps {
    * 部分集合の id で並び替えると非表示エントリと sortOrder が衝突するため。
    */
   disabled?: boolean;
+  /**
+   * ドロップの受け入れだけを無効化する（カードのドラッグ**元**としては機能する）。
+   * タイムラインの「未分類」列用: 孤児エントリをグループへ救出するドラッグは許可しつつ、
+   * 未分類へのドロップ（孤児を意図的に作る操作）は受け付けない。
+   */
+  dropDisabled?: boolean;
   /** エントリが空のとき列内に表示するプレースホルダ（空グループでもドロップ可能にする） */
   emptyPlaceholder?: React.ReactNode;
 }
@@ -31,10 +37,11 @@ export function SortableEntryColumn({
   entries,
   hideTimeDuplicates,
   disabled = false,
+  dropDisabled = false,
   emptyPlaceholder,
 }: SortableEntryColumnProps) {
   const allIds = useMemo(() => entries.map((e) => e.id), [entries]);
-  const { setNodeRef } = useDroppable({ id: containerId, disabled });
+  const { setNodeRef } = useDroppable({ id: containerId, disabled: disabled || dropDisabled });
   const { active, over } = useDndContext();
 
   // コンテナ跨ぎ DnD の視覚フィードバック。隣接並び替えと違い跨ぎは要素が動かず落とし先が
@@ -48,6 +55,7 @@ export function SortableEntryColumn({
   // ドラッグ元と異なるコンテナにカーソルがあるときだけ塗る（同一コンテナは通常の並び替え演出）
   const isOverTarget =
     !disabled &&
+    !dropDisabled &&
     active != null &&
     activeContainerId !== containerId &&
     overContainerId === containerId;

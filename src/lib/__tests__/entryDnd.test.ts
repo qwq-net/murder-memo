@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { MemoEntry, TimelineGroup } from '@/types/memo';
 import {
+  TIMELINE_UNASSIGNED_CONTAINER_ID,
   computeReorderedIds,
   entryContainerId,
   memoContainerId,
@@ -56,6 +57,12 @@ describe('コンテナ id の生成・解析', () => {
 
   it('カード id（命名規約外）は null を返す', () => {
     expect(parseContainerId('abc123')).toBeNull();
+  });
+
+  it('タイムラインの「未分類」列 id は命名規約外（ドロップ先に解決されない契約）', () => {
+    // 未分類列はドラッグ元としてのみ機能する。万一ドロップ解決に渡っても
+    // parse が null を返して no-op になることを保証する
+    expect(parseContainerId(TIMELINE_UNASSIGNED_CONTAINER_ID)).toBeNull();
   });
 
   it('entryContainerId はエントリの所属コンテナを返す', () => {
@@ -241,5 +248,49 @@ describe('planEntryMove', () => {
   it('自分自身へのドロップは null（no-op）', () => {
     const entries = [entry({ id: 'a', panel: 'free' })];
     expect(planEntryMove({ activeId: 'a', overId: 'a', entries, timelineGroups: [] })).toBeNull();
+  });
+
+  it('未分類（孤児）のエントリをグループ内カードへのドロップで救出できる', () => {
+    const tg: TimelineGroup = {
+      id: 'tg-1',
+      sessionId: 's',
+      label: '当日',
+      sortOrder: 0,
+      collapsed: false,
+    };
+    const entries = [
+      // どのグループにも属さない孤児（インポートデータ等由来）
+      entry({ id: 'orphan', panel: 'timeline', timelineGroupId: undefined, sortOrder: 5 }),
+      entry({
+        id: 'b',
+        panel: 'timeline',
+        timelineGroupId: 'tg-1',
+        eventTime: '9:00',
+        eventTimeSortKey: 540,
+        sortOrder: 0,
+      }),
+    ];
+    const move = planEntryMove({ activeId: 'orphan', overId: 'b', entries, timelineGroups: [tg] });
+    expect(move?.panel).toBe('timeline');
+    expect(move?.timelineGroupId).toBe('tg-1');
+    // 表示順（グループ→時間帯）に含まれない孤児でも orderedIds に組み込まれる
+    expect(move?.orderedIds).toContain('orphan');
+  });
+
+  it('孤児カードへのドロップは解決不能で null（孤児を意図的に作れない）', () => {
+    const tg: TimelineGroup = {
+      id: 'tg-1',
+      sessionId: 's',
+      label: '当日',
+      sortOrder: 0,
+      collapsed: false,
+    };
+    const entries = [
+      entry({ id: 'orphan', panel: 'timeline', timelineGroupId: undefined }),
+      entry({ id: 'b', panel: 'timeline', timelineGroupId: 'tg-1' }),
+    ];
+    expect(
+      planEntryMove({ activeId: 'b', overId: 'orphan', entries, timelineGroups: [tg] }),
+    ).toBeNull();
   });
 });

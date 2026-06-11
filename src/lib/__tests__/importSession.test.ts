@@ -174,4 +174,134 @@ describe('importSession', () => {
     // 部分書き込みのクリーンアップが1回走る
     expect(mockDeleteSession).toHaveBeenCalledTimes(1);
   });
+
+  // ── ダングリング参照の正規化（remap が未知 ID に新 ID を捏造するのを防ぐ） ──
+
+  it('実在しないタイムライングループへの参照は捏造 remap せず未設定に倒す', async () => {
+    const data = makeExport({
+      timelineGroups: [
+        { id: 'old-tg1', sessionId: 'old-s', label: '当日', sortOrder: 0, collapsed: false },
+      ],
+      entries: [
+        {
+          id: 'old-e1',
+          type: 'timeline',
+          content: '正常な参照',
+          panel: 'timeline',
+          characterTags: [],
+          createdAt: 0,
+          updatedAt: 0,
+          sortOrder: 0,
+          timelineGroupId: 'old-tg1',
+        },
+        {
+          id: 'old-e2',
+          type: 'timeline',
+          content: '実在しないグループを参照',
+          panel: 'timeline',
+          characterTags: [],
+          createdAt: 0,
+          updatedAt: 0,
+          sortOrder: 1,
+          timelineGroupId: 'ghost-group',
+        },
+      ] as unknown as MurderMemoExport['entries'],
+    });
+
+    await importSession(fakeFile(data));
+
+    const [entries] = mockBulkPutEntries.mock.calls[0];
+    const [groups] = mockBulkPutTimelineGroups.mock.calls[0];
+    // 実在する参照はグループの新 ID と一致するよう remap される
+    expect(entries[0].timelineGroupId).toBe(groups[0].id);
+    // 実在しない参照は undefined（タイムラインの「未分類」に表示され、振り分け直せる）
+    expect(entries[1].timelineGroupId).toBeUndefined();
+  });
+
+  it('timeline 以外のパネルからは timeline 系フィールドと timeline 型を剥がす', async () => {
+    const data = makeExport({
+      entries: [
+        {
+          id: 'old-e1',
+          type: 'timeline',
+          content: 'free なのに timeline 系フィールド持ち',
+          panel: 'free',
+          characterTags: [],
+          createdAt: 0,
+          updatedAt: 0,
+          sortOrder: 0,
+          timelineGroupId: 'ghost-group',
+          eventTime: '9:00',
+          eventTimeSortKey: 540,
+        },
+      ] as unknown as MurderMemoExport['entries'],
+    });
+
+    await importSession(fakeFile(data));
+
+    const [entries] = mockBulkPutEntries.mock.calls[0];
+    expect(entries[0].type).toBe('text');
+    expect(entries[0].timelineGroupId).toBeUndefined();
+    expect(entries[0].eventTime).toBeUndefined();
+    expect(entries[0].eventTimeSortKey).toBeUndefined();
+  });
+
+  it('実在しないメモグループ・キャラクターへのダングリング参照を掃除する', async () => {
+    const data = makeExport({
+      memoGroups: [
+        {
+          id: 'old-mg1',
+          sessionId: 'old-s',
+          panel: 'free',
+          label: 'A',
+          sortOrder: 0,
+          collapsed: false,
+        },
+      ],
+      entries: [
+        {
+          id: 'old-e1',
+          type: 'text',
+          content: 'x',
+          panel: 'free',
+          characterTags: ['old-c1', 'ghost-char'],
+          createdAt: 0,
+          updatedAt: 0,
+          sortOrder: 0,
+          groupId: 'ghost-group',
+        },
+      ] as unknown as MurderMemoExport['entries'],
+      deductions: [
+        {
+          id: 'old-d1',
+          sessionId: 'old-s',
+          characterId: 'ghost-char',
+          suspicionLevel: 1,
+          memo: '',
+          updatedAt: 0,
+        },
+      ] as unknown as MurderMemoExport['deductions'],
+      relations: [
+        {
+          id: 'old-r1',
+          sessionId: 'old-s',
+          fromCharacterId: 'old-c1',
+          toCharacterId: 'ghost-char',
+          label: '関係',
+          sortOrder: 0,
+        },
+      ] as unknown as MurderMemoExport['relations'],
+    });
+
+    await importSession(fakeFile(data));
+
+    const [entries] = mockBulkPutEntries.mock.calls[0];
+    const [chars] = mockBulkPutCharacters.mock.calls[0];
+    // 実在しないグループ参照は未分類化、実在しないキャラタグは除去（実在分は remap 済みで残る）
+    expect(entries[0].groupId).toBeUndefined();
+    expect(entries[0].characterTags).toEqual([chars[0].id]);
+    // 実在しないキャラクターを指す推理メモ・相関図は取り込まれない（空なので書き込み自体なし）
+    expect(mockBulkPutDeductions).not.toHaveBeenCalled();
+    expect(mockBulkPutRelations).not.toHaveBeenCalled();
+  });
 });

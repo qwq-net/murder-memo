@@ -1,5 +1,10 @@
 import type { MemoEntry, MemoGroup, TimelineGroup } from '@/types/memo';
-import { groupEntriesByMemoGroup, groupEntriesByTimeline, memoGroupsForPanel } from '../grouping';
+import {
+  groupEntriesByMemoGroup,
+  groupEntriesByTimeline,
+  memoGroupsForPanel,
+  unassignedTimelineEntries,
+} from '../grouping';
 
 // テスト用のエントリ生成ヘルパー
 function makeEntry(overrides: Partial<MemoEntry> & { id: string }): MemoEntry {
@@ -185,5 +190,43 @@ describe('groupEntriesByTimeline', () => {
     const result = groupEntriesByTimeline([], groups);
     expect(result[0].hourGroups).toHaveLength(0);
     expect(result[0].unknown).toHaveLength(0);
+  });
+});
+
+// ─── unassignedTimelineEntries ────────────────────────────────────────────────
+
+describe('unassignedTimelineEntries', () => {
+  it('timelineGroupId 未設定・実在しないグループ参照のエントリを抽出する', () => {
+    const groups = [makeTlGroup({ id: 'tg1' })];
+    const entries = [
+      makeEntry({ id: 'normal', timelineGroupId: 'tg1' }),
+      makeEntry({ id: 'missing', timelineGroupId: undefined }),
+      makeEntry({ id: 'dangling', timelineGroupId: 'deleted-group' }),
+    ];
+    expect(unassignedTimelineEntries(entries, groups).map((e) => e.id)).toEqual([
+      'missing',
+      'dangling',
+    ]);
+  });
+
+  it('時刻昇順（時刻なしは末尾）、同位は sortOrder 昇順で並ぶ', () => {
+    const entries = [
+      makeEntry({ id: 'no-time-2', sortOrder: 5 }),
+      makeEntry({ id: 'late', eventTimeSortKey: 720, sortOrder: 9 }),
+      makeEntry({ id: 'no-time-1', sortOrder: 1 }),
+      makeEntry({ id: 'early', eventTimeSortKey: 540, sortOrder: 9 }),
+    ];
+    expect(unassignedTimelineEntries(entries, []).map((e) => e.id)).toEqual([
+      'early',
+      'late',
+      'no-time-1',
+      'no-time-2',
+    ]);
+  });
+
+  it('全エントリが実在するグループに属していれば空配列', () => {
+    const groups = [makeTlGroup({ id: 'tg1' })];
+    const entries = [makeEntry({ id: 'a', timelineGroupId: 'tg1' })];
+    expect(unassignedTimelineEntries(entries, groups)).toEqual([]);
   });
 });
