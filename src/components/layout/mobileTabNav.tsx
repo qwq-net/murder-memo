@@ -1,4 +1,8 @@
+import { useMemo } from 'react';
+
+import { visiblePanels } from '@/lib/panelLayout';
 import { useStore } from '@/store';
+import { selectResolvedLayout } from '@/store/selectors';
 import type { PanelId } from '@/types/memo';
 
 const PANEL_LABELS: Record<PanelId, string> = {
@@ -16,7 +20,10 @@ const PANEL_ACCENT: Record<PanelId, string> = {
 export function MobileTabNav() {
   const active = useStore((s) => s.activePanel);
   const setActivePanel = useStore((s) => s.setActivePanel);
-  const order = useStore((s) => s.layout.order);
+  const layout = useStore(selectResolvedLayout);
+  // 非表示パネルはタブにも出さない（activePanel が非表示を指さないことは
+  // store/index.ts の activePanel ガードが保証する）
+  const order = useMemo(() => visiblePanels(layout), [layout]);
 
   return (
     <nav

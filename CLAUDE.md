@@ -22,37 +22,49 @@ npm run preview    # ビルドプレビュー
 
 `src/store/index.ts` に10個のスライスを結合:
 
-| スライス        | 責務                                                                 |
-| --------------- | -------------------------------------------------------------------- |
-| sessions        | セッション CRUD、アクティブセッション管理                            |
-| entries         | メモエントリの追加・更新・削除・並び替え                             |
-| characters      | キャラクター管理                                                     |
-| timeline-groups | タイムライングループ管理                                             |
-| memo-groups     | 自由メモ / 個人メモのグループ管理                                    |
-| deductions      | 人物推理メモ（犯人投票・疑惑度）                                     |
-| relations       | 相関図の関係線管理                                                   |
-| link-keywords   | リンクキーワード辞書（`[ワード]` 自動リンク化対象）                  |
-| settings        | アプリ設定（パネル順、表示形式等）                                   |
-| ui              | モーダル表示状態、アクティブパネル、トースト、キャラクターフィルター |
+| スライス        | 責務                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| sessions        | セッション CRUD、アクティブセッション管理                                                |
+| entries         | メモエントリの追加・更新・削除・並び替え                                                 |
+| characters      | キャラクター管理                                                                         |
+| timeline-groups | タイムライングループ管理                                                                 |
+| memo-groups     | 自由メモ / 個人メモのグループ管理                                                        |
+| deductions      | 人物推理メモ（犯人投票・疑惑度）                                                         |
+| relations       | 相関図の関係線管理                                                                       |
+| link-keywords   | リンクキーワード辞書（`[ワード]` 自動リンク化対象）                                      |
+| settings        | アプリ設定（グローバルレイアウト、表示形式等）                                           |
+| ui              | モーダル表示状態、アクティブパネル、トースト、キャラクターフィルター、レイアウトドラフト |
 
 セッション切替時に `subscribeWithSelector` で自動リロードされる。
 
 Undo/Redo（`zundo`）は `entries / characters / timelineGroups / memoGroups / deductions / relations` のみを履歴対象（TrackedState）にする。`linkKeywords` や `ui` 等は履歴対象外。詳細は「データ永続化」の注意を参照。
 
+### パネルレイアウト（2層設定）
+
+パネル配置は **カラムツリー型の `PanelLayout`**（`types/memo.ts`。`columns: { panels(1〜2枚・縦積み), size, rowSizes }[]` + `hidden`）で表し、純関数群を `src/lib/panelLayout.ts` に集約する（不変条件・救済規則は同ファイル冒頭コメントとテストが真実）。構造プリセット（3列 / 左右の上下分割 / 2段）は**保存しない派生情報**で、形状から `classifyStructure` で判定する。
+
+- **2層設定**: グローバル（`settings.layout`、localStorage）とセッション固有（`GameSession.layout`、IDB）。セッション作成時にグローバルを **structuredClone で複製して継承**。表示は `selectResolvedLayout`（`src/store/selectors.ts`）が `layoutDraft ?? session.layout ?? settings.layout` で解決する。セレクタは layout 参照のみ返し、`visiblePanels` 等の配列派生は**消費側の useMemo** で行う（新配列をセレクタから返すと再レンダー嵐になる）。selectors.ts が独立モジュールなのはスライスから実行時 import すると store/index.ts と循環するため。
+- **書き込み先ルーティング**（`ui.updateResolvedLayout` が単一実装点）: 設定パネル→グローバル / ヘッダーポップオーバー→セッション / リサイズ確定・検索の自動再表示→**所有レイヤー**（session.layout があれば session、なければ settings）。
+- **リサイズ**: ドラッグ中は `ui.layoutDraft`（メモリのみ）を毎 mousemove 更新し、mouseup の `commitLayoutDraft` で所有レイヤーへ1回だけ永続化（sizes もレイアウトの一部として永続化される）。セッション切替時に draft はクリア。
+- **非表示パネルの防御**: `store/index.ts` の subscribe が「activePanel が非表示化されたら先頭の表示パネルへ逃がす」を一手に担う（モバイルタブは activePanel のみ描画のため必須）。検索は `fullPanelOrder` で非表示パネルのメモもヒットさせ、ジャンプ時に `ensurePanelVisible`（revealEntry のステップ0）が自動で再表示する。右クリックの移動先には非表示パネルも「（非表示中）」サフィックス付きで残す（移動経路を断たない）。
+- レイアウト変更は TrackedState 外なので **Undo 対象外**（意図的）。
+
 ### コンポーネント階層
 
 ```
 App → SelectionProvider → AppShell
-  ├── Header（セッション切替、登場人物設定、アプリ設定）
-  ├── PanelContainer（デスクトップ）/ MobileTabNav（モバイル）
+  ├── Header（セッション切替、レイアウト（LayoutMenuButton + ポップオーバー）、登場人物設定、アプリ設定）
+  ├── PanelContainer（デスクトップ。解決済みレイアウトのカラムツリーを描画）/ MobileTabNav（モバイル。表示パネルのみタブ化）
   │   ├── Panel → FreeMemoPanel → MemoPanel
   │   ├── Panel → PersonalMemoPanel → MemoPanel
   │   └── Panel → TimelinePanel
   ├── CharacterSetupPanel（モーダル）
   ├── DeductionModal（モーダル）
   ├── RelationDiagramModal（モーダル）
-  └── SettingsPanel（モーダル）
+  └── SettingsPanel（モーダル。グローバルレイアウトは LayoutEditor 共有コンポーネントで編集）
 ```
+
+PanelContainer の縦積み描画では、段の wrapper に **`min-h-0` が必須**（flex 子の `min-height: auto` により内部スクロールが壊れてカラム全体が伸びる。横方向の `minWidth` ガードと対）。
 
 #### エントリ DnD（コンテナ跨ぎ）
 
@@ -155,6 +167,7 @@ SVG アイコンは `icons/index.tsx` に集約。`size` と `className` props �
   2. `validateExport` のバリデーションを更新
   3. IndexedDB スキーマ変更時は `DB_VERSION` バンプ + upgrade 関数追加
   4. エクスポート → インポートのラウンドトリップで動作確認
+- ただし **optional な追加フィールドはバンプ不要**: インポート時の sanitize（無ければ/不正なら undefined に倒す）で吸収できるなら `EXPORT_VERSION` は据え置く（前例: `session.layout` + `sanitizeImportedLayout`）。バンプすると旧バージョンの PWA キャッシュが新エクスポートを「未来版」として拒否する実害があるため、必須構造が変わるときだけバンプする
 
 `importSession` は全 ID を新規採番し（元セッションと共存可）、書き込み途中で失敗したら `Promise.allSettled` 後に `deleteSession` で巻き戻す。`validateExport` は必須配列の要素の参照フィールドに加え、値域（`session.name` が文字列・`entry.panel` が既知 PanelId・`deduction.suspicionLevel` が 0〜3・`relation.label` が文字列・`linkKeyword.createdAt` が数値）も検証する。インポート時はエントリの `eventTime`/`eventTimeSortKey` を `resolveEventTime` で再正規化し（不正な時刻ペアを永続化しない）、自己参照の相関図（from === to）は取り込まない。**ダングリング参照は取り込まない**: `remap` は未知の旧 ID にも新 ID を発番してしまうため、参照フィールド（`timelineGroupId` / `groupId` / `characterTags` / 推理メモ・相関図のキャラ参照）は「エクスポート内に実体が存在する場合のみ remap、無ければ落とす」に統一する（実在しないグループを指す timeline エントリは `timelineGroupId` 未設定＝「未分類」に倒す）。panel と timeline 系フィールドの整合は `timelineFieldPatch` をアプリ内移動と共用する。`getEntriesBySession` は内部フィールド `sessionId` を剥がして返す（エクスポート JSON へ漏出させない）。
 

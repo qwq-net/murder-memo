@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { CharacterFilterBar } from '@/components/characters/characterFilterBar';
 import { CharacterSetupPanel } from '@/components/characters/characterSetupPanel';
 import { ToastContainer } from '@/components/common/toast';
@@ -18,6 +20,7 @@ import {
   User,
 } from '@/components/icons';
 import { HeaderButton } from '@/components/layout/headerButton';
+import { LayoutMenuButton } from '@/components/layout/layoutPopover';
 import { MobileTabNav } from '@/components/layout/mobileTabNav';
 import { Panel } from '@/components/layout/panel';
 import { PanelContainer } from '@/components/layout/panelContainer';
@@ -31,7 +34,9 @@ import { SettingsPanel } from '@/components/settings/settingsPanel';
 import { useFilteredCharacters } from '@/hooks/useFilteredCharacters';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useSessionRenaming } from '@/hooks/useSessionRenaming';
+import { visiblePanels } from '@/lib/panelLayout';
 import { useStore } from '@/store';
+import { selectResolvedLayout } from '@/store/selectors';
 import type { PanelId } from '@/types/memo';
 
 const PANEL_TITLES: Record<PanelId, string> = {
@@ -107,7 +112,7 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
 }
 
 export function AppShell() {
-  const order = useStore((s) => s.layout.order);
+  const layout = useStore(selectResolvedLayout);
   const activePanel = useStore((s) => s.activePanel);
   const isSessionReady = useStore((s) => s.isSessionReady);
   const setCharacterSetupOpen = useStore((s) => s.setCharacterSetupOpen);
@@ -129,6 +134,10 @@ export function AppShell() {
   const { isMobile } = useResponsive(1024);
   const { plChars, npcChars } = useFilteredCharacters();
   const sessionRename = useSessionRenaming({ sessions, activeSessionId, renameSession });
+
+  // 表示パネルの導出はセレクタではなく useMemo で行う規約
+  // （セレクタが毎回新配列を返すと全購読者が再レンダーするため）
+  const visible = useMemo(() => visiblePanels(layout), [layout]);
 
   // セッション初期化／切替完了まではローディング表示。
   // 初回起動時は IDB マイグレーションやサンプルシナリオ再投入を待ち、
@@ -160,9 +169,10 @@ export function AppShell() {
     timeline: <TimelinePanel />,
   };
 
-  const orderedPanels = order.map((id) => ({
-    id,
-    node: (
+  // 表示パネルのみ描画ノードを生成する（非表示パネルはマウント自体しない）
+  const panelNodes: Partial<Record<PanelId, React.ReactNode>> = {};
+  for (const id of visible) {
+    panelNodes[id] = (
       <Panel
         panelId={id}
         title={PANEL_TITLES[id]}
@@ -176,8 +186,8 @@ export function AppShell() {
       >
         {PANEL_CONTENT[id]}
       </Panel>
-    ),
-  }));
+    );
+  }
 
   return (
     <div
@@ -278,6 +288,9 @@ export function AppShell() {
               <User size={13} />
               登場人物設定
             </HeaderButton>
+
+            {/* レイアウト編集（セッション単位）— 設定ボタンの直前に配置 */}
+            <LayoutMenuButton />
 
             {/* アプリ設定ボタン */}
             <HeaderButton onClick={() => setSettingsOpen(true)} variant="settings">
@@ -462,9 +475,8 @@ export function AppShell() {
       {/* ── Panels ── */}
       {isMobile ? (
         <>
-          <div className="flex-1 overflow-hidden">
-            {orderedPanels.find((p) => p.id === activePanel)?.node}
-          </div>
+          {/* activePanel が非表示パネルを指さないことは store/index.ts のガードが保証する */}
+          <div className="flex-1 overflow-hidden">{panelNodes[activePanel]}</div>
           <MobileTabNav />
         </>
       ) : (
@@ -473,7 +485,7 @@ export function AppShell() {
         // コンテキストを張るため、ここでは包まない。
         <EntriesDndContext>
           <div className="min-h-0 flex-1 overflow-hidden">
-            <PanelContainer panels={orderedPanels} />
+            <PanelContainer panels={panelNodes} />
           </div>
         </EntriesDndContext>
       )}

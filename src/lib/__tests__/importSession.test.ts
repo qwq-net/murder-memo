@@ -1,4 +1,5 @@
-import type { MurderMemoExport } from '@/types/memo';
+import { DEFAULT_PANEL_LAYOUT, layoutsEqual } from '@/lib/panelLayout';
+import type { GameSession, MurderMemoExport, PanelLayout } from '@/types/memo';
 import { EXPORT_VERSION } from '@/types/memo';
 
 // importSession が呼ぶ idb 書き込み系をモック（get* は import 解決のためのダミー）
@@ -303,5 +304,76 @@ describe('importSession', () => {
     // 実在しないキャラクターを指す推理メモ・相関図は取り込まれない（空なので書き込み自体なし）
     expect(mockBulkPutDeductions).not.toHaveBeenCalled();
     expect(mockBulkPutRelations).not.toHaveBeenCalled();
+  });
+
+  // ── セッション固有レイアウト（session.layout）の運搬 ──
+
+  it('正当な session.layout は sanitizeImportedLayout を通って同値で取り込まれる', async () => {
+    const layout: PanelLayout = structuredClone(DEFAULT_PANEL_LAYOUT);
+    const data = makeExport({
+      session: {
+        id: 'old-s',
+        name: 'レイアウト付き',
+        createdAt: 0,
+        updatedAt: 0,
+        layout,
+      } as GameSession,
+    });
+
+    await importSession(fakeFile(data));
+
+    const [saved] = mockPutSession.mock.calls[0] as [GameSession];
+    expect(saved.layout).toBeDefined();
+    expect(layoutsEqual(saved.layout!, layout)).toBe(true);
+  });
+
+  it('壊れた session.layout は layout 未設定（undefined）で取り込まれる', async () => {
+    const data = makeExport({
+      session: {
+        id: 'old-s',
+        name: 'レイアウト壊れ',
+        createdAt: 0,
+        updatedAt: 0,
+        // columns が配列でない（手編集された不正値）→ sanitizeImportedLayout が undefined に倒す
+        layout: { columns: 'garbage', hidden: [] },
+      } as unknown as GameSession,
+    });
+
+    await importSession(fakeFile(data));
+
+    const [saved] = mockPutSession.mock.calls[0] as [GameSession];
+    expect(saved.layout).toBeUndefined();
+  });
+
+  it('パネル重複を含む session.layout も undefined に倒す', async () => {
+    const data = makeExport({
+      session: {
+        id: 'old-s',
+        name: 'パネル重複',
+        createdAt: 0,
+        updatedAt: 0,
+        // free が2回・personal 欠落（全パネルちょうど1回の不変条件に反する）
+        layout: {
+          columns: [
+            { panels: ['free'], size: 50 },
+            { panels: ['free'], size: 50 },
+          ],
+          hidden: ['timeline'],
+        },
+      } as unknown as GameSession,
+    });
+
+    await importSession(fakeFile(data));
+
+    const [saved] = mockPutSession.mock.calls[0] as [GameSession];
+    expect(saved.layout).toBeUndefined();
+  });
+
+  it('session.layout 無し（従来ファイル）は layout 未設定で取り込まれる（後方互換）', async () => {
+    // makeExport の既定 session は layout を持たない
+    await importSession(fakeFile(makeExport()));
+
+    const [saved] = mockPutSession.mock.calls[0] as [GameSession];
+    expect(saved.layout).toBeUndefined();
   });
 });

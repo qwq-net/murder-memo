@@ -46,6 +46,11 @@ export const IMPORTANCE_LABELS: Record<string, string> = {
 export interface MenuContext {
   timelineGroups: TimelineGroup[];
   memoGroups: MemoGroup[];
+  /**
+   * レイアウトで非表示中のパネル。移動先としては残し（移動経路を断たない。
+   * タイムラインの孤児救出と同じ防御思想）、ラベルに「（非表示中）」を付けて示す。
+   */
+  hiddenPanels: PanelId[];
   /** showInEntries が true のキャラクター一覧（役職マーカー追加用） */
   characters: Character[];
   moveEntryToPanel: (
@@ -118,15 +123,20 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
     plural: (n) => `${n}件のメモを${PANEL_LABELS[p]}に移動しました`,
   });
 
+  // 非表示パネルへも移動できる（メモは消えず、パネルを再表示すれば見える）。
+  // ただし移動先が今見えないことが分かるようラベルで明示する
+  const panelLabel = (p: PanelId) =>
+    ctx.hiddenPanels.includes(p) ? `${PANEL_LABELS[p]}（非表示中）` : PANEL_LABELS[p];
+
   for (const p of ['free', 'personal', 'timeline'] as PanelId[]) {
     if (isBulk ? commonPanel && p === commonPanel : p === entries[0].panel) continue;
 
     if (p === 'timeline') {
       if (ctx.timelineGroups.length === 0) {
-        sub.push({ label: PANEL_LABELS[p], disabled: true, onClick: () => {} });
+        sub.push({ label: panelLabel(p), disabled: true, onClick: () => {} });
       } else if (ctx.timelineGroups.length === 1) {
         sub.push({
-          label: PANEL_LABELS[p],
+          label: panelLabel(p),
           onClick: async () => {
             await forEntries(
               entries,
@@ -145,7 +155,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
         // グループが複数 → フラットに展開（ネストサブメニュー回避）
         for (const g of ctx.timelineGroups) {
           sub.push({
-            label: `${PANEL_LABELS[p]}: ${g.label}`,
+            label: `${panelLabel(p)}: ${g.label}`,
             onClick: async () => {
               await forEntries(
                 entries,
@@ -164,7 +174,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
       const panelGroups = ctx.memoGroups.filter((g) => g.panel === p);
       if (panelGroups.length === 0) {
         sub.push({
-          label: PANEL_LABELS[p],
+          label: panelLabel(p),
           onClick: async () => {
             await forEntries(
               entries,
@@ -180,7 +190,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
       } else {
         // グループあり → フラットに展開（ネストサブメニュー回避）
         sub.push({
-          label: `${PANEL_LABELS[p]}: 未分類`,
+          label: `${panelLabel(p)}: 未分類`,
           onClick: async () => {
             await forEntries(
               entries,
@@ -195,7 +205,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
         });
         for (const g of panelGroups) {
           sub.push({
-            label: `${PANEL_LABELS[p]}: ${g.label}`,
+            label: `${panelLabel(p)}: ${g.label}`,
             onClick: async () => {
               await forEntries(
                 entries,

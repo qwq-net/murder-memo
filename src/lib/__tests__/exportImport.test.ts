@@ -7,6 +7,7 @@ import type {
 } from '@/types/memo';
 import { EXPORT_VERSION } from '@/types/memo';
 import { formatBytes, migrateToLatest, validateExport } from '../exportImport';
+import { DEFAULT_PANEL_LAYOUT } from '../panelLayout';
 
 // ─── テストデータ生成ヘルパー ─────────────────────────────────────────────────
 
@@ -258,6 +259,27 @@ describe('validateExport', () => {
       relations: [{ id: 'r1', fromCharacterId: 'c1', toCharacterId: 'c1' } as any],
     });
     expect(validateExport(data)).toBe(false);
+  });
+
+  // セッション固有レイアウト追加でも EXPORT_VERSION はバンプせず v2 のまま（後方互換方針の回帰）。
+  // validateExport は session.layout を検証対象にしないため、付いていても無くても valid。
+  it('session.layout が付いていても v2 のまま valid', () => {
+    const data = makeValidExport({
+      session: {
+        id: 's1',
+        name: 'テストセッション',
+        createdAt: 0,
+        updatedAt: 0,
+        layout: DEFAULT_PANEL_LAYOUT,
+      },
+    });
+    expect(EXPORT_VERSION).toBe(2);
+    expect(validateExport(data)).toBe(true);
+  });
+
+  it('session.layout が無くても valid（従来ファイルの後方互換）', () => {
+    // makeValidExport の既定 session は layout を持たない
+    expect(validateExport(makeValidExport())).toBe(true);
   });
 });
 

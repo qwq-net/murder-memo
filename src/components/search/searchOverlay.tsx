@@ -6,7 +6,9 @@ import { SearchResultItem } from '@/components/search/searchResultItem';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { navigateToEntry } from '@/lib/entryNavigation';
 import { searchEntries, tokenizeQuery } from '@/lib/entrySearch';
+import { fullPanelOrder } from '@/lib/panelLayout';
 import { useStore } from '@/store';
+import { selectResolvedLayout } from '@/store/selectors';
 import type { MemoEntry, PanelId } from '@/types/memo';
 
 const PANEL_TITLES: Record<PanelId, string> = {
@@ -32,7 +34,9 @@ export function SearchOverlay() {
   const characters = useStore((s) => s.characters);
   const timelineGroups = useStore((s) => s.timelineGroups);
   const memoGroups = useStore((s) => s.memoGroups);
-  const order = useStore((s) => s.layout.order);
+  const layout = useStore(selectResolvedLayout);
+  // 非表示パネルのメモも検索結果に出す（クリック時に revealEntry が自動で再表示する）
+  const order = useMemo(() => fullPanelOrder(layout), [layout]);
   const setActivePanel = useStore((s) => s.setActivePanel);
   const revealEntry = useStore((s) => s.revealEntry);
   const addToast = useStore((s) => s.addToast);

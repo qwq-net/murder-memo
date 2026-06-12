@@ -28,7 +28,8 @@ export function BackupSection({
 }: {
   sessions: GameSession[];
   activeSessionId: string | null;
-  panelOrder: [PanelId, PanelId, PanelId];
+  /** テキスト出力のパネル順（表示順 → 非表示の全パネル。fullPanelOrder で導出） */
+  panelOrder: PanelId[];
   addToast: (msg: string, variant?: 'info' | 'success' | 'error') => void;
   setOpen: (v: boolean) => void;
   showExportConfirm: boolean;
@@ -107,7 +108,7 @@ export function BackupSection({
 
   const handleTextExport = useCallback(
     async (panelFilter?: PanelId) => {
-      const { entries, characters, timelineGroups, memoGroups, settings: s } = useStore.getState();
+      const { entries, characters, timelineGroups, memoGroups } = useStore.getState();
       const session = sessions.find((ss) => ss.id === activeSessionId);
       if (!session) return;
       const text = formatSessionAsText(
@@ -116,7 +117,7 @@ export function BackupSection({
         characters,
         timelineGroups,
         memoGroups,
-        s.panelOrder,
+        panelOrder,
         panelFilter,
       );
       if (!text) {
@@ -130,7 +131,7 @@ export function BackupSection({
         addToast('コピーに失敗しました', 'error');
       }
     },
-    [sessions, activeSessionId, addToast],
+    [sessions, activeSessionId, panelOrder, addToast],
   );
 
   return (

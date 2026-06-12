@@ -1,6 +1,8 @@
 import { matchesEntryFilter, resolveCharacterNames } from '@/lib/entryFilter';
+import { setPanelHidden } from '@/lib/panelLayout';
 import type { StoreState } from '@/store/index';
-import type { ImportanceLevel, MemoEntry, PanelId, PanelLayoutConfig } from '@/types/memo';
+import { selectResolvedLayout } from '@/store/selectors';
+import type { ImportanceLevel, MemoEntry, PanelId, PanelLayout } from '@/types/memo';
 
 const EMPTY_FILTER: Record<PanelId, string[]> = { free: [], personal: [], timeline: [] };
 const EMPTY_IMPORTANCE_FILTER: Record<PanelId, ImportanceLevel[]> = {
@@ -22,7 +24,20 @@ export interface ToastItem {
 let toastId = 0;
 
 export interface UiSlice {
-  layout: PanelLayoutConfig;
+  /**
+   * リサイズドラッグ中の一時レイアウト（メモリのみ・毎 mousemove 更新）。
+   * 表示は selectResolvedLayout（store/selectors.ts）が最優先で参照し、
+   * 確定（pointerup）時に commitLayoutDraft が所有レイヤーへ1回だけ書き込む。
+   */
+  layoutDraft: PanelLayout | null;
+  /** セッション単位レイアウト編集ポップオーバーの表示状態 */
+  isLayoutPopoverOpen: boolean;
+  /**
+   * パネルの「順番ヒント」オーバーレイ（各領域を薄暗くして①②③を表示）の発火カウンタ。
+   * 0 は未発火。インクリメントのたびにオーバーレイが再表示され、一定時間後に自動で消える
+   * （タイマーは表示側 panelOrderHintOverlay.tsx が持つ。連続変更では表示が延長される）。
+   */
+  layoutOrderHintTick: number;
   activePanel: PanelId;
   highlightCharacterId: string | null;
   /** セッション初期化（IDB読込 + データ投入）が完了したか */
@@ -57,7 +72,26 @@ export interface UiSlice {
   /** リンク一覧モーダルの表示状態 */
   isLinkListOpen: boolean;
 
-  setLayout: (layout: Partial<PanelLayoutConfig>) => void;
+  setLayoutDraft: (draft: PanelLayout | null) => void;
+  /** ドラッグ中の layoutDraft を所有レイヤーへ書き込み、draft をクリアする */
+  commitLayoutDraft: () => Promise<void>;
+  /**
+   * 解決済みレイアウトの所有レイヤーへ書き込む。セッションがレイアウトを持つ
+   * （= セッション固有設定中）ならセッションへ、持たない（= グローバル準拠中）なら
+   * グローバル設定へ書く（プラン上の「書き込み先ルーティング」の単一実装点）。
+   */
+  updateResolvedLayout: (layout: PanelLayout) => Promise<void>;
+  /**
+   * 指定パネルが非表示なら所有レイヤーへ再表示を書き込む（検索ジャンプ時の自動再表示用。
+   * revealEntry の「干渉するフィルターを自動解除する」と同じ思想）。表示中なら no-op。
+   */
+  ensurePanelVisible: (panel: PanelId) => void;
+  setLayoutPopoverOpen: (open: boolean) => void;
+  /**
+   * 順番ヒントのオーバーレイを発火する（レイアウト編集で配置が実際に変わったときに呼ぶ。
+   * 「なぜこの順番なのか」を画面上の位置と①②③の対応で直感的に示す）。
+   */
+  flashLayoutOrderHint: () => void;
   setActivePanel: (panel: PanelId) => void;
   setHighlightCharacter: (id: string | null) => void;
   setSessionReady: (ready: boolean) => void;
@@ -97,16 +131,13 @@ export interface UiSlice {
   setLinkListOpen: (open: boolean) => void;
 }
 
-const DEFAULT_LAYOUT: PanelLayoutConfig = {
-  sizes: [33.33, 33.33, 33.34],
-  order: ['free', 'timeline', 'personal'],
-};
-
 export const createUiSlice = (
   set: (fn: (s: StoreState) => Partial<StoreState>) => void,
   get: () => StoreState,
 ): UiSlice => ({
-  layout: DEFAULT_LAYOUT,
+  layoutDraft: null,
+  isLayoutPopoverOpen: false,
+  layoutOrderHintTick: 0,
   activePanel: 'free',
   highlightCharacterId: null,
   timeEditRequestId: null,
@@ -126,7 +157,37 @@ export const createUiSlice = (
   isRelationDiagramOpen: false,
   isLinkListOpen: false,
 
-  setLayout: (patch) => set((s) => ({ layout: { ...s.layout, ...patch } })),
+  setLayoutDraft: (draft) => set(() => ({ layoutDraft: draft })),
+
+  commitLayoutDraft: async () => {
+    const draft = get().layoutDraft;
+    if (!draft) return;
+    // 書き込み（楽観更新で同期反映される）→ draft クリアの順にし、
+    // クリア後も resolved が同じ内容を指し続けるようにする（ちらつき防止）
+    await get().updateResolvedLayout(draft);
+    set(() => ({ layoutDraft: null }));
+  },
+
+  updateResolvedLayout: async (layout) => {
+    const s = get();
+    const session = s.sessions.find((x) => x.id === s.activeSessionId);
+    if (session?.layout) {
+      await s.updateSessionLayout(layout);
+    } else {
+      s.updateSettings({ layout });
+    }
+  },
+
+  ensurePanelVisible: (panel) => {
+    const s = get();
+    const resolved = selectResolvedLayout(s);
+    if (!resolved.hidden.includes(panel)) return;
+    void s.updateResolvedLayout(setPanelHidden(resolved, panel, false));
+  },
+
+  setLayoutPopoverOpen: (open) => set(() => ({ isLayoutPopoverOpen: open })),
+
+  flashLayoutOrderHint: () => set((s) => ({ layoutOrderHintTick: s.layoutOrderHintTick + 1 })),
 
   setActivePanel: (panel) => set(() => ({ activePanel: panel })),
 
@@ -151,6 +212,8 @@ export const createUiSlice = (
 
   revealEntry: (entry) => {
     const state = get();
+    // 0. 所属パネルが非表示なら再表示する（非表示のままではジャンプ先が存在しない）
+    state.ensurePanelVisible(entry.panel);
     // 1. 所属グループ（折りたたみ）を展開して対象を可視化する
     if (entry.panel === 'timeline') {
       const g = entry.timelineGroupId

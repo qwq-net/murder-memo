@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import type { MenuContext } from '@/components/entries/actions/menuItems';
 import { useStore } from '@/store';
+import { selectResolvedLayout } from '@/store/selectors';
 
 /**
  * コンテキストメニュー用の共通ストアセレクタをまとめて取得するフック。
@@ -19,6 +20,8 @@ export function useMenuContext(onDone?: () => void): MenuContext {
   const memoGroups = useStore((s) => s.memoGroups);
   const settings = useStore((s) => s.settings);
   const addToast = useStore((s) => s.addToast);
+  const layout = useStore(selectResolvedLayout);
+  const hiddenPanels = useMemo(() => layout.hidden, [layout]);
 
   // showInEntries が true のキャラのみ。プレイヤー → NPC、sortOrder 順
   const characters = useMemo(
@@ -43,6 +46,7 @@ export function useMenuContext(onDone?: () => void): MenuContext {
       characters,
       timelineGroups,
       memoGroups,
+      hiddenPanels,
       settings,
       addToast,
       onDone,
@@ -57,6 +61,7 @@ export function useMenuContext(onDone?: () => void): MenuContext {
       characters,
       timelineGroups,
       memoGroups,
+      hiddenPanels,
       settings,
       addToast,
       onDone,

@@ -21,6 +21,7 @@ import {
   putImage,
   putSession,
 } from '@/lib/idb';
+import { sanitizeImportedLayout } from '@/lib/panelLayout';
 import { resolveEventTime } from '@/lib/timeParser';
 import type { ExportedImage, GameSession, LinkKeyword, MurderMemoExport } from '@/types/memo';
 import { EXPORT_VERSION } from '@/types/memo';
@@ -356,6 +357,9 @@ export async function importSession(file: File): Promise<GameSession> {
     name: data.session.name,
     createdAt: Date.now(),
     updatedAt: Date.now(),
+    // セッション固有レイアウトも運搬する。手編集されうるファイル由来の値は信用せず、
+    // 構造が正当な場合のみ取り込む（不正なら undefined = グローバル設定に準拠）
+    layout: sanitizeImportedLayout(data.session.layout),
   };
 
   // キャラクター

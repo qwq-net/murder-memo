@@ -1,15 +1,20 @@
+import { OrderBadge } from '@/components/common/orderBadge';
 import { PANEL_CARD_ACCENT, PANEL_ORDER_LABELS } from '@/components/settings/panelConstants';
 import type { PanelId } from '@/types/memo';
 
+/**
+ * パネル並び順の ↑↓ エディタ。表示中パネルのみを対象とする可変長リスト
+ * （非表示パネルは並び順を持たない。レイアウト設定の一部として使う）。
+ */
 export function PanelOrderEditor({
   order,
   onChange,
 }: {
-  order: [PanelId, PanelId, PanelId];
-  onChange: (order: [PanelId, PanelId, PanelId]) => void;
+  order: PanelId[];
+  onChange: (order: PanelId[]) => void;
 }) {
   const swap = (index: number, direction: -1 | 1) => {
-    const newOrder = [...order] as [PanelId, PanelId, PanelId];
+    const newOrder = [...order];
     const target = index + direction;
     if (target < 0 || target >= newOrder.length) return;
     [newOrder[index], newOrder[target]] = [newOrder[target], newOrder[index]];
@@ -30,6 +35,11 @@ export function PanelOrderEditor({
             background: 'var(--bg-elevated)',
           }}
         >
+          {/* 順番バッジ — レイアウト変更時にパネル領域へ出る①②③と同じ記号・採番。
+              「エディタの行」と「画面上の領域」の対応を視覚的につなぐ */}
+          <span style={{ color: 'var(--text-muted)', display: 'inline-flex', flexShrink: 0 }}>
+            <OrderBadge number={i + 1} size={16} />
+          </span>
           {/* accent dot */}
           <span
             style={{

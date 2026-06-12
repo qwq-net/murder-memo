@@ -3,12 +3,14 @@ import { useState } from 'react';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { X } from '@/components/icons';
 import { BackupSection } from '@/components/settings/backupSection';
+import { LayoutEditor } from '@/components/settings/layoutEditor';
 import { MarkerCard } from '@/components/settings/markerCard';
-import { PanelOrderEditor } from '@/components/settings/panelOrderEditor';
 import { SectionHeader } from '@/components/settings/sectionHeader';
 import { SessionManagementSection } from '@/components/settings/sessionManagementSection';
 import { SettingRow } from '@/components/settings/settingRow';
+import { DEFAULT_PANEL_LAYOUT, fullPanelOrder, layoutsEqual } from '@/lib/panelLayout';
 import { useStore } from '@/store';
+import { selectResolvedLayout } from '@/store/selectors';
 import type { AppSettings } from '@/store/slices/settings';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
 
@@ -17,6 +19,8 @@ export function SettingsPanel() {
   const setOpen = useStore((s) => s.setSettingsOpen);
   const settings = useStore((s) => s.settings);
   const updateSettings = useStore((s) => s.updateSettings);
+  // テキスト出力（BackupSection）はアクティブセッションの解決済みレイアウト順で出す
+  const resolvedLayout = useStore(selectResolvedLayout);
   const addToast = useStore((s) => s.addToast);
   const sessions = useStore((s) => s.sessions);
   const activeSessionId = useStore((s) => s.activeSessionId);
@@ -118,25 +122,18 @@ export function SettingsPanel() {
             ]}
           />
 
-          {/* ── パネル表示順 ── */}
+          {/* ── レイアウト（グローバル: 新規セッションの初期値） ── */}
           <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
             <SectionHeader
-              hint="左から順に並びます"
-              onReset={() => update('panelOrder', ['free', 'timeline', 'personal'])}
-              resetDisabled={
-                settings.panelOrder[0] === 'free' &&
-                settings.panelOrder[1] === 'timeline' &&
-                settings.panelOrder[2] === 'personal'
-              }
+              hint="新しいセッションの初期値になります"
+              onReset={() => update('layout', DEFAULT_PANEL_LAYOUT)}
+              resetDisabled={layoutsEqual(settings.layout, DEFAULT_PANEL_LAYOUT)}
             >
-              パネル表示順
+              レイアウト
             </SectionHeader>
           </div>
 
-          <PanelOrderEditor
-            order={settings.panelOrder}
-            onChange={(newOrder) => update('panelOrder', newOrder)}
-          />
+          <LayoutEditor layout={settings.layout} onChange={(l) => update('layout', l)} />
 
           {/* ── 関連人物マーカー ── */}
           <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
@@ -181,7 +178,7 @@ export function SettingsPanel() {
           <BackupSection
             sessions={sessions}
             activeSessionId={activeSessionId}
-            panelOrder={settings.panelOrder}
+            panelOrder={fullPanelOrder(resolvedLayout)}
             addToast={addToast}
             setOpen={setOpen}
             showExportConfirm={showExportConfirm}

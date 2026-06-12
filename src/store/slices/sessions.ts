@@ -24,7 +24,7 @@ import {
 } from '@/lib/idb';
 import { APP_VERSION } from '@/lib/version';
 import type { StoreState } from '@/store/index';
-import type { GameSession } from '@/types/memo';
+import type { GameSession, PanelLayout } from '@/types/memo';
 
 export interface SessionsSlice {
   sessions: GameSession[];
@@ -36,6 +36,17 @@ export interface SessionsSlice {
   renameSession: (id: string, name: string) => Promise<void>;
   removeSession: (id: string) => Promise<void>;
   clearCurrentSession: () => Promise<void>;
+  /**
+   * アクティブセッションのレイアウトを更新する（セッション固有設定）。
+   * 楽観更新し、putSession 失敗時は state を巻き戻してエラートーストを出す。
+   */
+  updateSessionLayout: (layout: PanelLayout) => Promise<void>;
+  /**
+   * アクティブセッションのレイアウトを破棄してグローバル設定準拠へ戻す。
+   * layout を持たないセッションは selectResolvedLayout が settings.layout へ
+   * フォールバックする（store/selectors.ts）。
+   */
+  clearSessionLayout: () => Promise<void>;
 }
 
 const LAST_SESSION_KEY = 'murder-memo-last-session-id';
@@ -184,6 +195,9 @@ export const createSessionsSlice = (
         name,
         createdAt: Date.now(),
         updatedAt: Date.now(),
+        // グローバル設定のレイアウトを複製して継承する（以後はセッション単位で独立。
+        // 参照を共有すると後のレイアウト編集がグローバル設定を巻き込むため必ず複製）
+        layout: structuredClone(get().settings.layout),
       };
       await putSession(session);
       localStorage.setItem(LAST_SESSION_KEY, session.id);
@@ -202,6 +216,39 @@ export const createSessionsSlice = (
       const updated = { ...session, name, updatedAt: Date.now() };
       await putSession(updated);
       set((s) => ({ sessions: s.sessions.map((s2) => (s2.id === id ? updated : s2)) }));
+    },
+
+    updateSessionLayout: async (layout) => {
+      const session = get().sessions.find((s) => s.id === get().activeSessionId);
+      if (!session) return;
+      const updated: GameSession = { ...session, layout, updatedAt: Date.now() };
+      const prevSessions = get().sessions;
+      // 楽観更新（ポップオーバー操作へ即時反映）→ 失敗時は参照ごと巻き戻し＋エラートースト
+      set((s) => ({ sessions: s.sessions.map((s2) => (s2.id === session.id ? updated : s2)) }));
+      try {
+        await putSession(updated);
+      } catch (err) {
+        set(() => ({ sessions: prevSessions }));
+        get().addToast('レイアウトの保存に失敗しました', 'error');
+        console.error('updateSessionLayout の保存に失敗しました', err);
+      }
+    },
+
+    clearSessionLayout: async () => {
+      const session = get().sessions.find((s) => s.id === get().activeSessionId);
+      if (!session?.layout) return;
+      const { layout: _removed, ...rest } = session;
+      void _removed;
+      const updated: GameSession = { ...rest, updatedAt: Date.now() };
+      const prevSessions = get().sessions;
+      set((s) => ({ sessions: s.sessions.map((s2) => (s2.id === session.id ? updated : s2)) }));
+      try {
+        await putSession(updated);
+      } catch (err) {
+        set(() => ({ sessions: prevSessions }));
+        get().addToast('レイアウトの保存に失敗しました', 'error');
+        console.error('clearSessionLayout の保存に失敗しました', err);
+      }
     },
 
     /**

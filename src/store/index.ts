@@ -4,6 +4,8 @@ import { subscribeWithSelector } from 'zustand/middleware';
 
 import { groupsEqualIgnoringCollapse } from '@/lib/historyEquality';
 import { getEntriesBySession } from '@/lib/idb';
+import { visiblePanels } from '@/lib/panelLayout';
+import { selectResolvedLayout } from '@/store/selectors';
 import type { CharactersSlice } from '@/store/slices/characters';
 import { createCharactersSlice } from '@/store/slices/characters';
 import type { DeductionsSlice } from '@/store/slices/deductions';
@@ -91,23 +93,25 @@ export const useStore = create<StoreState>()(
   ),
 );
 
-// ─── 設定のパネル順を layout.order に反映 ─────────────────────────────────────
+// ─── 非表示パネルから activePanel を逃がす ────────────────────────────────────
+//
+// レイアウト変更（設定・ポップオーバー・セッション切替・検索の自動再表示）のどの経路でも、
+// activePanel が非表示パネルを指したら先頭の表示パネルへ移す。モバイルのタブ UI は
+// activePanel のパネルだけを描画するため、これを怠ると画面が空になる。
 
-// 初期同期
 {
-  const { settings, setLayout } = useStore.getState();
-  if (settings.panelOrder) {
-    setLayout({ order: settings.panelOrder });
-  }
+  // 起動時の初期ガード（保存済みレイアウトで activePanel 既定値が非表示の場合）
+  const s = useStore.getState();
+  const visible = visiblePanels(selectResolvedLayout(s));
+  if (!visible.includes(s.activePanel)) s.setActivePanel(visible[0]);
 }
 
-// 設定変更時の同期
 useStore.subscribe(
-  (state) => state.settings.panelOrder,
-  (panelOrder) => {
-    if (panelOrder) {
-      useStore.getState().setLayout({ order: panelOrder });
-    }
+  (state) => selectResolvedLayout(state),
+  (layout) => {
+    const { activePanel, setActivePanel } = useStore.getState();
+    const visible = visiblePanels(layout);
+    if (!visible.includes(activePanel)) setActivePanel(visible[0]);
   },
 );
 
@@ -141,13 +145,15 @@ useStore.subscribe(
       clearAllCharacterFilters,
       clearAllImportanceFilters,
       clearSearchInitialQuery,
+      setLayoutDraft,
       setSessionReady,
       addToast,
     } = useStore.getState();
-    // セッション固有の UI 状態（フィルター・検索初期クエリ）を持ち越さない
+    // セッション固有の UI 状態（フィルター・検索初期クエリ・リサイズ中ドラフト）を持ち越さない
     clearAllCharacterFilters();
     clearAllImportanceFilters();
     clearSearchInitialQuery();
+    setLayoutDraft(null);
     // ロード完了まで UI をローディング表示に切り替える（中途半端なデータでの操作を防ぐ）
     setSessionReady(false);
     // ロード中は履歴記録を停止（ロード操作自体を undo できないように）
