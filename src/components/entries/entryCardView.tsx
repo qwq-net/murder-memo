@@ -1,13 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { IconImportance } from '@/components/icons';
-import type { MemoEntry, PanelId } from '@/types/memo';
-
-const PANEL_ACCENT: Record<PanelId, string> = {
-  free: 'var(--panel-free-accent)',
-  personal: 'var(--panel-personal-accent)',
-  timeline: 'var(--panel-timeline-accent)',
-};
+import { PANEL_ACCENT } from '@/lib/panelMeta';
+import type { MemoEntry } from '@/types/memo';
 
 const IMPORTANCE_COLOR: Record<NonNullable<MemoEntry['importance']>, string> = {
   high: 'var(--importance-high)',

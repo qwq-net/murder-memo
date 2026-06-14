@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 
 import { deleteRelation, getRelationsBySession, putRelation } from '@/lib/idb';
+import { nextSortOrder } from '@/lib/sortOrder';
 import type { StoreState } from '@/store/index';
 import type { CharacterRelation } from '@/types/memo';
 
@@ -42,11 +43,10 @@ export const createRelationsSlice = (
       throw new Error('自己参照の関係は作成できません');
     }
 
-    const maxOrder = relations.reduce((m, r) => Math.max(m, r.sortOrder), -1);
     const relation: CharacterRelation = {
       id: nanoid(),
       sessionId: activeSessionId,
-      sortOrder: maxOrder + 1,
+      sortOrder: nextSortOrder(relations),
       ...partial,
     };
     await putRelation(relation);

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import { CharacterBadgeBarView } from '@/components/characters/characterBadgeBarView';
+import { sortCharactersByRole } from '@/lib/characterSort';
 import { useStore } from '@/store';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, MemoEntry } from '@/types/memo';
 
@@ -88,12 +89,9 @@ export function CharacterBadgeBar({
   // showInEntries が true かつインライン未表示のキャラのみ。PL→NPC、その中で行動順（sortOrder）
   const characters = useMemo(
     () =>
-      allCharacters
-        .filter((c) => c.showInEntries && !inlineDetectedIds?.includes(c.id))
-        .sort((a, b) => {
-          if (a.role !== b.role) return a.role === 'pl' ? -1 : 1;
-          return a.sortOrder - b.sortOrder;
-        }),
+      sortCharactersByRole(
+        allCharacters.filter((c) => c.showInEntries && !inlineDetectedIds?.includes(c.id)),
+      ),
     [allCharacters, inlineDetectedIds],
   );
 

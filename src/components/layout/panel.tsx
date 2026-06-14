@@ -3,6 +3,7 @@ import { type ReactNode } from 'react';
 import { DropOverlay } from '@/components/common/dropOverlay';
 import { ImagePickerContext } from '@/components/layout/imagePickerContext';
 import { useImageDrop } from '@/hooks/useImageDrop';
+import { PANEL_ACCENT } from '@/lib/panelMeta';
 import type { PanelId } from '@/types/memo';
 
 interface PanelProps {
@@ -11,12 +12,6 @@ interface PanelProps {
   actions?: ReactNode;
   children: ReactNode;
 }
-
-const PANEL_ACCENT: Record<PanelId, string> = {
-  free: 'var(--panel-free-accent)',
-  personal: 'var(--panel-personal-accent)',
-  timeline: 'var(--panel-timeline-accent)',
-};
 
 export function Panel({ panelId, title, actions, children }: PanelProps) {
   const accent = PANEL_ACCENT[panelId];

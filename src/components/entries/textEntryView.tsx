@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
+
 import { CharacterBadgeBarView } from '@/components/characters/characterBadgeBarView';
 import { EntryContentView } from '@/components/entries/entryContentView';
-import { detectInlineCharacterIds } from '@/lib/parseCharacterText';
+import { computeBadgeCharacters } from '@/lib/characterBadges';
 import type {
   Character,
   CharacterDisplayFormat,
@@ -46,15 +48,11 @@ export function TextEntryView({
   onSearchClick,
   onCharacterToggle,
 }: TextEntryViewProps) {
-  const inlineDetectedIds = detectInlineCharacterIds(
-    entry.content,
-    visibleCharacters,
-    linkKeywords,
+  // バッジ計算は ImageEntryView と共通の純関数に集約
+  const { badgeCharacters, activeCharacterIds, hasEffectiveActive } = useMemo(
+    () => computeBadgeCharacters(entry, visibleCharacters, linkKeywords),
+    [entry, visibleCharacters, linkKeywords],
   );
-  const badgeCharacters = visibleCharacters.filter((c) => !inlineDetectedIds.includes(c.id));
-  const activeCharacterIds = new Set(entry.characterTags);
-  const effective = new Set([...entry.characterTags, ...inlineDetectedIds]);
-  const hasEffectiveActive = visibleCharacters.some((c) => effective.has(c.id));
 
   return (
     <div style={{ flex: 1, minWidth: 0 }}>

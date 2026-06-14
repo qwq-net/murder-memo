@@ -6,7 +6,8 @@ import {
   putCharacter,
   removeCharacterCascade,
 } from '@/lib/idb';
-import { captureSessionRollback } from '@/lib/optimisticRollback';
+import { runOptimisticUpdate } from '@/lib/optimisticRollback';
+import { applyReorder, bySortOrder, nextSortOrder } from '@/lib/sortOrder';
 import type { StoreState } from '@/store/index';
 import type { Character } from '@/types/memo';
 
@@ -43,13 +44,12 @@ export const createCharactersSlice = (
   addCharacter: async (partial) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) throw new Error('No active session');
-    const maxOrder = get().characters.reduce((m, c) => Math.max(m, c.sortOrder), -1);
     const char: Character = {
       role: 'pl',
       showInEntries: true,
       ...partial,
       id: nanoid(),
-      sortOrder: maxOrder + 1,
+      sortOrder: nextSortOrder(get().characters),
     };
     await putCharacter(char, sessionId);
     set((s) => ({ characters: [...s.characters, char] }));
@@ -107,28 +107,24 @@ export const createCharactersSlice = (
       }));
     const entryUpdateById = new Map(entryUpdates.map((e) => [e.id, e]));
 
-    // 失敗時は参照ごと巻き戻す。await 中にセッション切替が完了していたら放棄する
-    // （captureSessionRollback 参照。旧スナップショットで新セッションを上書きしない）
-    const rollback = captureSessionRollback(get, set, prev);
-
-    set((s) => ({
-      characters: s.characters.filter((c) => c.id !== id),
-      relations: s.relations.filter((r) => !relationIdSet.has(r.id)),
-      deductions: deduction ? s.deductions.filter((d) => d.id !== deduction.id) : s.deductions,
-      entries: s.entries.map((e) => entryUpdateById.get(e.id) ?? e),
-    }));
-
-    try {
-      await removeCharacterCascade(
-        { characterId: id, relationIds, deductionId: deduction?.id, entryUpdates },
-        sessionId,
-      );
-    } catch (err) {
-      rollback();
-      get().addToast('登場人物の削除に失敗しました', 'error');
-      console.error('removeCharacter の保存に失敗しました', err);
-      return;
-    }
+    // 楽観更新 → 失敗時は参照ごと巻き戻す（runOptimisticUpdate に集約）
+    const ok = await runOptimisticUpdate(get, set, {
+      snapshot: prev,
+      apply: (s) => ({
+        characters: s.characters.filter((c) => c.id !== id),
+        relations: s.relations.filter((r) => !relationIdSet.has(r.id)),
+        deductions: deduction ? s.deductions.filter((d) => d.id !== deduction.id) : s.deductions,
+        entries: s.entries.map((e) => entryUpdateById.get(e.id) ?? e),
+      }),
+      persist: () =>
+        removeCharacterCascade(
+          { characterId: id, relationIds, deductionId: deduction?.id, entryUpdates },
+          sessionId,
+        ),
+      errorMessage: '登場人物の削除に失敗しました',
+      logLabel: 'removeCharacter',
+    });
+    if (!ok) return;
 
     // 全パネルのキャラクターフィルターからも除去（残ると解除不能のまま絞り込みが効き続ける）
     get().removeCharacterFromFilters(id);
@@ -137,11 +133,11 @@ export const createCharactersSlice = (
   reorderCharacters: async (orderedIds) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) return;
-    const updated = get().characters.map((c) => {
-      const idx = orderedIds.indexOf(c.id);
-      return idx === -1 ? c : { ...c, sortOrder: idx };
-    });
-    await bulkPutCharacters(updated, sessionId);
-    set(() => ({ characters: updated.sort((a, b) => a.sortOrder - b.sortOrder) }));
+    // sortOrder が実際に変化したキャラだけを IDB へ書き込む（reorderMemoGroups と同じく
+    // 変化分のみに絞る）。state は全件を昇順に並べて反映。
+    const { updated, changed } = applyReorder(get().characters, orderedIds);
+    updated.sort(bySortOrder);
+    await bulkPutCharacters(changed, sessionId);
+    set(() => ({ characters: updated }));
   },
 });

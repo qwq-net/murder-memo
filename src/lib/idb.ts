@@ -222,12 +222,15 @@ async function wipeSessionStores(
 ): Promise<void> {
   // entries だけは画像 blob の連動削除のためレコード本体（imageBlobKey）を読む
   const entries = await tx.objectStore('entries').index('by-session').getAll(sessionId);
+  // 削除リクエストは並列発行（他ストアと同じパターン。単一トランザクション内なので原子性は保たれる）
+  const dels: Promise<unknown>[] = [];
   for (const entry of entries) {
-    await tx.objectStore('entries').delete(entry.id);
+    dels.push(tx.objectStore('entries').delete(entry.id));
     if (deleteImages && entry.imageBlobKey) {
-      await tx.objectStore('images').delete(entry.imageBlobKey);
+      dels.push(tx.objectStore('images').delete(entry.imageBlobKey));
     }
   }
+  await Promise.all(dels);
 
   // 残りのストアは主キーだけで削除できる
   for (const store of SESSION_STORES) {
@@ -523,30 +526,38 @@ export async function replaceSessionData(
   const db = await getDb();
   const tx = db.transaction(SESSION_STORES, 'readwrite');
 
-  // 既存レコードを全削除（当該セッション分のみ）してから現在の state を書き戻す
-  for (const store of SESSION_STORES) {
-    const keys = await tx.objectStore(store).index('by-session').getAllKeys(sessionId);
-    await Promise.all(keys.map((k) => tx.objectStore(store).delete(k)));
-  }
+  // 「全ストア削除 → 全ストア書き戻し」の2フェーズを単一トランザクション内で行う。
+  // フェーズ境界（削除完了の await）は必ず残す: 削除前に書き戻すと当該セッションの新規レコードを
+  // 巻き添えで消す恐れがある。各ストア内・ストア間は並列発行するが、トランザクションは1本のまま。
 
-  // META 駆動の書き戻し。store ⇔ stateKey の値型相関は META で固定しているが、union 越しの
-  // 相関を TS は推論できないため put の引数のみキャストで割り切る（手書き列挙に戻すと
-  // 「ストア追加時に書き戻し行を忘れてもコンパイルが通る」ため、ループ化のほうが安全）
-  for (const store of SESSION_STORES) {
-    const { stateKey, attachSessionId } = SESSION_STORE_META[store];
-    await Promise.all(
-      data[stateKey].map((row) =>
-        tx
-          .objectStore(store)
-          .put(
-            (attachSessionId ? { ...row, sessionId } : row) as StoreValue<
-              MurderMemoDB,
-              SessionStoreName
-            >,
-          ),
-      ),
-    );
-  }
+  // フェーズ1: 既存レコードを全削除（当該セッション分のみ）
+  await Promise.all(
+    SESSION_STORES.map(async (store) => {
+      const keys = await tx.objectStore(store).index('by-session').getAllKeys(sessionId);
+      await Promise.all(keys.map((k) => tx.objectStore(store).delete(k)));
+    }),
+  );
+
+  // フェーズ2: META 駆動で現在の state を書き戻す。store ⇔ stateKey の値型相関は META で固定して
+  // いるが、union 越しの相関を TS は推論できないため put の引数のみキャストで割り切る（手書き列挙に
+  // 戻すと「ストア追加時に書き戻し行を忘れてもコンパイルが通る」ため、ループ化のほうが安全）
+  await Promise.all(
+    SESSION_STORES.map((store) => {
+      const { stateKey, attachSessionId } = SESSION_STORE_META[store];
+      return Promise.all(
+        data[stateKey].map((row) =>
+          tx
+            .objectStore(store)
+            .put(
+              (attachSessionId ? { ...row, sessionId } : row) as StoreValue<
+                MurderMemoDB,
+                SessionStoreName
+              >,
+            ),
+        ),
+      );
+    }),
+  );
 
   await tx.done;
 }

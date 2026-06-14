@@ -1,3 +1,4 @@
+import { ColorDot } from '@/components/common/colorDot';
 import { OrderBadge } from '@/components/common/orderBadge';
 import { PANEL_CARD_ACCENT, PANEL_ORDER_LABELS } from '@/components/settings/panelConstants';
 import type { PanelId } from '@/types/memo';
@@ -41,15 +42,7 @@ export function PanelOrderEditor({
             <OrderBadge number={i + 1} size={16} />
           </span>
           {/* accent dot */}
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: PANEL_CARD_ACCENT[panelId],
-              flexShrink: 0,
-            }}
-          />
+          <ColorDot color={PANEL_CARD_ACCENT[panelId]} />
 
           {/* label */}
           <span style={{ flex: 1, fontSize: 14, color: 'var(--text-primary)' }}>

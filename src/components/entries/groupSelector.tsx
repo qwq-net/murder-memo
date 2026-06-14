@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
 import { GroupSelectorView } from '@/components/entries/groupSelectorView';
-import { memoGroupsForPanel } from '@/lib/grouping';
+import { resolveGroupSelection } from '@/lib/groupSelection';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
 
@@ -29,19 +29,11 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
   const isTimeline = panel === 'timeline';
   const isMemoPanel = panel === 'free' || panel === 'personal';
 
-  const groups = useMemo(() => {
-    if (isTimeline) return timelineGroups;
-    if (isMemoPanel) return memoGroupsForPanel(memoGroups, panel);
-    return [];
-  }, [isTimeline, isMemoPanel, timelineGroups, memoGroups, panel]);
-
-  // selectedGroupId が現存するグループに含まれなければリセット
-  const validSelectedId = groups.some((g) => g.id === selectedGroupId) ? selectedGroupId : '';
-
-  const effectiveGroupId =
-    isTimeline && timelineGroups.length === 1 && !validSelectedId
-      ? timelineGroups[0].id
-      : validSelectedId;
+  // グループ候補と有効選択の解決は entryInput と共通の純関数に集約
+  const { candidates, effectiveGroupId } = useMemo(
+    () => resolveGroupSelection(panel, { timelineGroups, memoGroups }, selectedGroupId),
+    [panel, timelineGroups, memoGroups, selectedGroupId],
+  );
 
   const handleAddGroup = useCallback(
     async (label: string) => {
@@ -60,7 +52,7 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
   return (
     <GroupSelectorView
       isTimeline={isTimeline}
-      groups={groups.map((g) => ({ id: g.id, label: g.label }))}
+      groups={candidates}
       selectedGroupId={effectiveGroupId}
       onGroupIdChange={onGroupIdChange}
       onAddGroup={handleAddGroup}

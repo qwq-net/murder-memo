@@ -3,6 +3,8 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CharacterBadgeBar } from '@/components/characters/characterBadgeBar';
 import { ImageLightbox } from '@/components/common/imageLightbox';
 import { ImageEntryView } from '@/components/entries/imageEntryView';
+import { ImageThumbnailView } from '@/components/entries/imageThumbnailView';
+import { THUMB_HEIGHT } from '@/components/entries/thumbConstants';
 import { useAutoRegisterLinkKeywords } from '@/hooks/useAutoRegisterLinkKeywords';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
@@ -11,9 +13,6 @@ import { isCancelEscape, isCommitEnter } from '@/lib/keyboardKeys';
 import { detectInlineCharacterIds } from '@/lib/parseCharacterText';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
-
-/** サムネイルの高さ — テキスト2行分相当 (13px * 1.2 * 2 + padding ≒ 40px) */
-const THUMB_HEIGHT = 40;
 
 interface ImageEntryProps {
   entry: MemoEntry;
@@ -120,22 +119,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
     return (
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="flex items-start gap-2 pt-px pr-2.5 pb-0 pl-3.5">
-          {src ? (
-            <img
-              src={src}
-              alt=""
-              onClick={() => setLightboxOpen(true)}
-              className="border-border-subtle block shrink-0 cursor-pointer rounded-sm border object-cover"
-              style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
-            />
-          ) : (
-            <div
-              className="border-border-subtle text-text-faint flex shrink-0 items-center justify-center rounded-sm border text-[10px]"
-              style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
-            >
-              …
-            </div>
-          )}
+          <ImageThumbnailView src={src ?? undefined} onClick={() => setLightboxOpen(true)} />
           <textarea
             ref={inputRef}
             value={draft.content}

@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { ConfirmModal } from '@/components/common/confirmModal';
+import { ModalEmptyMessage } from '@/components/common/modalEmptyMessage';
 import { ModalFrame } from '@/components/common/modalFrame';
-import { X } from '@/components/icons';
+import { ModalHeader } from '@/components/common/modalHeader';
 import { LinkListItemView } from '@/components/links/linkListItemView';
 import { useStore } from '@/store';
 import type { LinkKeyword } from '@/types/memo';
@@ -46,48 +47,18 @@ export function LinkListModal() {
     <>
       <ModalFrame open={isOpen} onClose={() => setOpen(false)} width={440} ariaLabel="リンク一覧">
         {/* ヘッダー */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '14px 18px 10px',
-            borderBottom: '1px solid var(--border-subtle)',
-          }}
-        >
-          <span
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              letterSpacing: '0.04em',
-            }}
-          >
-            リンク一覧
-          </span>
-          <button onClick={() => setOpen(false)} className="modal-close-btn" aria-label="閉じる">
-            <X size={18} />
-          </button>
-        </div>
+        <ModalHeader title="リンク一覧" onClose={() => setOpen(false)} />
 
         {/* ボディ */}
         <div style={{ padding: '4px 18px 18px' }}>
           {sorted.length === 0 ? (
-            <div
-              style={{
-                padding: '24px 0',
-                textAlign: 'center',
-                color: 'var(--text-muted)',
-                fontSize: 14,
-                lineHeight: 1.6,
-              }}
-            >
+            <ModalEmptyMessage style={{ lineHeight: 1.6 }}>
               リンクが登録されていません
               <br />
               <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
                 メモに <code>[テキスト]</code> 形式で書いて確定すると自動で登録されます
               </span>
-            </div>
+            </ModalEmptyMessage>
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {sorted.map((kw) => (

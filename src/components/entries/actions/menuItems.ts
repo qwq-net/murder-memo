@@ -5,6 +5,7 @@
 
 import type { ContextMenuEntry } from '@/components/common/contextMenu';
 import { memoGroupsForPanel } from '@/lib/grouping';
+import { PANEL_LABEL } from '@/lib/panelMeta';
 import type {
   Character,
   CharacterDisplayFormat,
@@ -29,11 +30,8 @@ export const VISIBILITY_LABELS: Record<CharacterDisplayVisibility, string> = {
   off: 'オフ',
 };
 
-export const PANEL_LABELS: Record<PanelId, string> = {
-  free: 'フリーメモ',
-  personal: '自分用メモ',
-  timeline: 'タイムライン',
-};
+// パネル別ラベルは lib/panelMeta に一元化（従来の export 名は互換のため alias 再 export）
+export const PANEL_LABELS = PANEL_LABEL;
 
 export const IMPORTANCE_LABELS: Record<string, string> = {
   high: '高',
@@ -128,6 +126,29 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
   const panelLabel = (p: PanelId) =>
     ctx.hiddenPanels.includes(p) ? `${PANEL_LABELS[p]}（非表示中）` : PANEL_LABELS[p];
 
+  // 同型のパネル移動アイテム（label + moveEntryToPanel の opts のみ差分）を集約。
+  // 「移動先パネルへ既属のエントリはスキップ」「完了後に moveToast(p) を出す」は共通。
+  const pushMoveItem = (
+    label: string,
+    p: PanelId,
+    opts: { timelineGroupId?: string; groupId?: string },
+  ) => {
+    sub.push({
+      label,
+      onClick: async () => {
+        await forEntries(
+          entries,
+          async (entry) => {
+            if (entry.panel === p) return;
+            await ctx.moveEntryToPanel(entry.id, p, opts);
+          },
+          ctx,
+          moveToast(p),
+        );
+      },
+    });
+  };
+
   for (const p of ['free', 'personal', 'timeline'] as PanelId[]) {
     if (isBulk ? commonPanel && p === commonPanel : p === entries[0].panel) continue;
 
@@ -135,89 +156,22 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
       if (ctx.timelineGroups.length === 0) {
         sub.push({ label: panelLabel(p), disabled: true, onClick: () => {} });
       } else if (ctx.timelineGroups.length === 1) {
-        sub.push({
-          label: panelLabel(p),
-          onClick: async () => {
-            await forEntries(
-              entries,
-              async (entry) => {
-                if (entry.panel === p) return;
-                await ctx.moveEntryToPanel(entry.id, p, {
-                  timelineGroupId: ctx.timelineGroups[0].id,
-                });
-              },
-              ctx,
-              moveToast(p),
-            );
-          },
-        });
+        pushMoveItem(panelLabel(p), p, { timelineGroupId: ctx.timelineGroups[0].id });
       } else {
         // グループが複数 → フラットに展開（ネストサブメニュー回避）
         for (const g of ctx.timelineGroups) {
-          sub.push({
-            label: `${panelLabel(p)}: ${g.label}`,
-            onClick: async () => {
-              await forEntries(
-                entries,
-                async (entry) => {
-                  if (entry.panel === p) return;
-                  await ctx.moveEntryToPanel(entry.id, p, { timelineGroupId: g.id });
-                },
-                ctx,
-                moveToast(p),
-              );
-            },
-          });
+          pushMoveItem(`${panelLabel(p)}: ${g.label}`, p, { timelineGroupId: g.id });
         }
       }
     } else {
       const panelGroups = ctx.memoGroups.filter((g) => g.panel === p);
       if (panelGroups.length === 0) {
-        sub.push({
-          label: panelLabel(p),
-          onClick: async () => {
-            await forEntries(
-              entries,
-              async (entry) => {
-                if (entry.panel === p) return;
-                await ctx.moveEntryToPanel(entry.id, p, { groupId: undefined });
-              },
-              ctx,
-              moveToast(p),
-            );
-          },
-        });
+        pushMoveItem(panelLabel(p), p, { groupId: undefined });
       } else {
         // グループあり → フラットに展開（ネストサブメニュー回避）
-        sub.push({
-          label: `${panelLabel(p)}: 未分類`,
-          onClick: async () => {
-            await forEntries(
-              entries,
-              async (entry) => {
-                if (entry.panel === p) return;
-                await ctx.moveEntryToPanel(entry.id, p, { groupId: undefined });
-              },
-              ctx,
-              moveToast(p),
-            );
-          },
-        });
+        pushMoveItem(`${panelLabel(p)}: 未分類`, p, { groupId: undefined });
         for (const g of panelGroups) {
-          sub.push({
-            label: `${panelLabel(p)}: ${g.label}`,
-            onClick: async () => {
-              await forEntries(
-                entries,
-                async (entry) => {
-                  if (entry.panel === p) return;
-                  await ctx.moveEntryToPanel(entry.id, p, { groupId: g.id });
-                },
-                ctx,
-                moveToast(p),
-              );
-            },
-          });
+          pushMoveItem(`${panelLabel(p)}: ${g.label}`, p, { groupId: g.id });
         }
       }
     }
@@ -382,19 +336,28 @@ export function buildDisplaySubmenu(entries: MemoEntry[], ctx: MenuContext): Con
   const isBulk = entries.length > 1;
   const sub: ContextMenuEntry[] = [];
 
-  // 形式
-  {
-    const panelDefault = !isBulk ? ctx.settings.defaultCharacterDisplay[entries[0].panel] : null;
-    const currentFormat = !isBulk
-      ? (entries[0].characterDisplayFormat ?? panelDefault!.format)
-      : null;
+  /**
+   * 「形式」「モード」の同型ループ（オプション列挙 → 現在値に「（現在）」付与 + disabled →
+   * updateEntry で patch）を集約する。差分はオプション一覧・ラベル・現在値・patch のみ。
+   */
+  function pushDisplaySection<V extends string>(opts: {
+    /** セクション見出し */
+    header: string;
+    /** 列挙するオプション値 */
+    values: V[];
+    /** 値 → 表示ラベル */
+    labels: Record<V, string>;
+    /** 単体時の現在値（一括時は null。null なら「（現在）」も disabled も付かない） */
+    current: V | null;
+    /** 選択時に updateEntry へ渡す patch を組み立てる */
+    patch: (value: V) => Partial<MemoEntry>;
+  }) {
+    sub.push({ header: true as const, label: opts.header });
 
-    sub.push({ header: true as const, label: '表示形式' });
-
-    for (const fmt of ['full', 'badge', 'text'] as CharacterDisplayFormat[]) {
-      const isCurrent = !isBulk && fmt === currentFormat;
+    for (const value of opts.values) {
+      const isCurrent = value === opts.current;
       sub.push({
-        label: isCurrent ? `${FORMAT_LABELS[fmt]}（現在）` : FORMAT_LABELS[fmt],
+        label: isCurrent ? `${opts.labels[value]}（現在）` : opts.labels[value],
         disabled: isCurrent,
         onClick: isCurrent
           ? () => {}
@@ -402,7 +365,7 @@ export function buildDisplaySubmenu(entries: MemoEntry[], ctx: MenuContext): Con
               await forEntries(
                 entries,
                 async (entry) => {
-                  await ctx.updateEntry(entry.id, { characterDisplayFormat: fmt });
+                  await ctx.updateEntry(entry.id, opts.patch(value));
                 },
                 ctx,
               );
@@ -410,36 +373,29 @@ export function buildDisplaySubmenu(entries: MemoEntry[], ctx: MenuContext): Con
       });
     }
   }
+
+  const panelDefault = !isBulk ? ctx.settings.defaultCharacterDisplay[entries[0].panel] : null;
+
+  // 形式
+  pushDisplaySection<CharacterDisplayFormat>({
+    header: '表示形式',
+    values: ['full', 'badge', 'text'],
+    labels: FORMAT_LABELS,
+    current: !isBulk ? (entries[0].characterDisplayFormat ?? panelDefault!.format) : null,
+    patch: (fmt) => ({ characterDisplayFormat: fmt }),
+  });
 
   // モード
-  {
-    const panelDefault = !isBulk ? ctx.settings.defaultCharacterDisplay[entries[0].panel] : null;
-    const currentVisibility = !isBulk
+  sub.push({ separator: true as const });
+  pushDisplaySection<CharacterDisplayVisibility>({
+    header: '表示モード',
+    values: ['always', 'minimal', 'off'],
+    labels: VISIBILITY_LABELS,
+    current: !isBulk
       ? (entries[0].characterDisplayVisibility ?? panelDefault!.visibility)
-      : null;
-
-    sub.push({ separator: true as const });
-    sub.push({ header: true as const, label: '表示モード' });
-
-    for (const vis of ['always', 'minimal', 'off'] as CharacterDisplayVisibility[]) {
-      const isCurrent = !isBulk && vis === currentVisibility;
-      sub.push({
-        label: isCurrent ? `${VISIBILITY_LABELS[vis]}（現在）` : VISIBILITY_LABELS[vis],
-        disabled: isCurrent,
-        onClick: isCurrent
-          ? () => {}
-          : async () => {
-              await forEntries(
-                entries,
-                async (entry) => {
-                  await ctx.updateEntry(entry.id, { characterDisplayVisibility: vis });
-                },
-                ctx,
-              );
-            },
-      });
-    }
-  }
+      : null,
+    patch: (vis) => ({ characterDisplayVisibility: vis }),
+  });
 
   // デフォルトに戻す
   {

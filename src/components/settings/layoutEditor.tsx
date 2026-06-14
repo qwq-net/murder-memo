@@ -1,3 +1,4 @@
+import { ColorDot } from '@/components/common/colorDot';
 import { PANEL_CARD_ACCENT, PANEL_ORDER_LABELS } from '@/components/settings/panelConstants';
 import { PanelOrderEditor } from '@/components/settings/panelOrderEditor';
 import {
@@ -187,15 +188,7 @@ export function LayoutEditor({
                 }}
               >
                 {/* アクセントドット */}
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: PANEL_CARD_ACCENT[panelId],
-                    flexShrink: 0,
-                  }}
-                />
+                <ColorDot color={PANEL_CARD_ACCENT[panelId]} />
                 {/* パネル名 */}
                 <span style={{ flex: 1, fontSize: 14, color: 'var(--text-primary)' }}>
                   {PANEL_ORDER_LABELS[panelId]}

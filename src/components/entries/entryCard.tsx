@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { BulkContextMenu } from '@/components/entries/actions/bulkContextMenu';
 import { EntryContextMenu } from '@/components/entries/actions/entryContextMenu';
@@ -14,6 +14,9 @@ interface EntryCardProps {
   entry: MemoEntry;
   hideTime?: boolean;
 }
+
+/** bulkCtxMenu 非表示時の空配列（毎レンダーの新規生成を避けるためモジュール定数化） */
+const NO_SELECTED_ENTRIES: MemoEntry[] = [];
 
 /**
  * エントリ表示の店長ラッパー。
@@ -46,10 +49,15 @@ export function EntryCard({ entry, hideTime }: EntryCardProps) {
     [selectedIds, entry.id],
   );
 
-  // bulkCtxMenu表示時のみentriesを取得（全EntryCardの不要な再レンダーを回避）
-  const selectedEntries = bulkCtxMenu
-    ? useStore.getState().entries.filter((e) => selectedIds.has(e.id))
-    : [];
+  // bulkCtxMenu表示時のみentriesを取得（全EntryCardの不要な再レンダーを回避）。
+  // メニュー表示中の毎レンダー filter を避けるため bulkCtxMenu / selectedIds でメモ化
+  const selectedEntries = useMemo(
+    () =>
+      bulkCtxMenu
+        ? useStore.getState().entries.filter((e) => selectedIds.has(e.id))
+        : NO_SELECTED_ENTRIES,
+    [bulkCtxMenu, selectedIds],
+  );
 
   const renderContent = () => {
     // タイムラインは panel で判定（画像エントリも TimelineEntry で時刻を表示するため）

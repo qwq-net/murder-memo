@@ -64,9 +64,7 @@ export function SessionManagementSection({
   return (
     <>
       {/* ── 現在のセッション ── */}
-      <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
-        <SectionHeader>現在のセッション</SectionHeader>
-      </div>
+      <SectionHeader divider>現在のセッション</SectionHeader>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* 初期化 */}
@@ -119,9 +117,7 @@ export function SessionManagementSection({
       </div>
 
       {/* ── 完全リセット ── */}
-      <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
-        <SectionHeader>完全リセット</SectionHeader>
-      </div>
+      <SectionHeader divider>完全リセット</SectionHeader>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>

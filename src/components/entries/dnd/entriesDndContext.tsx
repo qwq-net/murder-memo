@@ -1,6 +1,6 @@
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { entryDropAnimation, useEntriesDndSensors } from '@/components/entries/dnd/dndConstants';
@@ -37,10 +37,13 @@ export function EntriesDndContext({ children }: { children: React.ReactNode }) {
   const sensors = useEntriesDndSensors();
   const moveEntryAcrossContainers = useStore((s) => s.moveEntryAcrossContainers);
 
-  // DragOverlay 用の active エントリは購読せず getState から取得（再描画を増やさない）
-  const activeEntry = activeId
-    ? (useStore.getState().entries.find((e) => e.id === activeId) ?? null)
-    : null;
+  // DragOverlay 用の active エントリは購読せず getState から取得（再描画を増やさない）。
+  // activeId が変わったときだけ O(n) find を走らせる
+  const activeEntry = useMemo(
+    () =>
+      activeId ? (useStore.getState().entries.find((e) => e.id === activeId) ?? null) : null,
+    [activeId],
+  );
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);

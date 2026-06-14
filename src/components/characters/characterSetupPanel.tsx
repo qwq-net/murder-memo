@@ -19,6 +19,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { CharacterRowView } from '@/components/characters/characterRowView';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { X } from '@/components/icons';
+import { splitCharactersByRole } from '@/lib/characterSort';
 import { useStore } from '@/store';
 import type { Character, CharacterRole } from '@/types/memo';
 
@@ -53,14 +54,7 @@ export function CharacterSetupPanel() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const plChars = useMemo(
-    () => characters.filter((c) => c.role === 'pl').sort((a, b) => a.sortOrder - b.sortOrder),
-    [characters],
-  );
-  const npcChars = useMemo(
-    () => characters.filter((c) => c.role === 'npc').sort((a, b) => a.sortOrder - b.sortOrder),
-    [characters],
-  );
+  const { plChars, npcChars } = useMemo(() => splitCharactersByRole(characters), [characters]);
   const activeChars = activeTab === 'pl' ? plChars : npcChars;
 
   const handleDragEnd = useCallback(

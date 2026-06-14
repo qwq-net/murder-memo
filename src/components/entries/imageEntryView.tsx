@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 
 import { CharacterBadgeBarView } from '@/components/characters/characterBadgeBarView';
 import { EntryContentView } from '@/components/entries/entryContentView';
-import { detectInlineCharacterIds } from '@/lib/parseCharacterText';
+import { ImageThumbnailView } from '@/components/entries/imageThumbnailView';
+import { THUMB_HEIGHT } from '@/components/entries/thumbConstants';
+import { computeBadgeCharacters } from '@/lib/characterBadges';
 import type {
   Character,
   CharacterDisplayFormat,
@@ -10,9 +12,6 @@ import type {
   LinkKeyword,
   MemoEntry,
 } from '@/types/memo';
-
-/** サムネイルの高さ — テキスト2行分相当 (13px * 1.2 * 2 + padding ≒ 40px) */
-const THUMB_HEIGHT = 40;
 
 interface ImageEntryViewProps {
   /** 表示するエントリ */
@@ -59,40 +58,17 @@ export function ImageEntryView({
   onSearchClick,
   onCharacterToggle,
 }: ImageEntryViewProps) {
-  const inlineDetectedIds = useMemo(
-    () => detectInlineCharacterIds(entry.content, visibleCharacters, linkKeywords),
-    [entry.content, visibleCharacters, linkKeywords],
+  // バッジ計算は TextEntryView と共通の純関数に集約
+  const { badgeCharacters, activeCharacterIds, hasEffectiveActive } = useMemo(
+    () => computeBadgeCharacters(entry, visibleCharacters, linkKeywords),
+    [entry, visibleCharacters, linkKeywords],
   );
-  const badgeCharacters = useMemo(
-    () => visibleCharacters.filter((c) => !inlineDetectedIds.includes(c.id)),
-    [visibleCharacters, inlineDetectedIds],
-  );
-  const activeCharacterIds = useMemo(() => new Set(entry.characterTags), [entry.characterTags]);
-  const hasEffectiveActive = useMemo(() => {
-    const effective = new Set([...entry.characterTags, ...inlineDetectedIds]);
-    return visibleCharacters.some((c) => effective.has(c.id));
-  }, [visibleCharacters, entry.characterTags, inlineDetectedIds]);
 
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       {/* サムネイル + キャプション */}
       <div className="flex items-start gap-2 pt-px pr-2.5 pb-0 pl-3.5">
-        {imageSrc ? (
-          <img
-            src={imageSrc}
-            alt=""
-            onClick={onLightboxOpen}
-            className="border-border-subtle block shrink-0 cursor-pointer rounded-sm border object-cover"
-            style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
-          />
-        ) : (
-          <div
-            className="border-border-subtle text-text-faint flex shrink-0 items-center justify-center rounded-sm border text-[10px]"
-            style={{ height: THUMB_HEIGHT, width: THUMB_HEIGHT }}
-          >
-            …
-          </div>
-        )}
+        <ImageThumbnailView src={imageSrc} onClick={onLightboxOpen} />
 
         {/* キャプション（閲覧モード） */}
         <div

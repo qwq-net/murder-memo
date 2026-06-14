@@ -1,8 +1,6 @@
-import { nanoid } from 'nanoid';
 import { useCallback, useEffect } from 'react';
 
-import { deleteImage, putImage } from '@/lib/idb';
-import { resizeImage } from '@/lib/imageResize';
+import { ImagePersistError, persistResizedImage } from '@/lib/imagePersist';
 
 /**
  * クリップボードからの画像ペーストを検知するフック（戻り値なし）。
@@ -33,17 +31,16 @@ export function useClipboardPaste(
       if (blobs.length === 0) return;
       e.preventDefault();
       for (const blob of blobs) {
-        let blobKey: string | null = null;
         try {
-          const resized = await resizeImage(blob);
-          blobKey = nanoid();
-          await putImage(blobKey, resized);
-          // onImagePaste（=addEntry 経由）の失敗を待って捕捉する。失敗時は下で blob を後始末
-          await onImagePaste(blobKey);
+          // リサイズ → IDB 保存 → onImagePaste（=addEntry 経由）。
+          // attach（onImagePaste）失敗時はヘルパーが保存済み blob を後始末してから throw する
+          await persistResizedImage(blob, (blobKey) => Promise.resolve(onImagePaste(blobKey)));
         } catch (err) {
-          // エントリ追加まで至らなかった場合、保存済み blob を孤児にしないよう削除して継続する
-          if (blobKey) await deleteImage(blobKey).catch(() => {});
-          console.error('画像ペーストの処理に失敗しました', err);
+          // どのステージで失敗しても孤児 blob は残らない（ヘルパーが後始末済み）。継続する
+          console.error(
+            '画像ペーストの処理に失敗しました',
+            err instanceof ImagePersistError ? err.cause : err,
+          );
         }
       }
     },

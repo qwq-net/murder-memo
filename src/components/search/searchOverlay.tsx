@@ -7,21 +7,10 @@ import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { navigateToEntry } from '@/lib/entryNavigation';
 import { searchEntries, tokenizeQuery } from '@/lib/entrySearch';
 import { fullPanelOrder } from '@/lib/panelLayout';
+import { PANEL_ACCENT, PANEL_LABEL as PANEL_TITLES } from '@/lib/panelMeta';
 import { useStore } from '@/store';
 import { selectResolvedLayout } from '@/store/selectors';
-import type { MemoEntry, PanelId } from '@/types/memo';
-
-const PANEL_TITLES: Record<PanelId, string> = {
-  free: 'フリーメモ',
-  personal: '自分用メモ',
-  timeline: 'タイムライン',
-};
-
-const PANEL_ACCENT: Record<PanelId, string> = {
-  free: 'var(--panel-free-accent)',
-  personal: 'var(--panel-personal-accent)',
-  timeline: 'var(--panel-timeline-accent)',
-};
+import type { MemoEntry } from '@/types/memo';
 
 const MAX_RESULTS = 50;
 const DEBOUNCE_MS = 150;

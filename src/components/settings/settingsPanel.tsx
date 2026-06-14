@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { ModalFrame } from '@/components/common/modalFrame';
-import { X } from '@/components/icons';
+import { ModalHeader } from '@/components/common/modalHeader';
 import { BackupSection } from '@/components/settings/backupSection';
 import { LayoutEditor } from '@/components/settings/layoutEditor';
 import { MarkerCard } from '@/components/settings/markerCard';
@@ -63,29 +63,7 @@ export function SettingsPanel() {
         ariaLabel="アプリ設定"
       >
         {/* header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '14px 18px 10px',
-            borderBottom: '1px solid var(--border-subtle)',
-          }}
-        >
-          <span
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              letterSpacing: '0.04em',
-            }}
-          >
-            アプリ設定
-          </span>
-          <button onClick={() => setOpen(false)} className="modal-close-btn" aria-label="閉じる">
-            <X size={18} />
-          </button>
-        </div>
+        <ModalHeader title="アプリ設定" onClose={() => setOpen(false)} />
 
         {/* body */}
         <div style={{ padding: '2px 18px 18px' }}>
@@ -123,40 +101,38 @@ export function SettingsPanel() {
           />
 
           {/* ── レイアウト（グローバル: 新規セッションの初期値） ── */}
-          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
-            <SectionHeader
-              hint="新しいセッションの初期値になります"
-              onReset={() => update('layout', DEFAULT_PANEL_LAYOUT)}
-              resetDisabled={layoutsEqual(settings.layout, DEFAULT_PANEL_LAYOUT)}
-            >
-              レイアウト
-            </SectionHeader>
-          </div>
+          <SectionHeader
+            divider
+            hint="新しいセッションの初期値になります"
+            onReset={() => update('layout', DEFAULT_PANEL_LAYOUT)}
+            resetDisabled={layoutsEqual(settings.layout, DEFAULT_PANEL_LAYOUT)}
+          >
+            レイアウト
+          </SectionHeader>
 
           <LayoutEditor layout={settings.layout} onChange={(l) => update('layout', l)} />
 
           {/* ── 関連人物マーカー ── */}
-          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
-            <SectionHeader
-              onReset={() =>
-                update('defaultCharacterDisplay', {
-                  free: { format: 'full', visibility: 'minimal' },
-                  timeline: { format: 'full', visibility: 'minimal' },
-                  personal: { format: 'full', visibility: 'off' },
-                })
-              }
-              resetDisabled={
-                settings.defaultCharacterDisplay.free.format === 'full' &&
-                settings.defaultCharacterDisplay.free.visibility === 'minimal' &&
-                settings.defaultCharacterDisplay.timeline.format === 'full' &&
-                settings.defaultCharacterDisplay.timeline.visibility === 'minimal' &&
-                settings.defaultCharacterDisplay.personal.format === 'full' &&
-                settings.defaultCharacterDisplay.personal.visibility === 'off'
-              }
-            >
-              関連人物マーカー（デフォルト）
-            </SectionHeader>
-          </div>
+          <SectionHeader
+            divider
+            onReset={() =>
+              update('defaultCharacterDisplay', {
+                free: { format: 'full', visibility: 'minimal' },
+                timeline: { format: 'full', visibility: 'minimal' },
+                personal: { format: 'full', visibility: 'off' },
+              })
+            }
+            resetDisabled={
+              settings.defaultCharacterDisplay.free.format === 'full' &&
+              settings.defaultCharacterDisplay.free.visibility === 'minimal' &&
+              settings.defaultCharacterDisplay.timeline.format === 'full' &&
+              settings.defaultCharacterDisplay.timeline.visibility === 'minimal' &&
+              settings.defaultCharacterDisplay.personal.format === 'full' &&
+              settings.defaultCharacterDisplay.personal.visibility === 'off'
+            }
+          >
+            関連人物マーカー（デフォルト）
+          </SectionHeader>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[

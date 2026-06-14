@@ -193,19 +193,17 @@ export async function estimateExportSize(
   sessionId: string,
 ): Promise<{ imageCount: number; totalBytes: number }> {
   const entries = await getEntriesBySession(sessionId);
-  const seenKeys = new Set<string>();
+  // blobKey を Set で重複排除してから一括取得（1件ずつ逐次 await すると往復回数分だけ遅い）
+  const uniqueKeys = [...new Set(entries.flatMap((e) => (e.imageBlobKey ? [e.imageBlobKey] : [])))];
+  const blobs = await Promise.all(uniqueKeys.map((key) => getImage(key)));
+
   let totalBytes = 0;
   let imageCount = 0;
-
-  for (const entry of entries) {
-    if (entry.imageBlobKey && !seenKeys.has(entry.imageBlobKey)) {
-      seenKeys.add(entry.imageBlobKey);
-      const blob = await getImage(entry.imageBlobKey);
-      if (blob) {
-        imageCount++;
-        // base64 化で約1.33倍 + JSON オーバーヘッド
-        totalBytes += Math.ceil(blob.size * 1.34);
-      }
+  for (const blob of blobs) {
+    if (blob) {
+      imageCount++;
+      // base64 化で約1.33倍 + JSON オーバーヘッド
+      totalBytes += Math.ceil(blob.size * 1.34);
     }
   }
 

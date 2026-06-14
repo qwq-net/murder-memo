@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { CharacterBadge } from '@/components/characters/characterBadge';
 import { MinimalSlot } from '@/components/characters/characterBadgeBar';
+import { ColorDot } from '@/components/common/colorDot';
 import { RadioGroup } from '@/components/common/radioGroup';
 import { PANEL_CARD_ACCENT } from '@/components/settings/panelConstants';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
@@ -125,15 +126,7 @@ export function MarkerCard({
     >
       {/* card title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: accent,
-            flexShrink: 0,
-          }}
-        />
+        <ColorDot color={accent} />
         <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</span>
         {hint && (
           <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginLeft: 'auto' }}>

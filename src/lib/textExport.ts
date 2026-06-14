@@ -1,11 +1,6 @@
 import { memoGroupsForPanel, unassignedTimelineEntries } from '@/lib/grouping';
+import { PANEL_LABEL as PANEL_LABELS } from '@/lib/panelMeta';
 import type { Character, MemoEntry, MemoGroup, PanelId, TimelineGroup } from '@/types/memo';
-
-const PANEL_LABELS: Record<PanelId, string> = {
-  free: 'フリーメモ',
-  timeline: 'タイムライン',
-  personal: '自分用メモ',
-};
 
 /** キャラクター ID → 名前のマップを構築 */
 function buildCharMap(characters: Character[]): Map<string, string> {
@@ -59,11 +54,10 @@ function formatEntry(entry: MemoEntry, charMap: Map<string, string>): string {
 function formatPanel(
   panel: PanelId,
   entries: MemoEntry[],
-  characters: Character[],
+  charMap: Map<string, string>,
   timelineGroups: TimelineGroup[],
   memoGroups: MemoGroup[],
 ): string {
-  const charMap = buildCharMap(characters);
   const panelEntries = entries
     .filter((e) => e.panel === panel)
     .sort((a, b) => a.sortOrder - b.sortOrder);
@@ -143,8 +137,11 @@ export function formatSessionAsText(
 ): string {
   const panels = panelFilter ? [panelFilter] : panelOrder;
 
+  // charMap はパネル横断で不変なので1回だけ構築して各パネルへ渡す（パネルごとの再構築を排除）
+  const charMap = buildCharMap(characters);
+
   const sections = panels
-    .map((p) => formatPanel(p, entries, characters, timelineGroups, memoGroups))
+    .map((p) => formatPanel(p, entries, charMap, timelineGroups, memoGroups))
     .filter(Boolean);
 
   if (sections.length === 0) return '';

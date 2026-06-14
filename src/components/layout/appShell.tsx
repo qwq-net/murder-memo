@@ -35,15 +35,10 @@ import { useFilteredCharacters } from '@/hooks/useFilteredCharacters';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useSessionRenaming } from '@/hooks/useSessionRenaming';
 import { visiblePanels } from '@/lib/panelLayout';
+import { PANEL_LABEL as PANEL_TITLES } from '@/lib/panelMeta';
 import { useStore } from '@/store';
 import { selectResolvedLayout } from '@/store/selectors';
 import type { PanelId } from '@/types/memo';
-
-const PANEL_TITLES: Record<PanelId, string> = {
-  free: 'フリーメモ',
-  personal: '自分用メモ',
-  timeline: 'タイムライン',
-};
 
 /** パネルヘッダーの全開/全閉ボタン */
 function GroupCollapseActions({ panelId }: { panelId: PanelId }) {

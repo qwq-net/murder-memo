@@ -1,15 +1,24 @@
+/** セクション間の区切り線（divider 指定時にヘッダーを囲むラッパー） */
+const DIVIDER_STYLE: React.CSSProperties = {
+  borderTop: '1px solid var(--border-subtle)',
+  marginTop: 6,
+};
+
 export function SectionHeader({
   children,
   hint,
   onReset,
   resetDisabled,
+  divider,
 }: {
   children: React.ReactNode;
   hint?: string;
   onReset?: () => void;
   resetDisabled?: boolean;
+  /** 上端に区切り線を引く（前セクションとの境界）。設定パネルの各セクション見出しで使う */
+  divider?: boolean;
 }) {
-  return (
+  const header = (
     <div
       style={{
         display: 'flex',
@@ -53,4 +62,6 @@ export function SectionHeader({
       )}
     </div>
   );
+
+  return divider ? <div style={DIVIDER_STYLE}>{header}</div> : header;
 }

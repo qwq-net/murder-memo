@@ -7,19 +7,8 @@ import {
 import { SearchOverlayShellView } from '@/components/search/searchOverlayShellView';
 import { SearchResultItem } from '@/components/search/searchResultItem';
 import { tokenizeQuery } from '@/lib/entrySearch';
+import { PANEL_ACCENT, PANEL_LABEL as PANEL_TITLES } from '@/lib/panelMeta';
 import type { MemoEntry, PanelId } from '@/types/memo';
-
-const PANEL_TITLES: Record<PanelId, string> = {
-  free: 'フリーメモ',
-  personal: '自分用メモ',
-  timeline: 'タイムライン',
-};
-
-const PANEL_ACCENT: Record<PanelId, string> = {
-  free: 'var(--panel-free-accent)',
-  personal: 'var(--panel-personal-accent)',
-  timeline: 'var(--panel-timeline-accent)',
-};
 
 function groupByPanel(entries: MemoEntry[]): { panel: PanelId; entries: MemoEntry[] }[] {
   const order: PanelId[] = ['timeline', 'free', 'personal'];

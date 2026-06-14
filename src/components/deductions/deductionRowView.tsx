@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 
+import { ColorDot } from '@/components/common/colorDot';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 
 /** 疑惑度の取りうる値 */
@@ -98,15 +99,7 @@ export function DeductionRowView({
     >
       {/* キャラクター名 + 星 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: characterColor,
-            flexShrink: 0,
-          }}
-        />
+        <ColorDot color={characterColor} />
         <span style={{ fontSize: 14, color: 'var(--text-primary)', flex: 1 }}>{characterName}</span>
         <StarRating value={suspicionLevel} onChange={(v) => onChangeLevel?.(v)} />
       </div>

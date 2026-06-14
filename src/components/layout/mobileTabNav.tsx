@@ -1,20 +1,17 @@
 import { useMemo } from 'react';
 
 import { visiblePanels } from '@/lib/panelLayout';
+import { PANEL_ACCENT } from '@/lib/panelMeta';
 import { useStore } from '@/store';
 import { selectResolvedLayout } from '@/store/selectors';
 import type { PanelId } from '@/types/memo';
 
+// NOTE: モバイルタブのラベルは personal が '自分用'（PANEL_LABEL の '自分用メモ' と異なる短縮表記）
+// のため、lib/panelMeta には寄せずローカル定義を維持する
 const PANEL_LABELS: Record<PanelId, string> = {
   free: 'フリーメモ',
   personal: '自分用',
   timeline: 'タイムライン',
-};
-
-const PANEL_ACCENT: Record<PanelId, string> = {
-  free: 'var(--panel-free-accent)',
-  personal: 'var(--panel-personal-accent)',
-  timeline: 'var(--panel-timeline-accent)',
 };
 
 export function MobileTabNav() {

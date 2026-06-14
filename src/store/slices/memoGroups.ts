@@ -6,7 +6,8 @@ import {
   putMemoGroup,
   reassignMemoGroupAndDelete,
 } from '@/lib/idb';
-import { captureSessionRollback } from '@/lib/optimisticRollback';
+import { runOptimisticUpdate } from '@/lib/optimisticRollback';
+import { applyReorder, bySortOrder, nextSortOrder } from '@/lib/sortOrder';
 import type { StoreState } from '@/store/index';
 import type { MemoGroup } from '@/types/memo';
 
@@ -40,13 +41,12 @@ export const createMemoGroupsSlice = (
     const sessionId = get().activeSessionId;
     if (!sessionId) throw new Error('No active session');
     const panelGroups = get().memoGroups.filter((g) => g.panel === panel);
-    const maxOrder = panelGroups.reduce((m, g) => Math.max(m, g.sortOrder), -1);
     const group: MemoGroup = {
       id: nanoid(),
       sessionId,
       panel,
       label,
-      sortOrder: maxOrder + 1,
+      sortOrder: nextSortOrder(panelGroups),
       collapsed: false,
     };
     await putMemoGroup(group);
@@ -82,37 +82,24 @@ export const createMemoGroupsSlice = (
       .filter((e) => e.groupId === id)
       .map((e) => ({ ...e, groupId: undefined, updatedAt: now }));
     const reassignedById = new Map(reassigned.map((e) => [e.id, e]));
-    // 失敗時は参照ごと巻き戻す。await 中にセッション切替が完了していたら放棄する
-    // （captureSessionRollback 参照。旧スナップショットで新セッションを上書きしない）
-    const rollback = captureSessionRollback(get, set, {
-      entries: prevEntries,
-      memoGroups: prevGroups,
+    // 楽観更新 → 失敗時は参照ごと巻き戻す（runOptimisticUpdate に集約）
+    await runOptimisticUpdate(get, set, {
+      snapshot: { entries: prevEntries, memoGroups: prevGroups },
+      apply: (s) => ({
+        entries: s.entries.map((e) => reassignedById.get(e.id) ?? e),
+        memoGroups: s.memoGroups.filter((g) => g.id !== id),
+      }),
+      persist: () => reassignMemoGroupAndDelete(id, reassigned, sessionId),
+      errorMessage: 'グループの削除に失敗しました',
+      logLabel: 'removeMemoGroup',
     });
-    set((s) => ({
-      entries: s.entries.map((e) => reassignedById.get(e.id) ?? e),
-      memoGroups: s.memoGroups.filter((g) => g.id !== id),
-    }));
-    try {
-      await reassignMemoGroupAndDelete(id, reassigned, sessionId);
-    } catch (err) {
-      rollback();
-      get().addToast('グループの削除に失敗しました', 'error');
-      console.error('removeMemoGroup の保存に失敗しました', err);
-    }
   },
 
   reorderMemoGroups: async (orderedIds) => {
     // sortOrder が実際に変化したグループだけを IDB へ書き込む（free/personal 両パネル分を
     // 毎回全件 put するのは無駄。reorderEntries と同じく変化分のみに絞る）。state は全件を反映。
-    const changed: MemoGroup[] = [];
-    const updated = get().memoGroups.map((g) => {
-      const idx = orderedIds.indexOf(g.id);
-      if (idx === -1 || g.sortOrder === idx) return g;
-      const next = { ...g, sortOrder: idx };
-      changed.push(next);
-      return next;
-    });
-    updated.sort((a, b) => a.sortOrder - b.sortOrder);
+    const { updated, changed } = applyReorder(get().memoGroups, orderedIds);
+    updated.sort(bySortOrder);
     await bulkPutMemoGroups(changed);
     set(() => ({ memoGroups: updated }));
   },

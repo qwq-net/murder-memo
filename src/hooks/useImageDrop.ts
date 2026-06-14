@@ -1,8 +1,6 @@
-import { nanoid } from 'nanoid';
 import { useCallback, useRef, useState } from 'react';
 
-import { deleteImage, putImage } from '@/lib/idb';
-import { resizeImage } from '@/lib/imageResize';
+import { ImagePersistError, persistResizedImage } from '@/lib/imagePersist';
 import { useStore } from '@/store';
 import type { MemoEntry, PanelId } from '@/types/memo';
 
@@ -37,37 +35,33 @@ export function useImageDrop(panel: PanelId) {
         // タイムラインでは type: 'timeline' にして TimelineEntry で表示（時刻は不明扱い）
         extra.type = 'timeline';
       }
-      let resized: Blob;
+      // リサイズ → IDB 保存 → エントリ追加（attach 失敗時は保存済み blob を後始末）を共通ヘルパーに委譲。
+      // 失敗ステージに応じてトースト・ログを出し分ける（attach 失敗は addEntry がトースト済みなので無音）
       try {
-        resized = await resizeImage(blob);
-      } catch (err) {
-        addToast('画像の読み込みに失敗しました', 'error');
-        console.error('resizeImage に失敗しました', err);
-        return false;
-      }
-      const blobKey = nanoid();
-      try {
-        await putImage(blobKey, resized);
-      } catch (err) {
-        addToast('画像の保存に失敗しました', 'error');
-        console.error('putImage に失敗しました', err);
-        return false;
-      }
-      try {
-        // 保存成功を待つ（失敗時は addEntry がロールバック＋エラートースト済み）
-        await addEntry({
-          content: '',
-          panel,
-          type: extra.type ?? 'image',
-          imageBlobKey: blobKey,
-          ...extra,
+        await persistResizedImage(blob, async (blobKey) => {
+          // 保存成功を待つ（失敗時は addEntry がロールバック＋エラートースト済み）
+          await addEntry({
+            content: '',
+            panel,
+            type: extra.type ?? 'image',
+            imageBlobKey: blobKey,
+            ...extra,
+          });
         });
-      } catch {
-        // エントリ追加に失敗 → 保存済み blob を後始末（孤児にしない）
-        await deleteImage(blobKey).catch(() => {});
+        return true;
+      } catch (err) {
+        if (err instanceof ImagePersistError) {
+          if (err.stage === 'resize') {
+            addToast('画像の読み込みに失敗しました', 'error');
+            console.error('resizeImage に失敗しました', err.cause);
+          } else if (err.stage === 'persist') {
+            addToast('画像の保存に失敗しました', 'error');
+            console.error('putImage に失敗しました', err.cause);
+          }
+          // stage === 'attach' は addEntry がトースト済み・blob 後始末も済んでいるため何もしない
+        }
         return false;
       }
-      return true;
     },
     [addEntry, addToast, panel],
   );

@@ -6,7 +6,8 @@ import {
   getTimelineGroupsBySession,
   putTimelineGroup,
 } from '@/lib/idb';
-import { captureSessionRollback } from '@/lib/optimisticRollback';
+import { runOptimisticUpdate } from '@/lib/optimisticRollback';
+import { applyReorder, bySortOrder, nextSortOrder } from '@/lib/sortOrder';
 import type { StoreState } from '@/store/index';
 import type { TimelineGroup } from '@/types/memo';
 
@@ -39,12 +40,11 @@ export const createTimelineGroupsSlice = (
   addTimelineGroup: async (label) => {
     const sessionId = get().activeSessionId;
     if (!sessionId) throw new Error('No active session');
-    const maxOrder = get().timelineGroups.reduce((m, g) => Math.max(m, g.sortOrder), -1);
     const group: TimelineGroup = {
       id: nanoid(),
       sessionId,
       label,
-      sortOrder: maxOrder + 1,
+      sortOrder: nextSortOrder(get().timelineGroups),
       collapsed: false,
     };
     await putTimelineGroup(group);
@@ -75,32 +75,25 @@ export const createTimelineGroupsSlice = (
     const prevGroups = get().timelineGroups;
     const entryIds = prevEntries.filter((e) => e.timelineGroupId === id).map((e) => e.id);
     const removedIds = new Set(entryIds);
-    // 失敗時は参照ごと巻き戻す。await 中にセッション切替が完了していたら放棄する
-    // （captureSessionRollback 参照。旧スナップショットで新セッションを上書きしない）
-    const rollback = captureSessionRollback(get, set, {
-      entries: prevEntries,
-      timelineGroups: prevGroups,
+    // 楽観更新 → 失敗時は参照ごと巻き戻す（runOptimisticUpdate に集約）
+    await runOptimisticUpdate(get, set, {
+      snapshot: { entries: prevEntries, timelineGroups: prevGroups },
+      apply: (s) => ({
+        entries: s.entries.filter((e) => !removedIds.has(e.id)),
+        timelineGroups: s.timelineGroups.filter((g) => g.id !== id),
+      }),
+      persist: () => deleteTimelineGroupCascade(id, entryIds),
+      errorMessage: 'グループの削除に失敗しました',
+      logLabel: 'removeTimelineGroup',
     });
-    set((s) => ({
-      entries: s.entries.filter((e) => !removedIds.has(e.id)),
-      timelineGroups: s.timelineGroups.filter((g) => g.id !== id),
-    }));
-    try {
-      await deleteTimelineGroupCascade(id, entryIds);
-    } catch (err) {
-      rollback();
-      get().addToast('グループの削除に失敗しました', 'error');
-      console.error('removeTimelineGroup の保存に失敗しました', err);
-    }
   },
 
   reorderTimelineGroups: async (orderedIds) => {
-    const updated = get().timelineGroups.map((g) => {
-      const idx = orderedIds.indexOf(g.id);
-      return idx === -1 ? g : { ...g, sortOrder: idx };
-    });
-    updated.sort((a, b) => a.sortOrder - b.sortOrder);
-    await bulkPutTimelineGroups(updated);
+    // sortOrder が実際に変化したグループだけを IDB へ書き込む（reorderMemoGroups と同じく
+    // 変化分のみに絞る）。state は全件を昇順に並べて反映。
+    const { updated, changed } = applyReorder(get().timelineGroups, orderedIds);
+    updated.sort(bySortOrder);
+    await bulkPutTimelineGroups(changed);
     set(() => ({ timelineGroups: updated }));
   },
 

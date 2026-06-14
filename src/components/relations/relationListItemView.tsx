@@ -1,3 +1,4 @@
+import { ColorDot } from '@/components/common/colorDot';
 import { X } from '@/components/icons';
 import type { CharacterRelation } from '@/types/memo';
 
@@ -41,15 +42,7 @@ export function RelationListItemView({
       }}
     >
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        <span
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: fromColor,
-            flexShrink: 0,
-          }}
-        />
+        <ColorDot color={fromColor} />
         <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{fromName}</span>
       </span>
       <span
@@ -65,15 +58,7 @@ export function RelationListItemView({
         {relation.label}
       </span>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        <span
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: toColor,
-            flexShrink: 0,
-          }}
-        />
+        <ColorDot color={toColor} />
         <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{toName}</span>
       </span>
       <button

@@ -1,13 +1,8 @@
 import { memo, useMemo } from 'react';
 
+import { PANEL_ACCENT } from '@/lib/panelMeta';
 import { buildSnippetSegments } from '@/lib/searchHighlight';
-import type { MemoEntry, PanelId } from '@/types/memo';
-
-const PANEL_ACCENT: Record<PanelId, string> = {
-  free: 'var(--panel-free-accent)',
-  personal: 'var(--panel-personal-accent)',
-  timeline: 'var(--panel-timeline-accent)',
-};
+import type { MemoEntry } from '@/types/memo';
 
 interface SearchResultItemProps {
   entry: MemoEntry;

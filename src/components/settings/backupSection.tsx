@@ -137,9 +137,7 @@ export function BackupSection({
   return (
     <>
       {/* ── テキストエクスポート ── */}
-      <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
-        <SectionHeader>テキストエクスポート</SectionHeader>
-      </div>
+      <SectionHeader divider>テキストエクスポート</SectionHeader>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -163,9 +161,7 @@ export function BackupSection({
       </div>
 
       {/* ── バックアップ ── */}
-      <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6 }}>
-        <SectionHeader>バックアップ</SectionHeader>
-      </div>
+      <SectionHeader divider>バックアップ</SectionHeader>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { ModalEmptyMessage } from '@/components/common/modalEmptyMessage';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { X } from '@/components/icons';
 import { RelationDiagramSvg } from '@/components/relations/relationDiagramSvg';
@@ -71,16 +72,7 @@ export function RelationDiagramModal() {
       {/* ボディ */}
       <div style={{ padding: '4px 18px 18px' }}>
         {!hasChars ? (
-          <div
-            style={{
-              padding: '24px 0',
-              textAlign: 'center',
-              color: 'var(--text-muted)',
-              fontSize: 14,
-            }}
-          >
-            登場人物を2人以上設定してください
-          </div>
+          <ModalEmptyMessage>登場人物を2人以上設定してください</ModalEmptyMessage>
         ) : tab === 'list' || isMobile ? (
           <RelationListView />
         ) : (

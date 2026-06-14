@@ -1,8 +1,10 @@
 import { useCallback, useMemo } from 'react';
 
+import { ModalEmptyMessage } from '@/components/common/modalEmptyMessage';
 import { ModalFrame } from '@/components/common/modalFrame';
+import { ModalHeader } from '@/components/common/modalHeader';
 import { DeductionRowView, type SuspicionLevel } from '@/components/deductions/deductionRowView';
-import { X } from '@/components/icons';
+import { splitCharactersByRole } from '@/lib/characterSort';
 import { useStore } from '@/store';
 
 /**
@@ -18,13 +20,10 @@ function DeductionRow({
   characterName: string;
   characterColor: string;
 }) {
-  const deductions = useStore((s) => s.deductions);
+  // 該当キャラの推理メモのみ購読（find は既存オブジェクト参照を返すため、
+  // 他キャラの変更ではこの行は再レンダーされない）
+  const deduction = useStore((s) => s.deductions.find((d) => d.characterId === characterId));
   const upsertDeduction = useStore((s) => s.upsertDeduction);
-
-  const deduction = useMemo(
-    () => deductions.find((d) => d.characterId === characterId),
-    [deductions, characterId],
-  );
 
   const suspicionLevel: SuspicionLevel = (deduction?.suspicionLevel as SuspicionLevel) ?? 0;
   const memo = deduction?.memo ?? '';
@@ -55,55 +54,17 @@ export function DeductionModal() {
   const setOpen = useStore((s) => s.setDeductionOpen);
   const characters = useStore((s) => s.characters);
 
-  const plChars = useMemo(
-    () => characters.filter((c) => c.role === 'pl').sort((a, b) => a.sortOrder - b.sortOrder),
-    [characters],
-  );
-  const npcChars = useMemo(
-    () => characters.filter((c) => c.role === 'npc').sort((a, b) => a.sortOrder - b.sortOrder),
-    [characters],
-  );
+  const { plChars, npcChars } = useMemo(() => splitCharactersByRole(characters), [characters]);
 
   return (
     <ModalFrame open={isOpen} onClose={() => setOpen(false)} width={440} ariaLabel="人物推理メモ">
       {/* ヘッダー */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 18px 10px',
-          borderBottom: '1px solid var(--border-subtle)',
-        }}
-      >
-        <span
-          style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--text-primary)',
-            letterSpacing: '0.04em',
-          }}
-        >
-          推理メモ
-        </span>
-        <button onClick={() => setOpen(false)} className="modal-close-btn" aria-label="閉じる">
-          <X size={18} />
-        </button>
-      </div>
+      <ModalHeader title="推理メモ" onClose={() => setOpen(false)} />
 
       {/* ボディ */}
       <div style={{ padding: '4px 18px 18px' }}>
         {characters.length === 0 ? (
-          <div
-            style={{
-              padding: '24px 0',
-              textAlign: 'center',
-              color: 'var(--text-muted)',
-              fontSize: 14,
-            }}
-          >
-            登場人物が設定されていません
-          </div>
+          <ModalEmptyMessage>登場人物が設定されていません</ModalEmptyMessage>
         ) : (
           <>
             {/* プレイヤー */}
