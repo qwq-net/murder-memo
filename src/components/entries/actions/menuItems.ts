@@ -391,9 +391,7 @@ export function buildDisplaySubmenu(entries: MemoEntry[], ctx: MenuContext): Con
     header: '表示モード',
     values: ['always', 'minimal', 'off'],
     labels: VISIBILITY_LABELS,
-    current: !isBulk
-      ? (entries[0].characterDisplayVisibility ?? panelDefault!.visibility)
-      : null,
+    current: !isBulk ? (entries[0].characterDisplayVisibility ?? panelDefault!.visibility) : null,
     patch: (vis) => ({ characterDisplayVisibility: vis }),
   });
 

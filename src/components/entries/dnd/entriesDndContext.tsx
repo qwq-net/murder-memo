@@ -40,8 +40,7 @@ export function EntriesDndContext({ children }: { children: React.ReactNode }) {
   // DragOverlay 用の active エントリは購読せず getState から取得（再描画を増やさない）。
   // activeId が変わったときだけ O(n) find を走らせる
   const activeEntry = useMemo(
-    () =>
-      activeId ? (useStore.getState().entries.find((e) => e.id === activeId) ?? null) : null,
+    () => (activeId ? (useStore.getState().entries.find((e) => e.id === activeId) ?? null) : null),
     [activeId],
   );
 

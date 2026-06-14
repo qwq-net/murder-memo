@@ -9,6 +9,7 @@
 **Tech Stack:** React + TypeScript + Zustand(zundo) + Vitest。コメントは日本語。Prettier 規約（セミコロンあり・シングルクォート・100幅）。
 
 **絶対制約（全タスク共通）:**
+
 - 挙動・見た目・出力を1ビットも変えない（純粋なリファクタリング）
 - CLAUDE.md のドメイン不変条件（楽観更新ロールバック、Undo/IDB 同期、カスケード削除、画像 blob GC、DnD 原子確定）を維持する
 - `git commit` は実行しない（ユーザーが自分でコミットする）
@@ -22,6 +23,7 @@
 ### タスク1: store 楽観更新・並び替えの定型句を共通ヘルパーへ統合
 
 **Files:**
+
 - Modify: `src/lib/optimisticRollback.ts`（`runOptimisticUpdate` 追加）
 - Create: `src/lib/sortOrder.ts`
 - Create: `src/lib/__tests__/sortOrder.test.ts`
@@ -225,6 +227,7 @@ Expected: 既存テスト（entries / characters / groupRemoval / undoSync 等�
 ### タスク2: lib/hooks の I/O 効率化 + 画像保存フロー共通化
 
 **Files:**
+
 - Modify: `src/lib/idb.ts`（wipeSessionStores, replaceSessionData）
 - Modify: `src/lib/exportImport.ts`（estimateExportSize）
 - Modify: `src/lib/textExport.ts`（buildCharMap の引き回し）
@@ -304,6 +307,7 @@ Expected: 全パス
 ### タスク3: モーダル・共通 UI 部品の統合
 
 **Files:**
+
 - Create: `src/components/common/modalHeader.tsx`
 - Create: `src/components/common/modalEmptyMessage.tsx`
 - Create: `src/components/common/colorDot.tsx`
@@ -381,7 +385,9 @@ import type { ReactNode } from 'react';
 /** モーダル内の「データなし」中央寄せメッセージ（3モーダルで重複していた div を集約） */
 export function ModalEmptyMessage({ children }: { children: ReactNode }) {
   return (
-    <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
+    <div
+      style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}
+    >
       {children}
     </div>
   );
@@ -431,6 +437,7 @@ Expected: 全パス。可能なら dev サーバーで各モーダルの見た�
 ### タスク4: エントリ系 UI の重複解消
 
 **Files:**
+
 - Create: `src/lib/groupSelection.ts` + `src/lib/__tests__/groupSelection.test.ts`
 - Modify: `src/components/entries/entryInput.tsx` / `groupSelector.tsx`
 - Modify: `src/components/entries/textEntryView.tsx` / `imageEntryView.tsx`
@@ -506,6 +513,7 @@ Expected: 全パス
 ### タスク5: パネル別定数（色・ラベル）の一元化
 
 **Files:**
+
 - Create: `src/lib/panelMeta.ts`
 - Modify: `src/components/entries/entryCardView.tsx:6-10` / `src/components/search/searchOverlay.tsx:14-24` / `src/components/search/searchResultItem.tsx:6-10` / `src/components/entries/actions/menuItems.ts:32-36` / `src/components/layout/panel.tsx:15-19` / `src/components/layout/mobileTabNav.tsx:8-18` / `src/components/layout/appShell.tsx:42` / `src/lib/textExport.ts:4` / `src/components/settings/panelConstants.ts` / `src/components/guide/previews/SearchOverlayPreview.tsx:12-22`
 
