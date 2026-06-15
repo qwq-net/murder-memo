@@ -117,6 +117,9 @@ const ITEM_STYLE: React.CSSProperties = {
   color: 'var(--text-primary)',
   cursor: 'pointer',
   transition: 'background 0.1s',
+  // ラベルは折り返さない（折り返すとメニューが縦に伸びるだけで読みづらい。
+  // 横はコンテンツに合わせてメニューが広がる）
+  whiteSpace: 'nowrap',
 };
 
 const MENU_STYLE: React.CSSProperties = {
@@ -352,6 +355,9 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  // ラベルと矢印の最小間隔を確保する。space-between だけだと最長アイテムでは
+                  // ラベルと矢印が詰まって 0 になる（gap で min-content 幅が広がりメニューも追従する）
+                  gap: 24,
                   background: isOpen ? 'var(--bg-active)' : 'none',
                   color: item.disabled ? 'var(--text-faint)' : 'var(--text-primary)',
                   cursor: item.disabled ? 'default' : 'pointer',
