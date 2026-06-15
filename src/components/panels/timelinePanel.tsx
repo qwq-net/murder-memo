@@ -5,6 +5,7 @@ import { PanelDndBoundary } from '@/components/entries/dnd/entriesDndContext';
 import { SortableEntryColumn } from '@/components/entries/dnd/sortableEntryColumn';
 import { EntryInput } from '@/components/entries/entryInput';
 import { TimelineGroupSection } from '@/components/panels/timelineGroupSection';
+import { useT } from '@/i18n';
 import { useGroupSwap } from '@/hooks/useGroupSwap';
 import { TIMELINE_UNASSIGNED_CONTAINER_ID } from '@/lib/entryDnd';
 import { filterEntries, isFilterActive, resolveCharacterNames } from '@/lib/entryFilter';
@@ -13,6 +14,7 @@ import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
 
 export function TimelinePanel() {
+  const t = useT();
   const allEntries = useStore((s) => s.entries);
   const allCharacters = useStore((s) => s.characters);
   const timelineGroups = useStore((s) => s.timelineGroups);
@@ -72,16 +74,16 @@ export function TimelinePanel() {
       <div className="flex-1 overflow-x-hidden overflow-y-auto pb-[60px]">
         {isFilteredEmpty ? (
           <div className="text-text-faint px-5 py-6 text-center text-sm">
-            フィルター条件に一致するメモはありません
+            {t('panels.noFilterMatch')}
           </div>
         ) : isEmpty ? (
           <>
             <EmptyState
               accentColor="var(--panel-timeline-accent)"
-              message="メモグループを追加してタイムラインを整理しよう"
+              message={t('panels.emptyTimelineAddGroup')}
               onAddGroup={async (label) => {
                 await addTimelineGroup(label);
-                addToast('グループを追加しました');
+                addToast(t('panels.groupAdded'));
               }}
             />
             {/* グループが 1 つも無くても孤児は不可視にしない（グループ作成後に振り分け直せる） */}
@@ -132,14 +134,13 @@ function UnassignedTimelineSection({
   entries: MemoEntry[];
   dndDisabled: boolean;
 }) {
+  const t = useT();
   return (
     <div className="pb-2">
       <div className="text-text-muted px-3 pt-3 pb-0.5 text-xs font-semibold tracking-wide">
-        未分類
+        {t('common.uncategorized')}
       </div>
-      <p className="text-text-faint px-3 pb-1 text-xs">
-        どのグループにも属していないメモです。ドラッグまたは右クリックでグループへ移動できます。
-      </p>
+      <p className="text-text-faint px-3 pb-1 text-xs">{t('panels.unassignedTimelineHint')}</p>
       <SortableEntryColumn
         containerId={TIMELINE_UNASSIGNED_CONTAINER_ID}
         entries={entries}

@@ -3,6 +3,7 @@ import { HeaderButton } from '@/components/layout/headerButton';
 import { LayoutEditor } from '@/components/settings/layoutEditor';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useT } from '@/i18n';
 import { arrangementEqual } from '@/lib/panelLayout';
 import { useStore } from '@/store';
 import { selectResolvedLayout } from '@/store/selectors';
@@ -18,6 +19,7 @@ import { selectResolvedLayout } from '@/store/selectors';
  * 閉じる手段は ①透明オーバーレイのクリック ②ESC キー の2系統。
  */
 export function LayoutMenuButton() {
+  const t = useT();
   const isOpen = useStore((s) => s.isLayoutPopoverOpen);
   const setOpen = useStore((s) => s.setLayoutPopoverOpen);
   const resolved = useStore(selectResolvedLayout);
@@ -45,9 +47,9 @@ export function LayoutMenuButton() {
 
   return (
     <div style={{ position: 'relative', display: 'inline-flex' }}>
-      <HeaderButton onClick={() => setOpen(!isOpen)} title="レイアウトを編集">
+      <HeaderButton onClick={() => setOpen(!isOpen)} title={t('layout.layoutBtnTitle')}>
         <Columns2 size={13} />
-        {!isMobile && 'レイアウト'}
+        {!isMobile && t('layout.layoutBtn')}
       </HeaderButton>
 
       {isOpen && (
@@ -62,7 +64,7 @@ export function LayoutMenuButton() {
           {/* アンカー式ポップオーバーカード */}
           <div
             role="dialog"
-            aria-label="このセッションのレイアウト"
+            aria-label={t('layout.popover.dialogLabel')}
             style={{
               position: 'absolute',
               top: 'calc(100% + 6px)',
@@ -86,10 +88,10 @@ export function LayoutMenuButton() {
                   letterSpacing: '0.04em',
                 }}
               >
-                このセッションのレイアウト
+                {t('layout.popover.heading')}
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                この設定は現在のセッションにのみ適用されます
+                {t('layout.popover.note')}
               </div>
             </div>
 
@@ -119,7 +121,7 @@ export function LayoutMenuButton() {
                 onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
               >
-                グローバル設定に戻す
+                {t('layout.popover.resetToGlobal')}
               </button>
             )}
           </div>

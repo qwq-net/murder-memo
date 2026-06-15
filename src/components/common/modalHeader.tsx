@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { X } from '@/components/icons';
+import { useT } from '@/i18n';
 
 // モーダル共通のヘッダースタイル（毎レンダー再生成を避けるためモジュールスコープに固定）
 const HEADER_STYLE: React.CSSProperties = {
@@ -23,10 +24,11 @@ const TITLE_STYLE: React.CSSProperties = {
  * 複数のモーダルで同一 JSX が手書き反復されていたものを集約。
  */
 export function ModalHeader({ title, onClose }: { title: ReactNode; onClose: () => void }) {
+  const t = useT();
   return (
     <div style={HEADER_STYLE}>
       <span style={TITLE_STYLE}>{title}</span>
-      <button onClick={onClose} className="modal-close-btn" aria-label="閉じる">
+      <button onClick={onClose} className="modal-close-btn" aria-label={t('common.close')}>
         <X size={18} />
       </button>
     </div>

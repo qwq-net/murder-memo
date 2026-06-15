@@ -1,13 +1,15 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 
+import { useT } from '@/i18n';
 import {
-  RELATION_LABEL_PRESETS,
   getRelationPresetColor,
+  resolveRelationLabelPresets,
 } from '@/components/relations/relationLabelPresets';
 import { RelationListItemView } from '@/components/relations/relationListItemView';
 import { useStore } from '@/store';
 
 export function RelationListView() {
+  const t = useT();
   const characters = useStore((s) => s.characters);
   const relations = useStore((s) => s.relations);
   const addRelation = useStore((s) => s.addRelation);
@@ -15,6 +17,9 @@ export function RelationListView() {
   const addToast = useStore((s) => s.addToast);
 
   const charMap = useMemo(() => new Map(characters.map((c) => [c.id, c])), [characters]);
+
+  // 現在の言語で解決したプリセット一覧（t の変化に追従）
+  const presets = useMemo(() => resolveRelationLabelPresets(t), [t]);
 
   // ── 追加フォーム ──
   const [fromId, setFromId] = useState('');
@@ -42,15 +47,15 @@ export function RelationListView() {
     setToId('');
     setLabel('');
     setColor('#95a5a6');
-    addToast('関係を追加しました');
-  }, [canAdd, fromId, toId, label, color, addRelation, addToast]);
+    addToast(t('relations.toastAdded'));
+  }, [canAdd, fromId, toId, label, color, addRelation, addToast, t]);
 
   const handleRemove = useCallback(
     async (id: string) => {
       await removeRelation(id);
-      addToast('関係を削除しました');
+      addToast(t('relations.toastRemoved'));
     },
-    [removeRelation, addToast],
+    [removeRelation, addToast, t],
   );
 
   const charName = (id: string) => charMap.get(id)?.name ?? '？';
@@ -70,6 +75,7 @@ export function RelationListView() {
               toName={charName(r.toCharacterId)}
               toColor={charColor(r.toCharacterId)}
               onRemove={handleRemove}
+              removeTitle={t('relations.removeRelationTitle')}
             />
           ))}
         </div>
@@ -93,7 +99,7 @@ export function RelationListView() {
             letterSpacing: '0.06em',
           }}
         >
-          関係を追加
+          {t('relations.addHeading')}
         </div>
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -103,7 +109,7 @@ export function RelationListView() {
             className="input-base"
             style={{ flex: 1, minWidth: 80 }}
           >
-            <option value="">人物1</option>
+            <option value="">{t('relations.person1Placeholder')}</option>
             {characters.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -117,7 +123,7 @@ export function RelationListView() {
             className="input-base"
             style={{ flex: 1, minWidth: 80 }}
           >
-            <option value="">人物2</option>
+            <option value="">{t('relations.person2Placeholder')}</option>
             {characters
               .filter((c) => c.id !== fromId)
               .map((c) => (
@@ -135,7 +141,7 @@ export function RelationListView() {
             onChange={(e) => {
               setLabel(e.target.value);
               // プリセットに一致する場合はデフォルト色を適用
-              const preset = getRelationPresetColor(e.target.value);
+              const preset = getRelationPresetColor(e.target.value, presets);
               if (preset) setColor(preset);
             }}
             onKeyDown={(e) => {
@@ -143,14 +149,14 @@ export function RelationListView() {
                 handleAdd();
               }
             }}
-            placeholder="関係（例: 友人）"
+            placeholder={t('relations.labelPlaceholder')}
             className="input-base"
             style={{ flex: 1 }}
           />
           {/* カラーピッカー */}
           <button
             onClick={() => colorInputRef.current?.click()}
-            title="線の色を選択"
+            title={t('relations.colorPickerTitle')}
             style={{
               width: 28,
               height: 28,
@@ -173,7 +179,7 @@ export function RelationListView() {
 
         {/* プリセットチップ */}
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {RELATION_LABEL_PRESETS.map((p) => (
+          {presets.map((p) => (
             <button
               key={p.label}
               onClick={() => handlePresetClick(p)}
@@ -200,7 +206,7 @@ export function RelationListView() {
           className="btn-primary btn-sm"
           style={{ alignSelf: 'flex-start' }}
         >
-          追加
+          {t('common.add')}
         </button>
       </div>
     </div>

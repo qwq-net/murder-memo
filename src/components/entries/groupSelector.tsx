@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
 import { GroupSelectorView } from '@/components/entries/groupSelectorView';
+import { useT } from '@/i18n';
 import { resolveGroupSelection } from '@/lib/groupSelection';
 import { useStore } from '@/store';
 import type { PanelId } from '@/types/memo';
@@ -20,6 +21,7 @@ interface GroupSelectorProps {
  * - 既存の controlled component 仕様は維持（選択状態は親 `EntryInput` が管理）
  */
 export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: GroupSelectorProps) {
+  const t = useT();
   const timelineGroups = useStore((s) => s.timelineGroups);
   const memoGroups = useStore((s) => s.memoGroups);
   const addMemoGroup = useStore((s) => s.addMemoGroup);
@@ -44,9 +46,9 @@ export function GroupSelector({ panel, selectedGroupId, onGroupIdChange }: Group
         const group = await addMemoGroup(label, panel as 'free' | 'personal');
         onGroupIdChange(group.id);
       }
-      addToast('グループを追加しました');
+      addToast(t('entries.group.added'));
     },
-    [isTimeline, isMemoPanel, panel, addTimelineGroup, addMemoGroup, onGroupIdChange, addToast],
+    [isTimeline, isMemoPanel, panel, addTimelineGroup, addMemoGroup, onGroupIdChange, addToast, t],
   );
 
   return (

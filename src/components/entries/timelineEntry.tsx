@@ -7,6 +7,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import { EntryContent } from '@/components/entries/entryContent';
 import { ImageEntry } from '@/components/entries/imageEntry';
+import { useT } from '@/i18n';
 import { isCancelEscape, isCommitEnter } from '@/lib/keyboardKeys';
 import { normalizeTimeInput, resolveEventTime } from '@/lib/timeParser';
 import { useStore } from '@/store';
@@ -19,6 +20,7 @@ interface TimelineEntryProps {
 }
 
 export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps) {
+  const t = useT();
   const updateEntry = useStore((s) => s.updateEntry);
   const focusedEntryId = useStore((s) => s.focusedEntryId);
   const setFocusedEntry = useStore((s) => s.setFocusedEntry);
@@ -217,7 +219,7 @@ export function TimelineEntry({ entry, hideTime, isHovered }: TimelineEntryProps
             e.currentTarget.placeholder = '--:--';
           }}
           placeholder=""
-          aria-label="時刻"
+          aria-label={t('entries.input.timeLabel')}
           className="outline-none"
           style={timeStyle}
         />

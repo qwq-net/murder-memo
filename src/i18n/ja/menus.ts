@@ -1,0 +1,30 @@
+/** エントリのコンテキストメニュー（単体 / 一括）のラベル。 */
+export const menus = {
+  move: '移動',
+  moveBulk: '移動 ({n}件)',
+  moveToOtherPanelHeader: '別パネルへ移動',
+  changeGroupHeader: 'グループ変更',
+  importance: '重要度',
+  importanceBulk: '重要度 ({n}件)',
+  clear: '解除',
+  displayFormatHeader: '表示形式',
+  displayModeHeader: '表示モード',
+  resetToDefault: 'デフォルトに戻す',
+  displayMarker: '役職マーカー設定',
+  displayMarkerBulk: '役職マーカー設定 ({n}件)',
+  addMarker: '役職マーカー追加',
+  addMarkerBulk: '役職マーカー追加 ({n}件)',
+  /** 現在値に付けるサフィックス。 */
+  current: '（現在）',
+  /** タグ済みに付けるサフィックス。 */
+  tagged: '（タグ済み）',
+  duplicate: '複製',
+  duplicateBulk: '複製 ({n}件)',
+  delete: '削除',
+  deleteBulk: '削除 ({n}件)',
+  setTime: '時刻を設定',
+  clearTime: '時刻を不明にする',
+  format: { full: 'フル', badge: 'バッジ', text: 'テキスト' },
+  visibility: { always: '常時', minimal: 'ミニマル', off: 'オフ' },
+  importanceLevels: { high: '高', medium: '中', low: '低' },
+} as const;

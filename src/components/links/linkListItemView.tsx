@@ -1,5 +1,6 @@
 import { SearchLinkButton } from '@/components/common/searchLinkButton';
 import { Trash2 } from '@/components/icons';
+import { useT } from '@/i18n';
 
 interface LinkListItemViewProps {
   /** リンク辞書のキーワード文字列 */
@@ -17,6 +18,8 @@ interface LinkListItemViewProps {
  * - `useStore` には触れず、props で全データを受ける
  */
 export function LinkListItemView({ keyword, onClick, onRemove }: LinkListItemViewProps) {
+  const t = useT();
+
   return (
     <li
       style={{
@@ -35,8 +38,10 @@ export function LinkListItemView({ keyword, onClick, onRemove }: LinkListItemVie
       />
       <button
         onClick={() => onRemove?.(keyword)}
-        aria-label={`「${keyword}」を削除`}
-        title="削除"
+        aria-label={t('links.removeAriaLabel', {
+          name: t('common.quoted', { label: keyword }),
+        })}
+        title={t('common.delete')}
         className="btn-ghost btn-sm"
         style={{
           display: 'inline-flex',

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { ArrowDown, ArrowUp, ChevronDown, SquarePen, X } from '@/components/icons';
+import { useT } from '@/i18n';
 
 interface GroupHeaderViewProps {
   /** グループラベル */
@@ -67,6 +68,7 @@ export function GroupHeaderView({
   forceHover = false,
   autoFocusInput = true,
 }: GroupHeaderViewProps) {
+  const t = useT();
   const [headerHovered, setHeaderHovered] = useState(false);
   // 呼び出し側で hover を強制している場合は state を無視する（Guide のプレビュー用）
   const effectiveHovered = forceHover || headerHovered;
@@ -102,7 +104,7 @@ export function GroupHeaderView({
           onBlur={onSave}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={onLabelKeyDown}
-          aria-label="グループ名を編集"
+          aria-label={t('groupHeader.editName')}
           className="bg-bg-base flex-1 rounded-sm px-1.5 py-px text-sm font-semibold outline-none"
           style={{
             border: `1px solid ${accentColor}`,
@@ -130,7 +132,7 @@ export function GroupHeaderView({
               e.stopPropagation();
               onMoveUp?.();
             }}
-            aria-label={`${label}を上に移動`}
+            aria-label={t('groupHeader.moveUp', { label })}
             className="flex cursor-pointer items-center border-none bg-transparent p-0 transition-colors duration-150"
             style={{ color: 'var(--text-faint)', opacity: onMoveUp ? 1 : 0.3 }}
             onMouseEnter={(e) => {
@@ -148,7 +150,7 @@ export function GroupHeaderView({
               e.stopPropagation();
               onMoveDown?.();
             }}
-            aria-label={`${label}を下に移動`}
+            aria-label={t('groupHeader.moveDown', { label })}
             className="flex cursor-pointer items-center border-none bg-transparent p-0 transition-colors duration-150"
             style={{ color: 'var(--text-faint)', opacity: onMoveDown ? 1 : 0.3 }}
             onMouseEnter={(e) => {
@@ -170,8 +172,8 @@ export function GroupHeaderView({
             e.stopPropagation();
             onStartEditing();
           }}
-          title="グループ名を変更"
-          aria-label={`${label}の名前を変更`}
+          title={t('groupHeader.renameTitle')}
+          aria-label={t('groupHeader.renameAria', { label })}
           className="text-text-faint flex cursor-pointer items-center border-none bg-transparent px-0.5 transition-[color,opacity] duration-150"
           style={{
             opacity: effectiveHovered ? 0.8 : 0,
@@ -193,8 +195,8 @@ export function GroupHeaderView({
           e.stopPropagation();
           onRequestDelete();
         }}
-        title="グループを削除"
-        aria-label={`${label}を削除`}
+        title={t('groupHeader.deleteTitle')}
+        aria-label={t('groupHeader.deleteAria', { label })}
         className="text-text-faint flex cursor-pointer items-center border-none bg-transparent px-0.5 transition-[color,opacity] duration-150"
         style={{
           opacity: effectiveHovered ? 1 : 0,

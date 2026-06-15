@@ -1,20 +1,14 @@
 import { useMemo } from 'react';
 
+import { useT } from '@/i18n';
 import { visiblePanels } from '@/lib/panelLayout';
 import { PANEL_ACCENT } from '@/lib/panelMeta';
 import { useStore } from '@/store';
 import { selectResolvedLayout } from '@/store/selectors';
 import type { PanelId } from '@/types/memo';
 
-// NOTE: モバイルタブのラベルは personal が '自分用'（PANEL_LABEL の '自分用メモ' と異なる短縮表記）
-// のため、lib/panelMeta には寄せずローカル定義を維持する
-const PANEL_LABELS: Record<PanelId, string> = {
-  free: 'フリーメモ',
-  personal: '自分用',
-  timeline: 'タイムライン',
-};
-
 export function MobileTabNav() {
+  const t = useT();
   const active = useStore((s) => s.activePanel);
   const setActivePanel = useStore((s) => s.setActivePanel);
   const layout = useStore(selectResolvedLayout);
@@ -22,10 +16,14 @@ export function MobileTabNav() {
   // store/index.ts の activePanel ガードが保証する）
   const order = useMemo(() => visiblePanels(layout), [layout]);
 
+  // NOTE: モバイルタブのラベルは personal が layout.tab.personal（panels.personal より短縮）
+  // のため、panels.* キーは使わず layout.tab.* を使う
+  const tabLabel = (id: PanelId): string => t(`layout.tab.${id}` as Parameters<typeof t>[0]);
+
   return (
     <nav
       role="tablist"
-      aria-label="パネル切替"
+      aria-label={t('layout.mobileTabNav')}
       style={{
         display: 'flex',
         borderTop: '1px solid var(--border-subtle)',
@@ -73,7 +71,7 @@ export function MobileTabNav() {
                 }}
               />
             )}
-            <span style={{ fontSize: 14 }}>{PANEL_LABELS[id]}</span>
+            <span style={{ fontSize: 14 }}>{tabLabel(id)}</span>
           </button>
         );
       })}

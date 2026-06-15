@@ -1,5 +1,6 @@
 import { CharacterBadge } from '@/components/characters/characterBadge';
 import { X } from '@/components/icons';
+import { useT } from '@/i18n';
 import type { Character } from '@/types/memo';
 
 interface CharacterFilterBarViewProps {
@@ -25,6 +26,7 @@ export function CharacterFilterBarView({
   onToggle,
   onClear,
 }: CharacterFilterBarViewProps) {
+  const t = useT();
   if (characters.length === 0) return null;
   const hasActiveFilter = filterIds.length > 0;
 
@@ -43,7 +45,11 @@ export function CharacterFilterBarView({
               onToggle(char.id);
             }}
             format="badge"
-            ariaLabel={`${char.name}${active ? 'のフィルターを解除' : 'でフィルター'}`}
+            ariaLabel={
+              active
+                ? t('characters.badge.filterOff', { name: char.name })
+                : t('characters.badge.filterOn', { name: char.name })
+            }
           />
         );
       })}
@@ -54,8 +60,8 @@ export function CharacterFilterBarView({
             onClear();
           }}
           className="btn-ghost btn-sm"
-          title="フィルターをクリア"
-          aria-label="キャラクターフィルターをクリア"
+          title={t('characters.filter.clearTitle')}
+          aria-label={t('characters.filter.clearLabel')}
           style={{ marginLeft: 2, padding: 2 }}
         >
           <X size={12} />

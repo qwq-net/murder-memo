@@ -34,14 +34,15 @@ import { SettingsPanel } from '@/components/settings/settingsPanel';
 import { useFilteredCharacters } from '@/hooks/useFilteredCharacters';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useSessionRenaming } from '@/hooks/useSessionRenaming';
+import { useT } from '@/i18n';
 import { visiblePanels } from '@/lib/panelLayout';
-import { PANEL_LABEL as PANEL_TITLES } from '@/lib/panelMeta';
 import { useStore } from '@/store';
 import { selectResolvedLayout } from '@/store/selectors';
 import type { PanelId } from '@/types/memo';
 
 /** パネルヘッダーの全開/全閉ボタン */
 function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
+  const t = useT();
   const memoGroups = useStore((s) => s.memoGroups);
   const timelineGroups = useStore((s) => s.timelineGroups);
   const updateMemoGroup = useStore((s) => s.updateMemoGroup);
@@ -87,8 +88,8 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
       <button
         disabled={allExpanded}
         onClick={() => setAll(false)}
-        title="すべて開く"
-        aria-label="すべてのグループを開く"
+        title={t('layout.expandAll')}
+        aria-label={t('layout.expandAllAria')}
         className="text-text-muted flex cursor-pointer items-center border-none bg-transparent p-0.5 opacity-70 transition-opacity duration-150 hover:opacity-100 disabled:cursor-default disabled:opacity-30 disabled:hover:opacity-30"
       >
         <ChevronsUpDown size={14} />
@@ -96,8 +97,8 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
       <button
         disabled={allCollapsed}
         onClick={() => setAll(true)}
-        title="すべて閉じる"
-        aria-label="すべてのグループを閉じる"
+        title={t('layout.collapseAll')}
+        aria-label={t('layout.collapseAllAria')}
         className="text-text-muted flex cursor-pointer items-center border-none bg-transparent p-0.5 opacity-70 transition-opacity duration-150 hover:opacity-100 disabled:cursor-default disabled:opacity-30 disabled:hover:opacity-30"
       >
         <ChevronsDownUp size={14} />
@@ -107,6 +108,7 @@ function GroupCollapseActions({ panelId }: { panelId: PanelId }) {
 }
 
 export function AppShell() {
+  const t = useT();
   const layout = useStore(selectResolvedLayout);
   const activePanel = useStore((s) => s.activePanel);
   const isSessionReady = useStore((s) => s.isSessionReady);
@@ -144,7 +146,7 @@ export function AppShell() {
         aria-live="polite"
         className="bg-bg-base flex h-full flex-col items-center justify-center gap-3"
       >
-        <img src="/logo.svg" alt="マダめもくん" width="32" height="32" className="opacity-60" />
+        <img src="/logo.svg" alt={t('app.title')} width="32" height="32" className="opacity-60" />
         <div
           className="size-5 animate-spin rounded-full border-2"
           style={{
@@ -153,7 +155,7 @@ export function AppShell() {
           }}
           aria-hidden="true"
         />
-        <span className="text-text-muted text-xs">データを準備しています…</span>
+        <span className="text-text-muted text-xs">{t('layout.loading')}</span>
       </div>
     );
   }
@@ -170,7 +172,7 @@ export function AppShell() {
     panelNodes[id] = (
       <Panel
         panelId={id}
-        title={PANEL_TITLES[id]}
+        title={t(`panels.${id}` as Parameters<typeof t>[0])}
         actions={
           <>
             <CharacterFilterBar panelId={id} />
@@ -201,19 +203,19 @@ export function AppShell() {
           {/* Logo / title + 使い方ガイドへの導線 */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <img src="/logo.svg" alt="マダめもくん" width="20" height="20" />
+              <img src="/logo.svg" alt={t('app.title')} width="20" height="20" />
               <span className="text-text-primary text-sm font-semibold tracking-[0.08em]">
-                マダめもくん
+                {t('app.title')}
               </span>
             </div>
             <HeaderButton
               href="/guide"
               target="_blank"
               rel="noopener noreferrer"
-              title="使い方ガイドを別タブで開く"
+              title={t('layout.guideTitle')}
             >
               <CircleHelp size={13} />
-              {!isMobile && '使い方'}
+              {!isMobile && t('layout.guide')}
             </HeaderButton>
           </div>
 
@@ -222,16 +224,16 @@ export function AppShell() {
             {/* 検索ボタン */}
             <HeaderButton onClick={() => setSearchOpen(true)}>
               <Search size={13} />
-              {!isMobile && '検索'}
+              {!isMobile && t('layout.search')}
             </HeaderButton>
 
             {/* リンク一覧 — 検索の隣に配置（関連機能としてグルーピング） */}
             <HeaderButton onClick={() => setLinkListOpen(true)}>
               <Link2 size={13} />
-              {!isMobile && 'リンク一覧'}
+              {!isMobile && t('layout.linkList')}
             </HeaderButton>
 
-            <HeaderButton onClick={() => setDeductionOpen(true)}>
+            <HeaderButton onClick={() => setDeductionOpen(true)} title={t('layout.deductionsAria')}>
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                 <path
                   d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.5 4.3 12.3l.7-4.1-3-2.9 4.2-.7L8 1z"
@@ -240,10 +242,10 @@ export function AppShell() {
                   strokeLinejoin="round"
                 />
               </svg>
-              {!isMobile && '人物推理メモ'}
+              {!isMobile && t('layout.deductions')}
             </HeaderButton>
 
-            <HeaderButton onClick={() => setRelationDiagramOpen(true)}>
+            <HeaderButton onClick={() => setRelationDiagramOpen(true)} title={t('layout.relationsAria')}>
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                 <circle cx="4" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.2" />
                 <circle cx="12" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.2" />
@@ -276,12 +278,12 @@ export function AppShell() {
                   opacity="0.5"
                 />
               </svg>
-              {!isMobile && '相関図'}
+              {!isMobile && t('layout.relations')}
             </HeaderButton>
 
-            <HeaderButton onClick={() => setCharacterSetupOpen(true)}>
+            <HeaderButton onClick={() => setCharacterSetupOpen(true)} title={t('layout.charactersAria')}>
               <User size={13} />
-              登場人物設定
+              {t('layout.characters')}
             </HeaderButton>
 
             {/* レイアウト編集（セッション単位）— 設定ボタンの直前に配置 */}
@@ -290,7 +292,7 @@ export function AppShell() {
             {/* アプリ設定ボタン */}
             <HeaderButton onClick={() => setSettingsOpen(true)} variant="settings">
               <Settings size={13} />
-              アプリ設定
+              {t('layout.settingsBtn')}
             </HeaderButton>
           </div>
         </div>
@@ -322,7 +324,7 @@ export function AppShell() {
               <select
                 value={activeSessionId ?? ''}
                 onChange={(e) => switchSession(e.target.value)}
-                aria-label="セッション切替"
+                aria-label={t('layout.sessionSwitch')}
                 style={{
                   background: 'var(--bg-elevated)',
                   color: 'var(--text-secondary)',
@@ -361,7 +363,7 @@ export function AppShell() {
             {/* Rename */}
             <button
               onClick={() => sessionRename.startRenaming()}
-              title="セッション名を変更"
+              title={t('layout.renameSession')}
               className="btn-ghost"
               style={{ width: 26, height: 26, justifyContent: 'center', padding: 0, flexShrink: 0 }}
             >
@@ -380,12 +382,13 @@ export function AppShell() {
               onClick={async () => {
                 const today = new Date();
                 const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-                const baseName = `セッション ${dateStr}`;
+                const prefix = t('layout.sessionNamePrefix');
+                const baseName = `${prefix}${dateStr}`;
                 // 同じ日付のセッションが既にあれば -2, -3 … と連番を付与
                 const sameDate = sessions.filter(
                   (s) =>
                     s.name === baseName ||
-                    s.name.match(new RegExp(`^セッション ${dateStr}-(\\d+)$`)),
+                    s.name.match(new RegExp(`^${prefix}${dateStr}-(\\d+)$`)),
                 );
                 const name =
                   sameDate.length === 0 ? baseName : `${baseName}-${sameDate.length + 1}`;
@@ -395,14 +398,14 @@ export function AppShell() {
                 useStore.temporal.getState().pause();
                 try {
                   await createSession(name);
-                  addToast('セッションを作成しました');
+                  addToast(t('layout.sessionCreated'));
                 } catch (err) {
                   useStore.temporal.getState().resume();
-                  addToast('セッションの作成に失敗しました', 'error');
+                  addToast(t('layout.sessionCreateFailed'), 'error');
                   console.error('セッション作成に失敗しました', err);
                 }
               }}
-              title="新しいセッション"
+              title={t('layout.newSession')}
               className="btn-ghost"
               style={{
                 width: 26,
@@ -422,7 +425,7 @@ export function AppShell() {
                 style={{ color: 'var(--accent)' }}
               >
                 <ChevronLeft size={14} />
-                こちらから新しいセッションを作成！
+                {t('layout.demoBanner')}
               </span>
             )}
           </div>
@@ -487,7 +490,7 @@ export function AppShell() {
 
       {/* Footer */}
       <footer className="border-border-subtle bg-bg-surface flex shrink-0 items-center justify-center border-t px-[14px] py-1.5">
-        <span className="text-text-faint text-sm tracking-[0.04em]">&copy; 2026 マダめもくん</span>
+        <span className="text-text-faint text-sm tracking-[0.04em]">{t('layout.footer')}</span>
       </footer>
 
       {/* Toast */}

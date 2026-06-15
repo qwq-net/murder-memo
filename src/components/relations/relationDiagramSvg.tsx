@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { RelationDiagramSvgView } from '@/components/relations/relationDiagramSvgView';
+import { useT } from '@/i18n';
 import { useStore } from '@/store';
 
 const WORLD_SIZE = 320;
@@ -15,6 +16,7 @@ const ZOOM_STEP = 0.1;
 
 /** キャラクターを円周上に配置し、関係線を描画する SVG（ズーム・パン対応） */
 export function RelationDiagramSvg() {
+  const t = useT();
   const characters = useStore((s) => s.characters);
   const relations = useStore((s) => s.relations);
 
@@ -122,7 +124,7 @@ export function RelationDiagramSvg() {
           className="btn-ghost"
           style={{ height: 24, padding: '0 6px', fontSize: 12 }}
         >
-          リセット
+          {t('relations.resetZoom')}
         </button>
       </div>
 

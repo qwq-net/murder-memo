@@ -10,6 +10,7 @@ import {
   buildMoveSubmenu,
   buildTagSubmenu,
 } from '@/components/entries/actions/menuItems';
+import { useT } from '@/i18n';
 import { useMenuContext } from '@/hooks/useMenuContext';
 import { useStore } from '@/store';
 import type { MemoEntry } from '@/types/memo';
@@ -23,6 +24,7 @@ interface EntryContextMenuProps {
 
 export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps) {
   const ctx = useMenuContext();
+  const t = useT();
 
   const items = useMemo<ContextMenuEntry[]>(() => {
     const entries = [entry];
@@ -38,7 +40,7 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
     if (entry.panel === 'timeline') {
       const hasTime = entry.eventTime != null;
       result.push({
-        label: hasTime ? '時刻を不明にする' : '時刻を設定',
+        label: hasTime ? t('menus.clearTime') : t('menus.setTime'),
         onClick: () => {
           if (hasTime) {
             ctx.updateEntry(entry.id, { eventTime: undefined, eventTimeSortKey: undefined });
@@ -55,7 +57,7 @@ export function EntryContextMenu({ entry, x, y, onClose }: EntryContextMenuProps
     result.push(...buildDeleteItems(entries, ctx));
 
     return result;
-  }, [entry, ctx]);
+  }, [entry, ctx, t]);
 
   return <ContextMenu x={x} y={y} items={items} onClose={onClose} />;
 }

@@ -5,7 +5,7 @@
 
 import type { ContextMenuEntry } from '@/components/common/contextMenu';
 import { memoGroupsForPanel } from '@/lib/grouping';
-import { PANEL_LABEL } from '@/lib/panelMeta';
+import type { TFunc } from '@/lib/i18n';
 import type {
   Character,
   CharacterDisplayFormat,
@@ -16,32 +16,11 @@ import type {
   TimelineGroup,
 } from '@/types/memo';
 
-// ─── ラベル定数 ─────────────────────────────────────────────────────────────
-
-export const FORMAT_LABELS: Record<CharacterDisplayFormat, string> = {
-  full: 'フル',
-  badge: 'バッジ',
-  text: 'テキスト',
-};
-
-export const VISIBILITY_LABELS: Record<CharacterDisplayVisibility, string> = {
-  always: '常時',
-  minimal: 'ミニマル',
-  off: 'オフ',
-};
-
-// パネル別ラベルは lib/panelMeta に一元化（従来の export 名は互換のため alias 再 export）
-export const PANEL_LABELS = PANEL_LABEL;
-
-export const IMPORTANCE_LABELS: Record<string, string> = {
-  high: '高',
-  medium: '中',
-  low: '低',
-};
-
 // ─── ヘルパー型 ──────────────────────────────────────────────────────────────
 
 export interface MenuContext {
+  /** 現在言語の翻訳関数（呼び手のコンポーネントが useT() で取得して渡す）。 */
+  t: TFunc;
   timelineGroups: TimelineGroup[];
   memoGroups: MemoGroup[];
   /**
@@ -114,17 +93,19 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
   const sub: ContextMenuEntry[] = [];
 
   // ── パネル移動 ──
-  sub.push({ header: true as const, label: '別パネルへ移動' });
+  sub.push({ header: true as const, label: ctx.t('menus.moveToOtherPanelHeader') });
 
   const moveToast = (p: PanelId): ToastConfig => ({
-    singular: `${PANEL_LABELS[p]}に移動しました`,
-    plural: (n) => `${n}件のメモを${PANEL_LABELS[p]}に移動しました`,
+    singular: ctx.t('toasts.movedTo', { n: 1, label: ctx.t(`panels.${p}`) }),
+    plural: (n) => ctx.t('toasts.movedTo', { n, label: ctx.t(`panels.${p}`) }),
   });
 
   // 非表示パネルへも移動できる（メモは消えず、パネルを再表示すれば見える）。
   // ただし移動先が今見えないことが分かるようラベルで明示する
   const panelLabel = (p: PanelId) =>
-    ctx.hiddenPanels.includes(p) ? `${PANEL_LABELS[p]}（非表示中）` : PANEL_LABELS[p];
+    ctx.hiddenPanels.includes(p)
+      ? `${ctx.t(`panels.${p}`)}${ctx.t('panels.hiddenSuffix')}`
+      : ctx.t(`panels.${p}`);
 
   // 同型のパネル移動アイテム（label + moveEntryToPanel の opts のみ差分）を集約。
   // 「移動先パネルへ既属のエントリはスキップ」「完了後に moveToast(p) を出す」は共通。
@@ -169,7 +150,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
         pushMoveItem(panelLabel(p), p, { groupId: undefined });
       } else {
         // グループあり → フラットに展開（ネストサブメニュー回避）
-        pushMoveItem(`${panelLabel(p)}: 未分類`, p, { groupId: undefined });
+        pushMoveItem(`${panelLabel(p)}: ${ctx.t('common.uncategorized')}`, p, { groupId: undefined });
         for (const g of panelGroups) {
           pushMoveItem(`${panelLabel(p)}: ${g.label}`, p, { groupId: g.id });
         }
@@ -197,11 +178,11 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
 
   if (hasGroupSection) {
     sub.push({ separator: true as const });
-    sub.push({ header: true as const, label: 'グループ変更' });
+    sub.push({ header: true as const, label: ctx.t('menus.changeGroupHeader') });
 
     const groupToast = (label: string): ToastConfig => ({
-      singular: `${label}に移動しました`,
-      plural: (n) => `${n}件のメモを${label}に移動しました`,
+      singular: ctx.t('toasts.movedTo', { n: 1, label }),
+      plural: (n) => ctx.t('toasts.movedTo', { n, label }),
     });
 
     if (panel === 'free' || panel === 'personal') {
@@ -210,7 +191,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
 
       if (isBulk || entries[0].groupId) {
         sub.push({
-          label: '未分類',
+          label: ctx.t('common.uncategorized'),
           onClick: async () => {
             await forEntries(
               entries,
@@ -218,7 +199,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
                 if (entry.groupId) await ctx.setEntryGroup(entry.id, undefined);
               },
               ctx,
-              groupToast('未分類'),
+              groupToast(ctx.t('common.uncategorized')),
             );
           },
         });
@@ -235,7 +216,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
                 if (entry.groupId !== g.id) await ctx.setEntryGroup(entry.id, g.id);
               },
               ctx,
-              groupToast(`「${g.label}」`),
+              groupToast(ctx.t('common.quoted', { label: g.label })),
             );
           },
         });
@@ -255,7 +236,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
                   await ctx.updateEntry(entry.id, { timelineGroupId: g.id });
               },
               ctx,
-              groupToast(`「${g.label}」`),
+              groupToast(ctx.t('common.quoted', { label: g.label })),
             );
           },
         });
@@ -265,7 +246,7 @@ export function buildMoveSubmenu(entries: MemoEntry[], ctx: MenuContext): Contex
 
   return [
     {
-      label: isBulk ? `移動 (${entries.length}件)` : '移動',
+      label: isBulk ? ctx.t('menus.moveBulk', { n: entries.length }) : ctx.t('menus.move'),
       submenu: sub,
     },
   ];
@@ -278,20 +259,22 @@ export function buildImportanceSubmenu(entries: MemoEntry[], ctx: MenuContext): 
 
   const sub: ContextMenuEntry[] = [];
 
-  for (const [key, label] of Object.entries(IMPORTANCE_LABELS)) {
+  for (const key of ['high', 'medium', 'low'] as const) {
     if (!isBulk && entries[0].importance === key) continue;
+    const label = ctx.t(`menus.importanceLevels.${key}`);
+    const quoted = ctx.t('common.quoted', { label });
     sub.push({
       label,
       onClick: async () => {
         await forEntries(
           entries,
           async (entry) => {
-            await ctx.updateEntry(entry.id, { importance: key as MemoEntry['importance'] });
+            await ctx.updateEntry(entry.id, { importance: key });
           },
           ctx,
           {
-            singular: `重要度を「${label}」に設定しました`,
-            plural: (n) => `${n}件の重要度を「${label}」に設定しました`,
+            singular: ctx.t('toasts.importanceSet', { n: 1, label: quoted }),
+            plural: (n) => ctx.t('toasts.importanceSet', { n, label: quoted }),
           },
         );
       },
@@ -302,7 +285,7 @@ export function buildImportanceSubmenu(entries: MemoEntry[], ctx: MenuContext): 
   if (isBulk || entries[0].importance) {
     sub.push({ separator: true as const });
     sub.push({
-      label: '解除',
+      label: ctx.t('menus.clear'),
       disabled: !hasImportance,
       onClick: hasImportance
         ? async () => {
@@ -313,8 +296,8 @@ export function buildImportanceSubmenu(entries: MemoEntry[], ctx: MenuContext): 
               },
               ctx,
               {
-                singular: '重要度を解除しました',
-                plural: (n) => `${n}件の重要度を解除しました`,
+                singular: ctx.t('toasts.importanceCleared', { n: 1 }),
+                plural: (n) => ctx.t('toasts.importanceCleared', { n }),
               },
             );
           }
@@ -324,7 +307,7 @@ export function buildImportanceSubmenu(entries: MemoEntry[], ctx: MenuContext): 
 
   return [
     {
-      label: isBulk ? `重要度 (${entries.length}件)` : '重要度',
+      label: isBulk ? ctx.t('menus.importanceBulk', { n: entries.length }) : ctx.t('menus.importance'),
       submenu: sub,
     },
   ];
@@ -357,7 +340,7 @@ export function buildDisplaySubmenu(entries: MemoEntry[], ctx: MenuContext): Con
     for (const value of opts.values) {
       const isCurrent = value === opts.current;
       sub.push({
-        label: isCurrent ? `${opts.labels[value]}（現在）` : opts.labels[value],
+        label: isCurrent ? `${opts.labels[value]}${ctx.t('menus.current')}` : opts.labels[value],
         disabled: isCurrent,
         onClick: isCurrent
           ? () => {}
@@ -378,9 +361,13 @@ export function buildDisplaySubmenu(entries: MemoEntry[], ctx: MenuContext): Con
 
   // 形式
   pushDisplaySection<CharacterDisplayFormat>({
-    header: '表示形式',
+    header: ctx.t('menus.displayFormatHeader'),
     values: ['full', 'badge', 'text'],
-    labels: FORMAT_LABELS,
+    labels: {
+      full: ctx.t('menus.format.full'),
+      badge: ctx.t('menus.format.badge'),
+      text: ctx.t('menus.format.text'),
+    },
     current: !isBulk ? (entries[0].characterDisplayFormat ?? panelDefault!.format) : null,
     patch: (fmt) => ({ characterDisplayFormat: fmt }),
   });
@@ -388,9 +375,13 @@ export function buildDisplaySubmenu(entries: MemoEntry[], ctx: MenuContext): Con
   // モード
   sub.push({ separator: true as const });
   pushDisplaySection<CharacterDisplayVisibility>({
-    header: '表示モード',
+    header: ctx.t('menus.displayModeHeader'),
     values: ['always', 'minimal', 'off'],
-    labels: VISIBILITY_LABELS,
+    labels: {
+      always: ctx.t('menus.visibility.always'),
+      minimal: ctx.t('menus.visibility.minimal'),
+      off: ctx.t('menus.visibility.off'),
+    },
     current: !isBulk ? (entries[0].characterDisplayVisibility ?? panelDefault!.visibility) : null,
     patch: (vis) => ({ characterDisplayVisibility: vis }),
   });
@@ -402,7 +393,7 @@ export function buildDisplaySubmenu(entries: MemoEntry[], ctx: MenuContext): Con
     );
     sub.push({ separator: true as const });
     sub.push({
-      label: 'デフォルトに戻す',
+      label: ctx.t('menus.resetToDefault'),
       disabled: !hasExplicit,
       onClick: hasExplicit
         ? async () => {
@@ -428,7 +419,9 @@ export function buildDisplaySubmenu(entries: MemoEntry[], ctx: MenuContext): Con
 
   return [
     {
-      label: isBulk ? `役職マーカー設定 (${entries.length}件)` : '役職マーカー設定',
+      label: isBulk
+        ? ctx.t('menus.displayMarkerBulk', { n: entries.length })
+        : ctx.t('menus.displayMarker'),
       submenu: sub,
     },
   ];
@@ -447,7 +440,7 @@ export function buildTagSubmenu(entries: MemoEntry[], ctx: MenuContext): Context
     // 単一エントリの場合、既にタグ付け済みかどうかを表示
     const isTagged = !isBulk && entries[0].characterTags.includes(char.id);
     sub.push({
-      label: isTagged ? `${char.name}（タグ済み）` : char.name,
+      label: isTagged ? `${char.name}${ctx.t('menus.tagged')}` : char.name,
       onClick: async () => {
         for (const entry of entries) {
           await ctx.toggleCharacterTag(entry.id, char.id);
@@ -467,7 +460,9 @@ export function buildTagSubmenu(entries: MemoEntry[], ctx: MenuContext): Context
 
   return [
     {
-      label: isBulk ? `役職マーカー追加 (${entries.length}件)` : '役職マーカー追加',
+      label: isBulk
+        ? ctx.t('menus.addMarkerBulk', { n: entries.length })
+        : ctx.t('menus.addMarker'),
       submenu: sub,
     },
   ];
@@ -478,7 +473,8 @@ export function buildTagSubmenu(entries: MemoEntry[], ctx: MenuContext): Context
 export function buildDuplicateItems(entries: MemoEntry[], ctx: MenuContext): ContextMenuEntry[] {
   return [
     {
-      label: entries.length > 1 ? `複製 (${entries.length}件)` : '複製',
+      label:
+        entries.length > 1 ? ctx.t('menus.duplicateBulk', { n: entries.length }) : ctx.t('menus.duplicate'),
       onClick: async () => {
         await forEntries(
           entries,
@@ -498,8 +494,8 @@ export function buildDuplicateItems(entries: MemoEntry[], ctx: MenuContext): Con
           },
           ctx,
           {
-            singular: 'メモを複製しました',
-            plural: (n) => `${n}件のメモを複製しました`,
+            singular: ctx.t('toasts.duplicated', { n: 1 }),
+            plural: (n) => ctx.t('toasts.duplicated', { n }),
           },
         );
       },
@@ -512,7 +508,7 @@ export function buildDuplicateItems(entries: MemoEntry[], ctx: MenuContext): Con
 export function buildDeleteItems(entries: MemoEntry[], ctx: MenuContext): ContextMenuEntry[] {
   return [
     {
-      label: entries.length > 1 ? `削除 (${entries.length}件)` : '削除',
+      label: entries.length > 1 ? ctx.t('menus.deleteBulk', { n: entries.length }) : ctx.t('menus.delete'),
       danger: true,
       onClick: async () => {
         await forEntries(
@@ -522,8 +518,8 @@ export function buildDeleteItems(entries: MemoEntry[], ctx: MenuContext): Contex
           },
           ctx,
           {
-            singular: 'メモを削除しました',
-            plural: (n) => `${n}件のメモを削除しました`,
+            singular: ctx.t('toasts.deleted', { n: 1 }),
+            plural: (n) => ctx.t('toasts.deleted', { n }),
           },
         );
       },

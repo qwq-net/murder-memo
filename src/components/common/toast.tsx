@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { X } from '@/components/icons';
+import { useT } from '@/i18n';
 import { useStore } from '@/store';
 import type { ToastItem, ToastType } from '@/store/slices/ui';
 
@@ -18,6 +19,7 @@ const ACCENT: Record<ToastType, string> = {
 // ─── 個別トースト ─────────────────────────────────────────────────────────────
 
 function ToastMessage({ toast, onRemove }: { toast: ToastItem; onRemove: (id: string) => void }) {
+  const t = useT();
   const [exiting, setExiting] = useState(false);
 
   const dismiss = useCallback(() => {
@@ -58,7 +60,7 @@ function ToastMessage({ toast, onRemove }: { toast: ToastItem; onRemove: (id: st
       <span style={{ flex: 1, lineHeight: 1.5 }}>{toast.message}</span>
       <button
         onClick={dismiss}
-        aria-label="閉じる"
+        aria-label={t('common.close')}
         style={{
           background: 'none',
           border: 'none',

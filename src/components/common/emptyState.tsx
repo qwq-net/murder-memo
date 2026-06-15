@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { Plus } from '@/components/icons';
+import { useT } from '@/i18n';
 
 interface EmptyStateProps {
   accentColor: string;
@@ -9,6 +10,7 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps) {
+  const t = useT();
   const [isAdding, setIsAdding] = useState(false);
   const [label, setLabel] = useState('');
 
@@ -83,7 +85,7 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
                 setLabel('');
               }
             }}
-            placeholder="メモグループ名"
+            placeholder={t('common.groupNamePlaceholder')}
             className="input-base"
             style={{ border: `1px solid ${accentColor}`, width: 140 }}
           />
@@ -97,7 +99,7 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
               color: 'var(--bg-base)',
             }}
           >
-            追加
+            {t('common.add')}
           </button>
         </div>
       ) : (
@@ -121,7 +123,7 @@ export function EmptyState({ accentColor, message, onAddGroup }: EmptyStateProps
           }}
         >
           <Plus size={14} strokeWidth={2.5} />
-          メモグループを作成
+          {t('common.createGroup')}
         </button>
       )}
     </div>

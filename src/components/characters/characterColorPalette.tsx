@@ -1,3 +1,5 @@
+import { useT } from '@/i18n';
+
 // マダミスでよく使われるテーマカラーのプリセット
 const PRESET_COLORS = [
   '#e74c3c', // 赤
@@ -20,6 +22,7 @@ interface CharacterColorPaletteProps {
 }
 
 export function CharacterColorPalette({ value, onChange }: CharacterColorPaletteProps) {
+  const t = useT();
   return (
     <div className="flex flex-wrap items-center gap-1">
       {PRESET_COLORS.map((color) => (
@@ -43,7 +46,7 @@ export function CharacterColorPalette({ value, onChange }: CharacterColorPalette
         onChange={(e) => onChange(e.target.value)}
         className="cursor-pointer border-none bg-transparent p-0"
         style={{ width: 20, height: 20 }}
-        title="カスタムカラー"
+        title={t('characters.palette.custom')}
       />
     </div>
   );

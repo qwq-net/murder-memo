@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/common/emptyState';
 import { PanelDndBoundary } from '@/components/entries/dnd/entriesDndContext';
 import { EntryInput } from '@/components/entries/entryInput';
 import { MemoGroupSection } from '@/components/panels/memoGroupSection';
+import { useT } from '@/i18n';
 import { useGroupSwap } from '@/hooks/useGroupSwap';
 import { filterEntries, isFilterActive, resolveCharacterNames } from '@/lib/entryFilter';
 import { groupEntriesByMemoGroup, memoGroupsForPanel } from '@/lib/grouping';
@@ -20,6 +21,7 @@ interface MemoPanelProps {
 }
 
 export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) {
+  const t = useT();
   const allEntries = useStore((s) => s.entries);
   const allCharacters = useStore((s) => s.characters);
   const memoGroups = useStore((s) => s.memoGroups);
@@ -73,7 +75,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
       <div className="flex-1 overflow-x-hidden overflow-y-auto pb-[60px]">
         {isFiltering && entries.length === 0 ? (
           <div className="text-text-faint px-5 py-6 text-center text-sm">
-            フィルター条件に一致するメモはありません
+            {t('panels.noFilterMatch')}
           </div>
         ) : isEmpty ? (
           <EmptyState
@@ -81,7 +83,7 @@ export function MemoPanel({ panel, accentColor, emptyMessage }: MemoPanelProps) 
             message={emptyMessage}
             onAddGroup={async (label) => {
               await addMemoGroup(label, panel);
-              addToast('グループを追加しました');
+              addToast(t('panels.groupAdded'));
             }}
           />
         ) : (

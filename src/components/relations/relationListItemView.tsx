@@ -15,6 +15,8 @@ interface RelationListItemViewProps {
   toColor: string;
   /** 削除ハンドラ。Guide では noop で渡せる */
   onRemove?: (relationId: string) => void;
+  /** 削除ボタンの title 属性（i18n 済みのテキストを呼び出し側から渡す） */
+  removeTitle?: string;
 }
 
 /**
@@ -22,6 +24,7 @@ interface RelationListItemViewProps {
  *
  * - `useStore` には触れず、props で全データを受ける
  * - キャラ名・色の解決は呼び出し側の責務（charMap などから lookup して渡す）
+ * - removeTitle は i18n 済みの文字列を呼び出し側で解決して渡す（useT 不可のため）
  */
 export function RelationListItemView({
   relation,
@@ -30,6 +33,7 @@ export function RelationListItemView({
   toName,
   toColor,
   onRemove,
+  removeTitle,
 }: RelationListItemViewProps) {
   return (
     <div
@@ -63,7 +67,7 @@ export function RelationListItemView({
       </span>
       <button
         onClick={() => onRemove?.(relation.id)}
-        title="関係を削除"
+        title={removeTitle}
         style={{
           marginLeft: 'auto',
           background: 'none',

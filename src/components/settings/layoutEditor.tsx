@@ -1,6 +1,7 @@
 import { ColorDot } from '@/components/common/colorDot';
-import { PANEL_CARD_ACCENT, PANEL_ORDER_LABELS } from '@/components/settings/panelConstants';
+import { PANEL_CARD_ACCENT } from '@/components/settings/panelConstants';
 import { PanelOrderEditor } from '@/components/settings/panelOrderEditor';
+import { useT } from '@/i18n';
 import {
   applySequence,
   applyStructure,
@@ -15,27 +16,6 @@ import type { LayoutStructure, PanelId, PanelLayout } from '@/types/memo';
 
 /** 全パネル（行表示で「非表示」も含めて並べるための固定順） */
 const ALL_PANELS: readonly PanelId[] = ['free', 'timeline', 'personal'];
-
-/** 構造プリセットの日本語ラベル（title / aria-label 用） */
-const STRUCTURE_LABELS: Record<LayoutStructure, string> = {
-  columns: '横並び',
-  'stack-left': '左を上下分割',
-  'stack-right': '右を上下分割',
-  stacked: '上下2段',
-};
-
-/**
- * 表示枚数に応じた「横並び」プリセットのラベル。
- * 構造そのものは columns でも、1枚なら「1列」、2枚なら「2列」、3枚なら「3列」と呼ぶ方が直感的。
- */
-function columnsLabel(count: number): string {
-  return count <= 1 ? '1列' : count === 2 ? '2列' : '3列';
-}
-
-/** プリセットの日本語ラベルを表示枚数込みで解決する */
-function structureLabel(structure: LayoutStructure, count: number): string {
-  return structure === 'columns' ? columnsLabel(count) : STRUCTURE_LABELS[structure];
-}
 
 /* ── スキーマ図 ───────────────────────────────────────────────────────────── */
 
@@ -121,6 +101,7 @@ export function LayoutEditor({
   onChange: (next: PanelLayout) => void;
   showStructure?: boolean;
 }) {
+  const t = useT();
   const visible = visiblePanels(layout);
   const visibleSet = new Set(visible);
   const structures = structuresForCount(visible.length);
@@ -128,12 +109,29 @@ export function LayoutEditor({
   // 表示順 → 非表示（薄く）の順で全パネルを行表示する
   const orderedPanels: PanelId[] = [...visible, ...ALL_PANELS.filter((p) => !visibleSet.has(p))];
 
+  /** 構造プリセットのラベルを表示枚数込みで解決する（t に依存するためレンダー内で生成） */
+  function structureLabel(structure: LayoutStructure, count: number): string {
+    if (structure === 'columns') {
+      return count <= 1
+        ? t('settings.structureColumns1')
+        : count === 2
+          ? t('settings.structureColumns2')
+          : t('settings.structureColumns3');
+    }
+    const map: Record<Exclude<LayoutStructure, 'columns'>, string> = {
+      'stack-left': t('settings.structureStackLeft'),
+      'stack-right': t('settings.structureStackRight'),
+      stacked: t('settings.structureStacked'),
+    };
+    return map[structure];
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* ── 1. 構造選択 ── */}
       {showStructure && structures.length > 1 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <BlockLabel>構造</BlockLabel>
+          <BlockLabel>{t('settings.layoutStructure')}</BlockLabel>
           <div style={{ display: 'flex', gap: 6 }}>
             {structures.map((s) => {
               const selected = s === currentStructure;
@@ -167,7 +165,7 @@ export function LayoutEditor({
 
       {/* ── 2. パネルの表示 ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <BlockLabel>パネルの表示</BlockLabel>
+        <BlockLabel>{t('settings.layoutPanelVisibility')}</BlockLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {orderedPanels.map((panelId) => {
             const isVisible = visibleSet.has(panelId);
@@ -191,7 +189,7 @@ export function LayoutEditor({
                 <ColorDot color={PANEL_CARD_ACCENT[panelId]} />
                 {/* パネル名 */}
                 <span style={{ flex: 1, fontSize: 14, color: 'var(--text-primary)' }}>
-                  {PANEL_ORDER_LABELS[panelId]}
+                  {t(`panels.${panelId}` as Parameters<typeof t>[0])}
                 </span>
                 {/* 表示/非表示トグル */}
                 <input
@@ -201,12 +199,12 @@ export function LayoutEditor({
                   onChange={() => onChange(setPanelHidden(layout, panelId, isVisible))}
                   title={
                     isLastVisible
-                      ? '最後の1枚は非表示にできません'
+                      ? t('settings.panelLastVisibleTooltip')
                       : isVisible
-                        ? '非表示にする'
-                        : '表示する'
+                        ? t('settings.panelHideTooltip')
+                        : t('settings.panelShowTooltip')
                   }
-                  aria-label={`${PANEL_ORDER_LABELS[panelId]}を${isVisible ? '非表示' : '表示'}`}
+                  aria-label={`${t(`panels.${panelId}` as Parameters<typeof t>[0])}${isVisible ? t('settings.panelHideTooltip') : t('settings.panelShowTooltip')}`}
                   style={{
                     width: 15,
                     height: 15,
@@ -224,7 +222,7 @@ export function LayoutEditor({
       {/* ── 3. 並び順 ── */}
       {visible.length > 1 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <BlockLabel>並び順</BlockLabel>
+          <BlockLabel>{t('settings.layoutPanelOrder')}</BlockLabel>
           <PanelOrderEditor
             order={visible}
             onChange={(seq) => onChange(applySequence(layout, seq))}

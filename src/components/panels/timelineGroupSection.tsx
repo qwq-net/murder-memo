@@ -3,6 +3,7 @@ import { useDndContext } from '@dnd-kit/core';
 import { GroupHeader } from '@/components/common/groupHeader';
 import { SortableEntryColumn } from '@/components/entries/dnd/sortableEntryColumn';
 import { HourDividerView } from '@/components/panels/hourDividerView';
+import { useT } from '@/i18n';
 import { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
 import { timelineHourContainerId, timelineUnknownContainerId } from '@/lib/entryDnd';
@@ -37,6 +38,7 @@ export function TimelineGroupSection({
   onMoveDown,
   dndDisabled,
 }: TimelineGroupSectionProps) {
+  const t = useT();
   const entryCount =
     hourGroups.reduce((sum, hg) => sum + hg.entries.length, 0) + unknownEntries.length;
 
@@ -49,13 +51,13 @@ export function TimelineGroupSection({
   const labelEditor = useGroupLabelEditor({
     initialLabel: group.label,
     onSave: (newLabel) => onUpdate(group.id, { label: newLabel }),
-    toastMessage: 'グループ名を変更しました',
+    toastMessage: t('panels.groupRenamed'),
   });
 
   const deleteConfirm = useDeleteWithConfirmation(
     entryCount > 0,
     () => onRemove(group.id),
-    'グループを削除しました',
+    t('panels.groupDeleted'),
   );
 
   return (
@@ -70,8 +72,8 @@ export function TimelineGroupSection({
         onMoveUp={onMoveUp}
         onMoveDown={onMoveDown}
         deleteModal={{
-          title: `「${group.label}」を削除`,
-          confirmationLabel: `メモが ${entryCount}件 一緒に削除されることを理解しました`,
+          title: t('panels.deleteGroupTitle', { label: t('common.quoted', { label: group.label }) }),
+          confirmationLabel: t('panels.deleteGroupConfirmTimeline', { n: entryCount }),
         }}
       />
 
@@ -130,14 +132,14 @@ export function TimelineGroupSection({
                 ドラッグ中は不明エントリが無くてもドロップ先として表示する。 */}
             {showUnknownZone && (
               <div>
-                <HourDividerView label="不明" muted />
+                <HourDividerView label={t('panels.unknownTime')} muted />
                 <SortableEntryColumn
                   containerId={timelineUnknownContainerId(group.id)}
                   entries={unknownEntries}
                   disabled={dndDisabled}
                   emptyPlaceholder={
                     <div className="text-text-faint px-3 py-3 text-center text-xs">
-                      ここへドロップで時刻なし
+                      {t('panels.dropToClearTime')}
                     </div>
                   }
                 />
@@ -147,7 +149,7 @@ export function TimelineGroupSection({
             {/* 完全に空 & 非ドラッグ時のみ案内を出す（ドラッグ中は上の不明ゾーンが受け皿になる） */}
             {hourGroups.length === 0 && unknownEntries.length === 0 && !isDragging && (
               <div className="text-text-faint px-3 py-3.5 text-center text-sm">
-                メモを追加してください
+                {t('panels.addMemoPrompt')}
               </div>
             )}
           </div>

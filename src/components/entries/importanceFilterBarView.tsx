@@ -7,13 +7,8 @@
  * プレビューは ImportanceFilterBarPreview がこの View を再利用する。
  */
 import { X } from '@/components/icons';
+import { useT } from '@/i18n';
 import type { ImportanceLevel } from '@/types/memo';
-
-const LEVELS: { level: ImportanceLevel; label: string; color: string }[] = [
-  { level: 'high', label: '高', color: 'var(--importance-high)' },
-  { level: 'medium', label: '中', color: 'var(--importance-medium)' },
-  { level: 'low', label: '低', color: 'var(--importance-low)' },
-];
 
 interface ImportanceFilterBarViewProps {
   /** 現在アクティブな重要度レベル */
@@ -29,6 +24,14 @@ export function ImportanceFilterBarView({
   onToggle,
   onClear,
 }: ImportanceFilterBarViewProps) {
+  const t = useT();
+
+  const LEVELS: { level: ImportanceLevel; label: string; color: string }[] = [
+    { level: 'high', label: t('entries.importance.high'), color: 'var(--importance-high)' },
+    { level: 'medium', label: t('entries.importance.medium'), color: 'var(--importance-medium)' },
+    { level: 'low', label: t('entries.importance.low'), color: 'var(--importance-low)' },
+  ];
+
   const hasActiveFilter = activeLevels.length > 0;
 
   return (
@@ -36,7 +39,7 @@ export function ImportanceFilterBarView({
       {/* 高/中/低 のセグメントコントロール（外周を1枚の枠で囲み、セル間は細線で区切る） */}
       <div
         role="group"
-        aria-label="重要度で絞り込み"
+        aria-label={t('entries.importance.filterGroupLabel')}
         style={{
           display: 'inline-flex',
           alignItems: 'stretch',
@@ -55,8 +58,12 @@ export function ImportanceFilterBarView({
                 onToggle(level);
               }}
               aria-pressed={active}
-              aria-label={`重要度「${label}」${active ? 'の絞り込みを解除' : 'で絞り込み'}`}
-              title={`重要度「${label}」`}
+              aria-label={
+                active
+                  ? t('entries.importance.filterOff', { label })
+                  : t('entries.importance.filterOn', { label })
+              }
+              title={t('entries.importance.levelTitle', { label })}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -102,8 +109,8 @@ export function ImportanceFilterBarView({
             onClear();
           }}
           className="btn-ghost btn-sm"
-          title="重要度フィルターをクリア"
-          aria-label="重要度フィルターをクリア"
+          title={t('entries.importance.clearFilter')}
+          aria-label={t('entries.importance.clearFilter')}
           style={{ padding: 2 }}
         >
           <X size={12} />

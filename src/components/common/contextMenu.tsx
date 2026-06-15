@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 
+import { useT } from '@/i18n';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 // ─── 型定義 ─────────────────────────────────────────────────────────────────
@@ -155,6 +156,7 @@ interface ContextMenuProps {
 }
 
 export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
+  const t = useT();
   const menuRef = useRef<HTMLDivElement>(null);
   const submenuRef = useRef<HTMLDivElement>(null);
 
@@ -313,7 +315,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       <div
         ref={menuRef}
         role="menu"
-        aria-label="コンテキストメニュー"
+        aria-label={t('common.contextMenuAria')}
         style={{ ...MENU_STYLE, top: y, left: x }}
       >
         {items.map((item, i) => {

@@ -1,5 +1,7 @@
 import { useCallback, type MouseEvent } from 'react';
 
+import { useT } from '@/i18n';
+
 /**
  * 検索ショートカット用ボタンの共通コンポーネント。
  *
@@ -56,6 +58,7 @@ export function SearchLinkButton({
   stopPropagation = true,
   variant = 'inline',
 }: SearchLinkButtonProps) {
+  const t = useT();
   const handleClick = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
       if (stopPropagation) e.stopPropagation();
@@ -68,7 +71,7 @@ export function SearchLinkButton({
     <button
       type="button"
       onClick={handleClick}
-      title={title ?? `「${keyword}」を検索`}
+      title={title ?? t('common.searchKeyword', { label: t('common.quoted', { label: keyword }) })}
       style={variant === 'block' ? BLOCK_STYLE : INLINE_STYLE}
     >
       {keyword}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { ModalFrame } from '@/components/common/modalFrame';
+import { useT } from '@/i18n';
 
 // ─── 型定義 ─────────────────────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ export interface ConfirmModalProps {
   confirmationLabel?: string;
   /** アクションボタン群（最大3つ）。右寄せで表示 */
   actions: ConfirmModalAction[];
-  /** 取り消しボタンのラベル。デフォルト "取り消し" */
+  /** 取り消しボタンのラベル。省略時は共通の「キャンセル」訳。 */
   cancelLabel?: string;
 }
 
@@ -33,8 +34,9 @@ export function ConfirmModal({
   title,
   confirmationLabel,
   actions,
-  cancelLabel = '取り消し',
+  cancelLabel,
 }: ConfirmModalProps) {
+  const t = useT();
   const [confirmed, setConfirmed] = useState(false);
   const [prevOpen, setPrevOpen] = useState(open);
 
@@ -109,7 +111,7 @@ export function ConfirmModal({
               color: 'var(--text-muted)',
             }}
           >
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </button>
 
           {actions.map((action, i) => {

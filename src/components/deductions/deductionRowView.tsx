@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 
 import { ColorDot } from '@/components/common/colorDot';
+import { useT } from '@/i18n';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 
 /** 疑惑度の取りうる値 */
@@ -25,13 +26,16 @@ interface StarRatingProps {
  * `DeductionRowView` の内部部品。store 非依存なので Guide からも安全に使える。
  */
 export function StarRating({ value, onChange }: StarRatingProps) {
+  const t = useT();
   return (
     <div style={{ display: 'flex', gap: 2 }}>
       {([1, 2, 3] as const).map((level) => (
         <button
           key={level}
           onClick={() => onChange(value === level ? 0 : level)}
-          title={value === level ? '解除' : `怪しさ ${level}`}
+          title={
+            value === level ? t('deductions.star.clear') : t('deductions.star.set', { level })
+          }
           style={{
             background: 'none',
             border: 'none',

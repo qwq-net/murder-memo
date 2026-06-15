@@ -1,6 +1,7 @@
 import { GroupHeader } from '@/components/common/groupHeader';
 import { SortableEntryColumn } from '@/components/entries/dnd/sortableEntryColumn';
 import { ChevronDown } from '@/components/icons';
+import { useT } from '@/i18n';
 import { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
 import { memoContainerId } from '@/lib/entryDnd';
@@ -33,6 +34,7 @@ export function MemoGroupSection({
   panel,
   dndDisabled,
 }: MemoGroupSectionProps) {
+  const t = useT();
   const isUncategorized = group === null;
 
   const uncategorizedCollapsed = useStore((s) => s.uncategorizedCollapsed[panel] ?? false);
@@ -44,7 +46,7 @@ export function MemoGroupSection({
     onSave: (newLabel) => {
       if (group && onUpdate) onUpdate(group.id, { label: newLabel });
     },
-    toastMessage: 'グループ名を変更しました',
+    toastMessage: t('panels.groupRenamed'),
   });
 
   const deleteConfirm = useDeleteWithConfirmation(
@@ -52,7 +54,7 @@ export function MemoGroupSection({
     () => {
       if (group && onRemove) return onRemove(group.id);
     },
-    'グループを削除しました',
+    t('panels.groupDeleted'),
   );
 
   return (
@@ -77,7 +79,7 @@ export function MemoGroupSection({
             <ChevronDown size={12} />
           </span>
           <span className="flex-1 text-sm tracking-[0.06em]" style={{ color: 'var(--text-muted)' }}>
-            未分類
+            {t('common.uncategorized')}
           </span>
         </div>
       ) : (
@@ -92,8 +94,10 @@ export function MemoGroupSection({
           onMoveUp={onMoveUp}
           onMoveDown={onMoveDown}
           deleteModal={{
-            title: `「${group.label}」を削除`,
-            confirmationLabel: `未分類へメモが ${entries.length}件 移動することを理解しました`,
+            title: t('panels.deleteGroupTitle', {
+              label: t('common.quoted', { label: group.label }),
+            }),
+            confirmationLabel: t('panels.deleteGroupConfirmMemo', { n: entries.length }),
           }}
         />
       )}
@@ -107,7 +111,7 @@ export function MemoGroupSection({
           emptyPlaceholder={
             !isUncategorized ? (
               <div className="text-text-faint px-3 py-3.5 text-center text-sm">
-                メモを追加してください
+                {t('panels.addMemoPrompt')}
               </div>
             ) : undefined
           }

@@ -1,3 +1,5 @@
+import { useT } from '@/i18n';
+
 /** セクション間の区切り線（divider 指定時にヘッダーを囲むラッパー） */
 const DIVIDER_STYLE: React.CSSProperties = {
   borderTop: '1px solid var(--border-subtle)',
@@ -18,6 +20,8 @@ export function SectionHeader({
   /** 上端に区切り線を引く（前セクションとの境界）。設定パネルの各セクション見出しで使う */
   divider?: boolean;
 }) {
+  const t = useT();
+
   const header = (
     <div
       style={{
@@ -57,7 +61,7 @@ export function SectionHeader({
             transition: 'color 0.12s',
           }}
         >
-          リセット
+          {t('common.reset')}
         </button>
       )}
     </div>

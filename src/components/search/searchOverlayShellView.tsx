@@ -1,6 +1,7 @@
 import { type ReactNode, type Ref } from 'react';
 
 import { Search, X } from '@/components/icons';
+import { useT } from '@/i18n';
 
 interface SearchOverlayShellViewProps {
   /** 検索入力値 */
@@ -35,6 +36,7 @@ export function SearchOverlayShellView({
   showEmpty,
   children,
 }: SearchOverlayShellViewProps) {
+  const t = useT();
   return (
     <div
       className="flex flex-col"
@@ -54,7 +56,7 @@ export function SearchOverlayShellView({
           ref={inputRef}
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="エントリを検索…"
+          placeholder={t('search.placeholder')}
           autoComplete="off"
           className="text-text-primary placeholder:text-text-faint flex-1 border-none bg-transparent text-sm outline-none"
           style={{ boxShadow: 'none' }}
@@ -63,7 +65,7 @@ export function SearchOverlayShellView({
           <button
             onClick={() => onQueryChange('')}
             className="text-text-muted hover:text-text-primary flex shrink-0 cursor-pointer items-center border-none bg-transparent p-0.5 transition-colors duration-100"
-            aria-label="クリア"
+            aria-label={t('search.clearLabel')}
           >
             <X size={14} />
           </button>
@@ -74,7 +76,7 @@ export function SearchOverlayShellView({
       <div className="overflow-y-auto" style={{ maxHeight: 'min(60vh, 480px)' }}>
         {showEmpty && (
           <div className="text-text-muted px-3 py-6 text-center text-sm">
-            該当するエントリが見つかりません
+            {t('search.noResults')}
           </div>
         )}
         {children}
@@ -83,7 +85,8 @@ export function SearchOverlayShellView({
       {/* フッター: 結果カウント */}
       {totalCount !== undefined && totalCount > 0 && (
         <div className="text-text-muted border-border-subtle border-t px-3 py-1.5 text-[11px]">
-          {totalCount}件の結果{maxReached && '（上限）'}
+          {t('search.resultCount', { n: totalCount })}
+          {maxReached && t('search.maxReachedSuffix')}
         </div>
       )}
     </div>

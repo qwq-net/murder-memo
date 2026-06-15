@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 
 import { ModalFrame } from '@/components/common/modalFrame';
 import { X } from '@/components/icons';
+import { useT } from '@/i18n';
 import { APP_VERSION } from '@/lib/version';
 import { useStore } from '@/store';
 
@@ -16,6 +17,7 @@ import { useStore } from '@/store';
  * バージョンアップ時の通知としての役割は維持（`lastSeenVersion !== APP_VERSION` で表示）。
  */
 export function WelcomeModal() {
+  const t = useT();
   const isOpen = useStore((s) => s.isWelcomeOpen);
   const setOpen = useStore((s) => s.setWelcomeOpen);
   const setLastSeenVersion = useStore((s) => s.setLastSeenVersion);
@@ -26,7 +28,7 @@ export function WelcomeModal() {
   }, [setLastSeenVersion, setOpen]);
 
   return (
-    <ModalFrame open={isOpen} onClose={handleClose} width={480} ariaLabel="マダめもくんへようこそ">
+    <ModalFrame open={isOpen} onClose={handleClose} width={480} ariaLabel={t('welcome.title')}>
       {/* ヘッダー */}
       <div
         style={{
@@ -47,10 +49,10 @@ export function WelcomeModal() {
               letterSpacing: '0.06em',
             }}
           >
-            マダめもくんへようこそ
+            {t('welcome.title')}
           </span>
         </div>
-        <button onClick={handleClose} className="modal-close-btn" aria-label="閉じる">
+        <button onClick={handleClose} className="modal-close-btn" aria-label={t('common.close')}>
           <X size={18} />
         </button>
       </div>
@@ -72,7 +74,7 @@ export function WelcomeModal() {
             margin: 0,
           }}
         >
-          マダめもくんは、マーダーミステリーのプレイ中に使うメモアプリです。
+          {t('welcome.intro1')}
         </p>
         <p
           style={{
@@ -82,8 +84,7 @@ export function WelcomeModal() {
             margin: 0,
           }}
         >
-          サンプルシナリオがすでに入っているので、まずは触って操作感を確かめてみてください。
-          実際のプレイ時はヘッダーの「+」ボタンから新しいセッションを作成できます。
+          {t('welcome.intro2')}
         </p>
         <p
           style={{
@@ -93,7 +94,7 @@ export function WelcomeModal() {
             margin: 0,
           }}
         >
-          ※ 現在は PC での利用を前提とした β バージョンです
+          {t('welcome.beta')}
         </p>
 
         {/* バージョン表示 */}
@@ -124,10 +125,10 @@ export function WelcomeModal() {
             className="btn-ghost btn-md"
             style={{ minWidth: 140, textDecoration: 'none', textAlign: 'center' }}
           >
-            使い方ガイドを開く
+            {t('welcome.openGuide')}
           </a>
           <button onClick={handleClose} className="btn-primary btn-md" style={{ minWidth: 140 }}>
-            はじめる
+            {t('welcome.start')}
           </button>
         </div>
       </div>

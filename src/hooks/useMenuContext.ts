@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import type { MenuContext } from '@/components/entries/actions/menuItems';
+import { useT } from '@/i18n';
 import { useStore } from '@/store';
 import { selectResolvedLayout } from '@/store/selectors';
 
@@ -20,6 +21,7 @@ export function useMenuContext(onDone?: () => void): MenuContext {
   const memoGroups = useStore((s) => s.memoGroups);
   const settings = useStore((s) => s.settings);
   const addToast = useStore((s) => s.addToast);
+  const t = useT();
   const layout = useStore(selectResolvedLayout);
   const hiddenPanels = useMemo(() => layout.hidden, [layout]);
 
@@ -37,6 +39,7 @@ export function useMenuContext(onDone?: () => void): MenuContext {
 
   return useMemo(
     () => ({
+      t,
       moveEntryToPanel,
       updateEntry,
       setEntryGroup,
@@ -52,6 +55,7 @@ export function useMenuContext(onDone?: () => void): MenuContext {
       onDone,
     }),
     [
+      t,
       moveEntryToPanel,
       updateEntry,
       setEntryGroup,

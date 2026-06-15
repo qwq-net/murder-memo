@@ -1,3 +1,4 @@
+import { useT } from '@/i18n';
 import type { CharacterDisplayFormat } from '@/types/memo';
 
 interface CharacterBadgeProps {
@@ -18,8 +19,13 @@ export function CharacterBadge({
   format,
   ariaLabel,
 }: CharacterBadgeProps) {
+  const t = useT();
   const displayName = name.length > 5 ? name.slice(0, 5) + '…' : name;
-  const label = ariaLabel ?? `${name}${isActive ? 'のタグを外す' : 'をタグ付け'}`;
+  const label =
+    ariaLabel ??
+    (isActive
+      ? t('characters.badge.untag', { name })
+      : t('characters.badge.tag', { name }));
 
   if (format === 'text') {
     return (

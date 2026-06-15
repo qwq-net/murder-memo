@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 
 import { CharacterColorPalette } from '@/components/characters/characterColorPalette';
 import { RadioGroup } from '@/components/common/radioGroup';
+import { useT } from '@/i18n';
 import type { Character } from '@/types/memo';
 
 interface CharacterRowViewProps {
@@ -31,6 +32,7 @@ export function CharacterRowView({
   onUpdate,
   onRemove,
 }: CharacterRowViewProps) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [localName, setLocalName] = useState(char.name);
   const [prevCharName, setPrevCharName] = useState(char.name);
@@ -60,7 +62,7 @@ export function CharacterRowView({
         {/* Drag handle */}
         <span
           {...dragHandleProps}
-          aria-label="ドラッグして並び替え"
+          aria-label={t('characters.row.dragHandle')}
           style={{
             cursor: 'grab',
             color: 'var(--text-faint)',
@@ -77,7 +79,7 @@ export function CharacterRowView({
         {/* Color dot — click to expand palette */}
         <button
           onClick={() => setExpanded((p) => !p)}
-          aria-label="テーマカラーを変更"
+          aria-label={t('characters.row.changeColor')}
           style={{
             width: 16,
             height: 16,
@@ -105,7 +107,7 @@ export function CharacterRowView({
               onUpdate?.(char.id, { name: e.currentTarget.value.trim() || char.name });
             }
           }}
-          aria-label="登場人物の名前"
+          aria-label={t('characters.row.nameLabel')}
           style={{
             flex: 1,
             background: 'transparent',
@@ -120,8 +122,8 @@ export function CharacterRowView({
         {/* エントリ表示トグル */}
         <RadioGroup
           options={[
-            { value: 'show', label: '表示' },
-            { value: 'hide', label: '非表示' },
+            { value: 'show', label: t('characters.row.showLabel') },
+            { value: 'hide', label: t('characters.row.hideLabel') },
           ]}
           value={char.showInEntries ? 'show' : 'hide'}
           onChange={(v: string) => onUpdate?.(char.id, { showInEntries: v === 'show' })}
@@ -130,7 +132,7 @@ export function CharacterRowView({
         {/* Delete */}
         <button
           onClick={() => onRemove?.(char.id)}
-          aria-label={`${char.name}を削除`}
+          aria-label={t('characters.row.removeLabel', { name: char.name })}
           style={{
             background: 'none',
             border: 'none',

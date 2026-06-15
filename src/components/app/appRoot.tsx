@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 
 import { SelectionProvider } from '@/components/entries/selectionContext';
 import { AppShell } from '@/components/layout/appShell';
+import { makeT } from '@/lib/i18n';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { APP_VERSION } from '@/lib/version';
 import { useStore } from '@/store';
@@ -20,6 +21,7 @@ export default function AppRoot() {
   const lastSeenVersion = useStore((s) => s.lastSeenVersion);
   const setWelcomeOpen = useStore((s) => s.setWelcomeOpen);
   const theme = useStore((s) => s.settings.theme);
+  const language = useStore((s) => s.settings.language);
 
   // /app マウント時のみ html.app-mode を付与し、ビューポート固定 + テキスト選択禁止を有効化する
   // （LP / Guide ではこのクラスが付かないため、ふつうにスクロール / コピペできる）
@@ -54,6 +56,13 @@ export default function AppRoot() {
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, [theme]);
+
+  // 言語を document に反映（<html lang> とタブタイトル）。/app マウント時のみ走り、
+  // SSG プリレンダーされた LP / Guide には影響しない（それらは別ルート）。
+  useEffect(() => {
+    document.documentElement.lang = language;
+    document.title = makeT(language)('app.title');
+  }, [language]);
 
   // Undo / Redo キーボードショートカット
   useUndoRedo();

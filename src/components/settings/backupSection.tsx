@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useRef } from 'react';
 
 import { ConfirmModal } from '@/components/common/confirmModal';
-import { PANEL_CARD_ACCENT, PANEL_ORDER_LABELS } from '@/components/settings/panelConstants';
+import { PANEL_CARD_ACCENT } from '@/components/settings/panelConstants';
 import { SectionHeader } from '@/components/settings/sectionHeader';
+import { useT } from '@/i18n';
 import {
   EXPORT_WARN_BYTES,
   downloadJson,
@@ -37,6 +38,7 @@ export function BackupSection({
   exportSizeInfo: string;
   setExportSizeInfo: (v: string) => void;
 }) {
+  const t = useT();
   const entries = useStore((s) => s.entries);
   const characters = useStore((s) => s.characters);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,11 +54,11 @@ export function BackupSection({
     try {
       const data = await exportSession(session);
       downloadJson(data);
-      addToast('バックアップをダウンロードしました', 'success');
+      addToast(t('settings.backupDownloaded'), 'success');
     } catch {
-      addToast('エクスポートに失敗しました', 'error');
+      addToast(t('settings.exportFailed'), 'error');
     }
-  }, [sessions, activeSessionId, addToast]);
+  }, [sessions, activeSessionId, addToast, t]);
 
   const handleExportBackup = useCallback(async () => {
     if (!activeSessionId) return;
@@ -64,16 +66,16 @@ export function BackupSection({
       const { imageCount, totalBytes } = await estimateExportSize(activeSessionId);
       if (totalBytes > EXPORT_WARN_BYTES) {
         setExportSizeInfo(
-          `画像 ${imageCount} 枚（推定 ${formatBytes(totalBytes)}）を含みます。\nファイルが大きいため、エクスポートに時間がかかる場合があります。`,
+          t('settings.exportLargeImageInfo', { n: imageCount, size: formatBytes(totalBytes) }),
         );
         setShowExportConfirm(true);
       } else {
         await doExport();
       }
     } catch {
-      addToast('エクスポートに失敗しました', 'error');
+      addToast(t('settings.exportFailed'), 'error');
     }
-  }, [activeSessionId, doExport, addToast, setExportSizeInfo, setShowExportConfirm]);
+  }, [activeSessionId, doExport, addToast, setExportSizeInfo, setShowExportConfirm, t]);
 
   const handleImportBackup = useCallback(
     async (file: File) => {
@@ -93,17 +95,20 @@ export function BackupSection({
           activeSessionId: newSession.id,
         });
         clear();
-        addToast(`「${newSession.name}」をインポートしました`, 'success');
+        addToast(
+          t('settings.sessionImported', { name: t('common.quoted', { label: newSession.name }) }),
+          'success',
+        );
         setOpen(false);
       } catch (e) {
-        addToast(e instanceof Error ? e.message : 'インポートに失敗しました', 'error');
+        addToast(e instanceof Error ? e.message : t('settings.importFailed'), 'error');
         // 失敗時は subscribe フックが発火しないため、ここでローディングを解除する必要がある
         setSessionReady(true);
       } finally {
         resume();
       }
     },
-    [addToast, setOpen],
+    [addToast, setOpen, t],
   );
 
   const handleTextExport = useCallback(
@@ -121,31 +126,31 @@ export function BackupSection({
         panelFilter,
       );
       if (!text) {
-        addToast('エクスポートするメモがありません');
+        addToast(t('settings.noMemoToExport'));
         return;
       }
       const ok = await copyToClipboard(text);
       if (ok) {
-        addToast('クリップボードにコピーしました', 'success');
+        addToast(t('settings.copiedToClipboard'), 'success');
       } else {
-        addToast('コピーに失敗しました', 'error');
+        addToast(t('settings.copyFailed'), 'error');
       }
     },
-    [sessions, activeSessionId, panelOrder, addToast],
+    [sessions, activeSessionId, panelOrder, addToast, t],
   );
 
   return (
     <>
       {/* ── テキストエクスポート ── */}
-      <SectionHeader divider>テキストエクスポート</SectionHeader>
+      <SectionHeader divider>{t('settings.textExport')}</SectionHeader>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          メモ内容を Markdown テキストとしてクリップボードにコピーします。
+          {t('settings.textExportDescription')}
         </span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           <button onClick={() => handleTextExport()} className="btn-ghost btn-sm">
-            全パネル
+            {t('settings.allPanels')}
           </button>
           {panelOrder.map((p) => (
             <button
@@ -154,26 +159,25 @@ export function BackupSection({
               className="btn-ghost btn-sm"
               style={{ color: PANEL_CARD_ACCENT[p], borderColor: PANEL_CARD_ACCENT[p] }}
             >
-              {PANEL_ORDER_LABELS[p]}
+              {t(`panels.${p}` as Parameters<typeof t>[0])}
             </button>
           ))}
         </div>
       </div>
 
       {/* ── バックアップ ── */}
-      <SectionHeader divider>バックアップ</SectionHeader>
+      <SectionHeader divider>{t('settings.backup')}</SectionHeader>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          現在のセッションのデータを JSON
-          ファイルとしてエクスポート、またはファイルからインポートして復元します。
+          {t('settings.backupDescription')}
         </span>
 
         {/* 統計 */}
         <div style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', gap: 12 }}>
-          <span>メモ {stats.total} 件</span>
-          <span>画像 {stats.imageCount} 件</span>
-          <span>登場人物 {stats.characterCount} 人</span>
+          <span>{t('settings.memoCount', { n: stats.total })}</span>
+          <span>{t('settings.imageCount', { n: stats.imageCount })}</span>
+          <span>{t('settings.characterCount', { n: stats.characterCount })}</span>
         </div>
 
         {stats.imageCount > 100 && (
@@ -205,19 +209,16 @@ export function BackupSection({
                 strokeLinecap="round"
               />
             </svg>
-            <span>
-              画像が {stats.imageCount}{' '}
-              件あります。エクスポート時にファイルが大きくなったり、インポート時にデータが破損するおそれがあります。
-            </span>
+            <span>{t('settings.manyImagesWarning', { n: stats.imageCount })}</span>
           </div>
         )}
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           <button onClick={handleExportBackup} className="btn-ghost btn-sm">
-            エクスポート
+            {t('settings.exportButton')}
           </button>
           <button onClick={() => fileInputRef.current?.click()} className="btn-ghost btn-sm">
-            インポート
+            {t('settings.importButton')}
           </button>
           <input
             ref={fileInputRef}
@@ -237,11 +238,11 @@ export function BackupSection({
       <ConfirmModal
         open={showExportConfirm}
         onClose={() => setShowExportConfirm(false)}
-        title="エクスポートファイルが大きくなります"
+        title={t('settings.exportLargeTitle')}
         confirmationLabel={exportSizeInfo}
         actions={[
           {
-            label: 'エクスポートする',
+            label: t('settings.doExport'),
             requiresConfirmation: true,
             onClick: doExport,
           },

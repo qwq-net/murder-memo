@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import { SearchLinkButton } from '@/components/common/searchLinkButton';
+import { useT } from '@/i18n';
 import { parseCharacterText } from '@/lib/parseCharacterText';
 import type { Character, LinkKeyword, MemoEntry } from '@/types/memo';
 
@@ -30,13 +31,14 @@ export function EntryContentView({
   linkKeywords,
   onSearchClick,
 }: EntryContentViewProps) {
+  const t = useT();
   const segments = useMemo(
     () => parseCharacterText(entry.content, visibleCharacters, linkKeywords),
     [entry.content, visibleCharacters, linkKeywords],
   );
 
   if (!entry.content) {
-    return <span className="text-text-faint">空のメモ</span>;
+    return <span className="text-text-faint">{t('entries.content.empty')}</span>;
   }
 
   return (

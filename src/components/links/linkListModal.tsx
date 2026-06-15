@@ -5,6 +5,7 @@ import { ModalEmptyMessage } from '@/components/common/modalEmptyMessage';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { ModalHeader } from '@/components/common/modalHeader';
 import { LinkListItemView } from '@/components/links/linkListItemView';
+import { useT } from '@/i18n';
 import { useStore } from '@/store';
 import type { LinkKeyword } from '@/types/memo';
 
@@ -16,6 +17,7 @@ import type { LinkKeyword } from '@/types/memo';
  *   （削除しても本文中の `[キーワード]` 明示形式は引き続きリンクとして機能する）
  */
 export function LinkListModal() {
+  const t = useT();
   const isOpen = useStore((s) => s.isLinkListOpen);
   const setOpen = useStore((s) => s.setLinkListOpen);
   const linkKeywords = useStore((s) => s.linkKeywords);
@@ -45,18 +47,25 @@ export function LinkListModal() {
 
   return (
     <>
-      <ModalFrame open={isOpen} onClose={() => setOpen(false)} width={440} ariaLabel="リンク一覧">
+      <ModalFrame
+        open={isOpen}
+        onClose={() => setOpen(false)}
+        width={440}
+        ariaLabel={t('links.heading')}
+      >
         {/* ヘッダー */}
-        <ModalHeader title="リンク一覧" onClose={() => setOpen(false)} />
+        <ModalHeader title={t('links.heading')} onClose={() => setOpen(false)} />
 
         {/* ボディ */}
         <div style={{ padding: '4px 18px 18px' }}>
           {sorted.length === 0 ? (
             <ModalEmptyMessage style={{ lineHeight: 1.6 }}>
-              リンクが登録されていません
+              {t('links.empty')}
               <br />
               <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-                メモに <code>[テキスト]</code> 形式で書いて確定すると自動で登録されます
+                {t('links.emptyHintPre')}
+                <code>{t('links.emptyHintCode')}</code>
+                {t('links.emptyHintPost')}
               </span>
             </ModalEmptyMessage>
           ) : (
@@ -78,10 +87,16 @@ export function LinkListModal() {
       <ConfirmModal
         open={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}
-        title={pendingDelete ? `「${pendingDelete.keyword}」を辞書から削除しますか？` : ''}
+        title={
+          pendingDelete
+            ? t('links.confirmDeleteTitle', {
+                name: t('common.quoted', { label: pendingDelete.keyword }),
+              })
+            : ''
+        }
         actions={[
           {
-            label: '削除',
+            label: t('common.delete'),
             color: 'var(--importance-high)',
             onClick: handleConfirmDelete,
           },

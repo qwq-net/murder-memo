@@ -4,6 +4,7 @@ import { CharacterBadgeBarView } from '@/components/characters/characterBadgeBar
 import { EntryContentView } from '@/components/entries/entryContentView';
 import { ImageThumbnailView } from '@/components/entries/imageThumbnailView';
 import { THUMB_HEIGHT } from '@/components/entries/thumbConstants';
+import { useT } from '@/i18n';
 import { computeBadgeCharacters } from '@/lib/characterBadges';
 import type {
   Character,
@@ -58,6 +59,7 @@ export function ImageEntryView({
   onSearchClick,
   onCharacterToggle,
 }: ImageEntryViewProps) {
+  const t = useT();
   // バッジ計算は TextEntryView と共通の純関数に集約
   const { badgeCharacters, activeCharacterIds, hasEffectiveActive } = useMemo(
     () => computeBadgeCharacters(entry, visibleCharacters, linkKeywords),
@@ -76,7 +78,7 @@ export function ImageEntryView({
           style={{ minHeight: THUMB_HEIGHT }}
         >
           {!entry.content ? (
-            <span className="text-text-faint">キャプションを入力</span>
+            <span className="text-text-faint">{t('entries.image.captionEmpty')}</span>
           ) : (
             <EntryContentView
               entry={entry}

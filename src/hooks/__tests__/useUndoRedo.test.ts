@@ -49,6 +49,8 @@ describe('useUndoRedo', () => {
       deductions: [],
       relations: [],
       addToast: mockAddToast,
+      // getT() が settings.language を参照するため必要
+      settings: { language: 'ja' },
     });
   });
 

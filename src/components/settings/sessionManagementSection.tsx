@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 
 import { ConfirmModal } from '@/components/common/confirmModal';
 import { SectionHeader } from '@/components/settings/sectionHeader';
+import { useT } from '@/i18n';
 import { destroyDatabase } from '@/lib/idb';
 import { useStore } from '@/store';
 import type { GameSession } from '@/types/memo';
@@ -31,6 +32,7 @@ export function SessionManagementSection({
   showResetAllConfirm: boolean;
   setShowResetAllConfirm: (v: boolean) => void;
 }) {
+  const t = useT();
   const clearCurrentSession = useStore((s) => s.clearCurrentSession);
   const removeSession = useStore((s) => s.removeSession);
 
@@ -40,9 +42,9 @@ export function SessionManagementSection({
     await clearCurrentSession();
     clear();
     resume();
-    addToast('セッションを初期化しました');
+    addToast(t('settings.sessionCleared'));
     setOpen(false);
-  }, [clearCurrentSession, addToast, setOpen]);
+  }, [clearCurrentSession, addToast, setOpen, t]);
 
   const handleDeleteSession = useCallback(async () => {
     if (!activeSessionId) return;
@@ -51,9 +53,9 @@ export function SessionManagementSection({
     await removeSession(activeSessionId);
     clear();
     resume();
-    addToast('セッションを削除しました');
+    addToast(t('settings.sessionDeleted'));
     setOpen(false);
-  }, [activeSessionId, removeSession, addToast, setOpen]);
+  }, [activeSessionId, removeSession, addToast, setOpen, t]);
 
   const handleResetAll = useCallback(async () => {
     localStorage.clear();
@@ -64,13 +66,13 @@ export function SessionManagementSection({
   return (
     <>
       {/* ── 現在のセッション ── */}
-      <SectionHeader divider>現在のセッション</SectionHeader>
+      <SectionHeader divider>{t('settings.currentSession')}</SectionHeader>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* 初期化 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            すべてのメモ・登場人物・メモグループ・画像データを削除します。セッション自体は残ります。
+            {t('settings.clearSessionDescription')}
           </span>
           <div>
             <button
@@ -78,11 +80,11 @@ export function SessionManagementSection({
               disabled={isDemo}
               className="btn-danger btn-lg"
             >
-              初期化する
+              {t('settings.clearSessionButton')}
             </button>
             {isDemo && (
               <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
-                サンプルシナリオは初期化できません
+                {t('settings.demoClearDisabled')}
               </span>
             )}
           </div>
@@ -91,7 +93,7 @@ export function SessionManagementSection({
         {/* 削除 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            セッションとそのデータをすべて削除します。
+            {t('settings.deleteSessionDescription')}
           </span>
           <div>
             <button
@@ -99,16 +101,16 @@ export function SessionManagementSection({
               disabled={isDemo || sessions.length <= 1}
               className="btn-danger btn-lg"
             >
-              セッションを削除
+              {t('settings.deleteSessionButton')}
             </button>
             {isDemo ? (
               <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
-                サンプルシナリオは削除できません
+                {t('settings.demoDeleteDisabled')}
               </span>
             ) : (
               sessions.length <= 1 && (
                 <span style={{ fontSize: 14, color: 'var(--text-faint)', marginLeft: 8 }}>
-                  最後のセッションは削除できません
+                  {t('settings.lastSessionDisabled')}
                 </span>
               )
             )}
@@ -117,15 +119,15 @@ export function SessionManagementSection({
       </div>
 
       {/* ── 完全リセット ── */}
-      <SectionHeader divider>完全リセット</SectionHeader>
+      <SectionHeader divider>{t('settings.fullReset')}</SectionHeader>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          すべてのセッション・設定・保存データを完全に削除し、アプリを初期状態に戻します。
+          {t('settings.fullResetDescription')}
         </span>
         <div>
           <button onClick={() => setShowResetAllConfirm(true)} className="btn-danger btn-lg">
-            完全リセット
+            {t('settings.fullResetButton')}
           </button>
         </div>
       </div>
@@ -133,11 +135,11 @@ export function SessionManagementSection({
       <ConfirmModal
         open={showClearConfirm}
         onClose={() => setShowClearConfirm(false)}
-        title="現在のセッションを初期化しますか？"
-        confirmationLabel="すべてのメモ・登場人物・画像データが削除されることを理解しました"
+        title={t('settings.clearConfirmTitle')}
+        confirmationLabel={t('settings.clearConfirmLabel')}
         actions={[
           {
-            label: '初期化する',
+            label: t('settings.clearConfirmAction'),
             color: 'var(--danger)',
             requiresConfirmation: true,
             onClick: handleClearSession,
@@ -148,11 +150,11 @@ export function SessionManagementSection({
       <ConfirmModal
         open={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
-        title="現在のセッションを削除しますか？"
-        confirmationLabel="セッションとそのすべてのデータが完全に削除されることを理解しました"
+        title={t('settings.deleteConfirmTitle')}
+        confirmationLabel={t('settings.deleteConfirmLabel')}
         actions={[
           {
-            label: '削除する',
+            label: t('settings.deleteConfirmAction'),
             color: 'var(--danger)',
             requiresConfirmation: true,
             onClick: handleDeleteSession,
@@ -163,11 +165,11 @@ export function SessionManagementSection({
       <ConfirmModal
         open={showResetAllConfirm}
         onClose={() => setShowResetAllConfirm(false)}
-        title="アプリを完全にリセットしますか？"
-        confirmationLabel="すべてのセッション・メモ・登場人物・設定・画像データが完全に削除されることを理解しました"
+        title={t('settings.resetAllConfirmTitle')}
+        confirmationLabel={t('settings.resetAllConfirmLabel')}
         actions={[
           {
-            label: '完全リセット',
+            label: t('settings.resetAllConfirmAction'),
             color: 'var(--danger)',
             requiresConfirmation: true,
             onClick: handleResetAll,

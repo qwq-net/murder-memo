@@ -5,10 +5,12 @@ import { ModalFrame } from '@/components/common/modalFrame';
 import { X } from '@/components/icons';
 import { RelationDiagramSvg } from '@/components/relations/relationDiagramSvg';
 import { RelationListView } from '@/components/relations/relationListView';
+import { useT } from '@/i18n';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useStore } from '@/store';
 
 export function RelationDiagramModal() {
+  const t = useT();
   const isOpen = useStore((s) => s.isRelationDiagramOpen);
   const setOpen = useStore((s) => s.setRelationDiagramOpen);
   const characters = useStore((s) => s.characters);
@@ -18,7 +20,7 @@ export function RelationDiagramModal() {
   const hasChars = characters.length >= 2;
 
   return (
-    <ModalFrame open={isOpen} onClose={() => setOpen(false)} width={560} ariaLabel="相関図">
+    <ModalFrame open={isOpen} onClose={() => setOpen(false)} width={560} ariaLabel={t('relations.title')}>
       {/* ヘッダー */}
       <div
         style={{
@@ -38,33 +40,33 @@ export function RelationDiagramModal() {
               letterSpacing: '0.04em',
             }}
           >
-            相関図
+            {t('relations.title')}
           </span>
           {/* タブ切替（デスクトップのみ） */}
           {!isMobile && hasChars && (
             <div style={{ display: 'flex', gap: 4 }}>
-              {(['list', 'diagram'] as const).map((t) => (
+              {(['list', 'diagram'] as const).map((tabKey) => (
                 <button
-                  key={t}
-                  onClick={() => setTab(t)}
+                  key={tabKey}
+                  onClick={() => setTab(tabKey)}
                   style={{
-                    background: tab === t ? 'var(--bg-active)' : 'none',
+                    background: tab === tabKey ? 'var(--bg-active)' : 'none',
                     border: 'none',
                     borderRadius: 'var(--radius-sm)',
-                    color: tab === t ? 'var(--text-primary)' : 'var(--text-muted)',
+                    color: tab === tabKey ? 'var(--text-primary)' : 'var(--text-muted)',
                     fontSize: 12,
                     padding: '3px 8px',
                     cursor: 'pointer',
                     transition: 'color 0.12s, background 0.12s',
                   }}
                 >
-                  {t === 'list' ? 'リスト' : '図'}
+                  {tabKey === 'list' ? t('relations.tabList') : t('relations.tabDiagram')}
                 </button>
               ))}
             </div>
           )}
         </div>
-        <button onClick={() => setOpen(false)} className="modal-close-btn" aria-label="閉じる">
+        <button onClick={() => setOpen(false)} className="modal-close-btn" aria-label={t('common.close')}>
           <X size={18} />
         </button>
       </div>
@@ -72,7 +74,7 @@ export function RelationDiagramModal() {
       {/* ボディ */}
       <div style={{ padding: '4px 18px 18px' }}>
         {!hasChars ? (
-          <ModalEmptyMessage>登場人物を2人以上設定してください</ModalEmptyMessage>
+          <ModalEmptyMessage>{t('relations.needMoreChars')}</ModalEmptyMessage>
         ) : tab === 'list' || isMobile ? (
           <RelationListView />
         ) : (

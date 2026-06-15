@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { Plus } from '@/components/icons';
+import { useT } from '@/i18n';
 
 export interface GroupSelectorGroupOption {
   /** グループ ID */
@@ -40,6 +41,7 @@ export function GroupSelectorView({
   onGroupIdChange,
   onAddGroup,
 }: GroupSelectorViewProps) {
+  const t = useT();
   const [newGroupLabel, setNewGroupLabel] = useState('');
   const [isAddingGroup, setIsAddingGroup] = useState(false);
 
@@ -57,13 +59,13 @@ export function GroupSelectorView({
       <select
         value={selectedGroupId}
         onChange={(e) => onGroupIdChange(e.target.value)}
-        aria-label="追加先メモグループ"
+        aria-label={t('entries.group.selectLabel')}
         className="bg-bg-elevated border-border-subtle text-text-secondary flex-1 rounded-sm border px-1.5 py-[3px] text-sm outline-none"
       >
         {isTimeline ? (
           <>
             <option value="">
-              {groups.length === 0 ? 'メモグループなし' : 'メモグループを選択…'}
+              {groups.length === 0 ? t('entries.group.none') : t('entries.group.selectPrompt')}
             </option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
@@ -73,7 +75,7 @@ export function GroupSelectorView({
           </>
         ) : (
           <>
-            <option value="">未分類</option>
+            <option value="">{t('common.uncategorized')}</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.label}
@@ -103,22 +105,26 @@ export function GroupSelectorView({
                 setNewGroupLabel('');
               }
             }}
-            placeholder={isTimeline ? '当日、前日 等' : 'メモグループ名'}
-            aria-label="メモグループ名"
+            placeholder={
+              isTimeline
+                ? t('entries.group.namePlaceholderTimeline')
+                : t('entries.group.namePlaceholderMemo')
+            }
+            aria-label={t('entries.group.nameLabel')}
             className="bg-bg-base border-border-default text-text-primary min-w-[60px] flex-1 rounded-sm border px-1.5 py-[3px] text-sm outline-none"
           />
           <button onClick={handleAddGroup} className="btn-primary btn-sm text-sm">
-            追加
+            {t('common.add')}
           </button>
         </div>
       ) : (
         <button
           onClick={() => setIsAddingGroup(true)}
-          title="メモグループを追加"
+          title={t('entries.group.addTitle')}
           className="border-border-default text-text-muted hover:border-border-strong hover:text-text-secondary flex cursor-pointer items-center rounded-sm border border-dashed bg-transparent px-2 py-[3px] text-sm whitespace-nowrap transition-[border-color,color] duration-150"
         >
           <Plus size={12} strokeWidth={2.5} className="mr-1" />
-          メモグループ
+          {t('entries.group.add')}
         </button>
       )}
     </div>

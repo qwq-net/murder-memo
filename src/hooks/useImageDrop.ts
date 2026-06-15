@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 
+import { useT } from '@/i18n';
 import { ImagePersistError, persistResizedImage } from '@/lib/imagePersist';
 import { useStore } from '@/store';
 import type { MemoEntry, PanelId } from '@/types/memo';
@@ -9,6 +10,7 @@ import type { MemoEntry, PanelId } from '@/types/memo';
  * 全パネルで利用可能。
  */
 export function useImageDrop(panel: PanelId) {
+  const t = useT();
   const addEntry = useStore((s) => s.addEntry);
   const addToast = useStore((s) => s.addToast);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,7 +30,7 @@ export function useImageDrop(panel: PanelId) {
         // 先に putImage すると、ここで return した場合に参照されない孤児 blob が IDB に残る
         const groups = useStore.getState().timelineGroups;
         if (groups.length === 0) {
-          addToast('先にメモグループを追加してください', 'error');
+          addToast(t('hooks.image.needGroupFirst'), 'error');
           return false;
         }
         extra.timelineGroupId = groups[0].id;
@@ -52,10 +54,10 @@ export function useImageDrop(panel: PanelId) {
       } catch (err) {
         if (err instanceof ImagePersistError) {
           if (err.stage === 'resize') {
-            addToast('画像の読み込みに失敗しました', 'error');
+            addToast(t('hooks.image.loadFailed'), 'error');
             console.error('resizeImage に失敗しました', err.cause);
           } else if (err.stage === 'persist') {
-            addToast('画像の保存に失敗しました', 'error');
+            addToast(t('hooks.image.saveFailed'), 'error');
             console.error('putImage に失敗しました', err.cause);
           }
           // stage === 'attach' は addEntry がトースト済み・blob 後始末も済んでいるため何もしない
@@ -63,7 +65,7 @@ export function useImageDrop(panel: PanelId) {
         return false;
       }
     },
-    [addEntry, addToast, panel],
+    [addEntry, addToast, panel, t],
   );
 
   /**
@@ -83,10 +85,10 @@ export function useImageDrop(panel: PanelId) {
         added += 1;
       }
       if (added > 0) {
-        addToast(added === 1 ? '画像を追加しました' : `画像を ${added} 件追加しました`);
+        addToast(t('hooks.image.added', { n: added }));
       }
     },
-    [addImage, addToast],
+    [addImage, addToast, t],
   );
 
   const handleFileChange = useCallback(

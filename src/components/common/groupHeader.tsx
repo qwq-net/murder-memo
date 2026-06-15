@@ -1,5 +1,6 @@
 import { ConfirmModal } from '@/components/common/confirmModal';
 import { GroupHeaderView } from '@/components/common/groupHeaderView';
+import { useT } from '@/i18n';
 import type { useDeleteWithConfirmation } from '@/hooks/useDeleteWithConfirmation';
 import type { useGroupLabelEditor } from '@/hooks/useGroupLabelEditor';
 
@@ -44,6 +45,7 @@ export function GroupHeader({
   onMoveDown,
   deleteModal,
 }: GroupHeaderProps) {
+  const t = useT();
   return (
     <>
       <GroupHeaderView
@@ -70,7 +72,7 @@ export function GroupHeader({
         confirmationLabel={deleteModal.confirmationLabel}
         actions={[
           {
-            label: '削除',
+            label: t('common.delete'),
             color: 'var(--danger)',
             requiresConfirmation: true,
             onClick: deleteConfirm.executeDelete,

@@ -9,6 +9,7 @@ import { useAutoRegisterLinkKeywords } from '@/hooks/useAutoRegisterLinkKeywords
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useEntryDraft } from '@/hooks/useEntryDraft';
 import { useImageBlob } from '@/hooks/useImageBlob';
+import { useT } from '@/i18n';
 import { isCancelEscape, isCommitEnter } from '@/lib/keyboardKeys';
 import { detectInlineCharacterIds } from '@/lib/parseCharacterText';
 import { useStore } from '@/store';
@@ -27,6 +28,7 @@ interface ImageEntryProps {
  * - サムネイル URL は `useImageBlob` で IDB から取得し、両モードで使う
  */
 export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
+  const t = useT();
   const src = useImageBlob(entry.imageBlobKey);
   const updateEntry = useStore((s) => s.updateEntry);
   const focusedEntryId = useStore((s) => s.focusedEntryId);
@@ -123,7 +125,7 @@ export function ImageEntry({ entry, isHovered }: ImageEntryProps) {
           <textarea
             ref={inputRef}
             value={draft.content}
-            placeholder="キャプションを入力"
+            placeholder={t('entries.image.captionPlaceholder')}
             onChange={(e) => {
               setDraft({ content: e.target.value });
               resize(e.target);

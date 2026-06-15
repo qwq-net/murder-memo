@@ -8,6 +8,7 @@ import { MarkerCard } from '@/components/settings/markerCard';
 import { SectionHeader } from '@/components/settings/sectionHeader';
 import { SessionManagementSection } from '@/components/settings/sessionManagementSection';
 import { SettingRow } from '@/components/settings/settingRow';
+import { useT } from '@/i18n';
 import { DEFAULT_PANEL_LAYOUT, fullPanelOrder, layoutsEqual } from '@/lib/panelLayout';
 import { useStore } from '@/store';
 import { selectResolvedLayout } from '@/store/selectors';
@@ -15,6 +16,7 @@ import type { AppSettings } from '@/store/slices/settings';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
 
 export function SettingsPanel() {
+  const t = useT();
   const isOpen = useStore((s) => s.isSettingsOpen);
   const setOpen = useStore((s) => s.setSettingsOpen);
   const settings = useStore((s) => s.settings);
@@ -52,6 +54,13 @@ export function SettingsPanel() {
   const hasSubModal =
     showClearConfirm || showDeleteConfirm || showResetAllConfirm || showExportConfirm;
 
+  // マーカーカードのパネル別ラベル（t が必要なためレンダー時に生成）
+  const markerPanels: { panel: PanelId; label: string }[] = [
+    { panel: 'free', label: t('panels.free') },
+    { panel: 'timeline', label: t('panels.timeline') },
+    { panel: 'personal', label: t('panels.personal') },
+  ];
+
   return (
     <>
       <ModalFrame
@@ -60,54 +69,53 @@ export function SettingsPanel() {
           if (!hasSubModal) setOpen(false);
         }}
         width={480}
-        ariaLabel="アプリ設定"
+        ariaLabel={t('settings.title')}
       >
         {/* header */}
-        <ModalHeader title="アプリ設定" onClose={() => setOpen(false)} />
+        <ModalHeader title={t('settings.title')} onClose={() => setOpen(false)} />
 
         {/* body */}
         <div style={{ padding: '2px 18px 18px' }}>
           {/* ── 一般 ── */}
-          <SectionHeader>一般</SectionHeader>
+          <SectionHeader>{t('settings.general')}</SectionHeader>
 
           <SettingRow
-            label="言語"
-            note="※WIP"
+            label={t('settings.language')}
             value={settings.language}
             onChange={(v) => update('language', v)}
             options={[
               { value: 'ja', label: '日本語' },
-              { value: 'en', label: 'English', disabled: true },
+              { value: 'en', label: 'English' },
             ]}
           />
           <SettingRow
-            label="テーマ"
+            label={t('settings.theme')}
             value={settings.theme}
             onChange={(v) => update('theme', v)}
             options={[
-              { value: 'auto', label: '自動' },
-              { value: 'dark', label: 'ダーク' },
-              { value: 'light', label: 'ライト' },
+              { value: 'auto', label: t('settings.themeAuto') },
+              { value: 'dark', label: t('settings.themeDark') },
+              { value: 'light', label: t('settings.themeLight') },
             ]}
           />
           <SettingRow
-            label="入力欄の位置"
+            label={t('settings.inputPosition')}
             value={settings.inputPosition}
             onChange={(v) => update('inputPosition', v)}
             options={[
-              { value: 'top', label: '上部' },
-              { value: 'bottom', label: '下部' },
+              { value: 'top', label: t('settings.inputTop') },
+              { value: 'bottom', label: t('settings.inputBottom') },
             ]}
           />
 
           {/* ── レイアウト（グローバル: 新規セッションの初期値） ── */}
           <SectionHeader
             divider
-            hint="新しいセッションの初期値になります"
+            hint={t('settings.layoutHint')}
             onReset={() => update('layout', DEFAULT_PANEL_LAYOUT)}
             resetDisabled={layoutsEqual(settings.layout, DEFAULT_PANEL_LAYOUT)}
           >
-            レイアウト
+            {t('settings.layout')}
           </SectionHeader>
 
           <LayoutEditor layout={settings.layout} onChange={(l) => update('layout', l)} />
@@ -131,15 +139,11 @@ export function SettingsPanel() {
               settings.defaultCharacterDisplay.personal.visibility === 'off'
             }
           >
-            関連人物マーカー（デフォルト）
+            {t('settings.markers')}
           </SectionHeader>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              { panel: 'free' as PanelId, label: 'フリーメモ' },
-              { panel: 'timeline' as PanelId, label: 'タイムライン' },
-              { panel: 'personal' as PanelId, label: '自分用メモ' },
-            ].map(({ panel, label }) => (
+            {markerPanels.map(({ panel, label }) => (
               <MarkerCard
                 key={panel}
                 panel={panel}

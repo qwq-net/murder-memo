@@ -1,6 +1,7 @@
 import { ColorDot } from '@/components/common/colorDot';
 import { OrderBadge } from '@/components/common/orderBadge';
-import { PANEL_CARD_ACCENT, PANEL_ORDER_LABELS } from '@/components/settings/panelConstants';
+import { PANEL_CARD_ACCENT } from '@/components/settings/panelConstants';
+import { useT } from '@/i18n';
 import type { PanelId } from '@/types/memo';
 
 /**
@@ -14,6 +15,8 @@ export function PanelOrderEditor({
   order: PanelId[];
   onChange: (order: PanelId[]) => void;
 }) {
+  const t = useT();
+
   const swap = (index: number, direction: -1 | 1) => {
     const newOrder = [...order];
     const target = index + direction;
@@ -46,14 +49,14 @@ export function PanelOrderEditor({
 
           {/* label */}
           <span style={{ flex: 1, fontSize: 14, color: 'var(--text-primary)' }}>
-            {PANEL_ORDER_LABELS[panelId]}
+            {t(`panels.${panelId}` as Parameters<typeof t>[0])}
           </span>
 
           {/* up / down buttons */}
           <button
             disabled={i === 0}
             onClick={() => swap(i, -1)}
-            aria-label="上に移動"
+            aria-label={t('settings.panelMoveUp')}
             style={{
               background: 'none',
               border: 'none',
@@ -77,7 +80,7 @@ export function PanelOrderEditor({
           <button
             disabled={i === order.length - 1}
             onClick={() => swap(i, 1)}
-            aria-label="下に移動"
+            aria-label={t('settings.panelMoveDown')}
             style={{
               background: 'none',
               border: 'none',

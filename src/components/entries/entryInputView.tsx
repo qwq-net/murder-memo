@@ -1,5 +1,7 @@
 import type { ReactNode, Ref } from 'react';
 
+import { useT } from '@/i18n';
+
 interface EntryInputViewProps {
   /** タイムライン用（時刻欄を出す）か */
   isTimeline: boolean;
@@ -64,6 +66,7 @@ export function EntryInputView({
   timeError,
   onImagePickerOpen,
 }: EntryInputViewProps) {
+  const t = useT();
   return (
     <div
       className={`bg-bg-surface flex shrink-0 flex-col gap-1 px-2.5 pt-1.5 pb-2 ${
@@ -84,7 +87,7 @@ export function EntryInputView({
             onBlur={onTimeBlur}
             placeholder="--:--"
             disabled={disabled}
-            aria-label="時刻"
+            aria-label={t('entries.input.timeLabel')}
             aria-invalid={timeError || undefined}
             aria-describedby={timeError ? 'entry-time-error' : undefined}
             className="text-panel-timeline-accent focus:border-b-panel-timeline-accent w-11 shrink-0 border-0 border-b bg-transparent px-0.5 py-px text-center font-mono text-sm tracking-wide transition-[border-color] duration-150 outline-none"
@@ -116,7 +119,7 @@ export function EntryInputView({
         {onImagePickerOpen && (
           <button
             onClick={onImagePickerOpen}
-            title="画像を追加"
+            title={t('entries.input.addImage')}
             style={{
               background: 'none',
               border: 'none',
@@ -160,12 +163,12 @@ export function EntryInputView({
       {/* スクリーンリーダー用エラーメッセージ */}
       {timeError && (
         <span id="entry-time-error" className="sr-only">
-          時刻の形式が正しくありません
+          {t('entries.input.timeError')}
         </span>
       )}
       {textError && (
         <span id="entry-text-error" className="sr-only">
-          テキストを入力してください
+          {t('entries.input.textError')}
         </span>
       )}
     </div>

@@ -4,6 +4,7 @@ import { ModalEmptyMessage } from '@/components/common/modalEmptyMessage';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { ModalHeader } from '@/components/common/modalHeader';
 import { DeductionRowView, type SuspicionLevel } from '@/components/deductions/deductionRowView';
+import { useT } from '@/i18n';
 import { splitCharactersByRole } from '@/lib/characterSort';
 import { useStore } from '@/store';
 
@@ -50,6 +51,7 @@ function DeductionRow({
 }
 
 export function DeductionModal() {
+  const t = useT();
   const isOpen = useStore((s) => s.isDeductionOpen);
   const setOpen = useStore((s) => s.setDeductionOpen);
   const characters = useStore((s) => s.characters);
@@ -57,14 +59,19 @@ export function DeductionModal() {
   const { plChars, npcChars } = useMemo(() => splitCharactersByRole(characters), [characters]);
 
   return (
-    <ModalFrame open={isOpen} onClose={() => setOpen(false)} width={440} ariaLabel="人物推理メモ">
+    <ModalFrame
+      open={isOpen}
+      onClose={() => setOpen(false)}
+      width={440}
+      ariaLabel={t('deductions.ariaLabel')}
+    >
       {/* ヘッダー */}
-      <ModalHeader title="推理メモ" onClose={() => setOpen(false)} />
+      <ModalHeader title={t('deductions.title')} onClose={() => setOpen(false)} />
 
       {/* ボディ */}
       <div style={{ padding: '4px 18px 18px' }}>
         {characters.length === 0 ? (
-          <ModalEmptyMessage>登場人物が設定されていません</ModalEmptyMessage>
+          <ModalEmptyMessage>{t('deductions.noCharacters')}</ModalEmptyMessage>
         ) : (
           <>
             {/* プレイヤー */}
@@ -79,7 +86,7 @@ export function DeductionModal() {
                     padding: '10px 0 4px',
                   }}
                 >
-                  プレイヤー
+                  {t('deductions.sectionPlayer')}
                 </div>
                 {plChars.map((c) => (
                   <DeductionRow

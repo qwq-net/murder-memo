@@ -4,18 +4,22 @@ import { createPortal } from 'react-dom';
 import { SearchOverlayShellView } from '@/components/search/searchOverlayShellView';
 import { SearchResultItem } from '@/components/search/searchResultItem';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useT } from '@/i18n';
 import { navigateToEntry } from '@/lib/entryNavigation';
 import { searchEntries, tokenizeQuery } from '@/lib/entrySearch';
 import { fullPanelOrder } from '@/lib/panelLayout';
-import { PANEL_ACCENT, PANEL_LABEL as PANEL_TITLES } from '@/lib/panelMeta';
+import { PANEL_ACCENT } from '@/lib/panelMeta';
 import { useStore } from '@/store';
 import { selectResolvedLayout } from '@/store/selectors';
-import type { MemoEntry } from '@/types/memo';
+import type { MemoEntry, PanelId } from '@/types/memo';
 
 const MAX_RESULTS = 50;
 const DEBOUNCE_MS = 150;
 
 export function SearchOverlay() {
+  const t = useT();
+  /** panels.* キーが PanelId と一致するため、直接 t でパネルラベルを引く */
+  const getPanelLabel = (panel: PanelId) => t(`panels.${panel}` as Parameters<typeof t>[0]);
   const isOpen = useStore((s) => s.isSearchOpen);
   const setSearchOpen = useStore((s) => s.setSearchOpen);
   const searchInitialQuery = useStore((s) => s.searchInitialQuery);
@@ -99,10 +103,10 @@ export function SearchOverlay() {
       close();
       revealEntry(entry);
       navigateToEntry(entry.id, entry.panel, setActivePanel, () =>
-        addToast('対象のメモを表示できませんでした', 'error'),
+        addToast(t('search.errorReveal'), 'error'),
       );
     },
-    [close, setActivePanel, revealEntry, addToast],
+    [close, setActivePanel, revealEntry, addToast, t],
   );
 
   if (!isOpen) return null;
@@ -157,8 +161,10 @@ export function SearchOverlay() {
                     opacity: 0.7,
                   }}
                 />
-                {PANEL_TITLES[group.panel]}
-                <span className="text-text-muted ml-1 font-normal">{group.matches.length}件</span>
+                {getPanelLabel(group.panel)}
+                <span className="text-text-muted ml-1 font-normal">
+                  {t('search.groupCount', { n: group.matches.length })}
+                </span>
               </div>
 
               {/* エントリ一覧 */}

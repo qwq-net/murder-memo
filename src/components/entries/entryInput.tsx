@@ -6,6 +6,7 @@ import { useImagePicker } from '@/components/layout/imagePickerContext';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useTimeInput } from '@/hooks/useTimeInput';
+import { useT } from '@/i18n';
 import { resolveGroupSelection } from '@/lib/groupSelection';
 import { isCommitEnter } from '@/lib/keyboardKeys';
 import { resolveEventTime } from '@/lib/timeParser';
@@ -23,6 +24,7 @@ interface EntryInputProps {
  * - グループセレクタは `GroupSelector`（store 連携版）を呼ぶ
  */
 export function EntryInput({ panel }: EntryInputProps) {
+  const t = useT();
   const addEntry = useStore((s) => s.addEntry);
   const timelineGroups = useStore((s) => s.timelineGroups);
   const memoGroups = useStore((s) => s.memoGroups);
@@ -103,7 +105,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         ...(memoGroupId ? { groupId: memoGroupId } : {}),
       }).catch(() => null);
       if (!created) return;
-      addToast('メモを追加しました');
+      addToast(t('entries.input.added'));
       setValue('');
       timeInput.reset();
 
@@ -117,7 +119,7 @@ export function EntryInput({ panel }: EntryInputProps) {
     } finally {
       submittingRef.current = false;
     }
-  }, [value, timeInput, panel, isTimeline, isMemoPanel, effectiveGroupId, addEntry, addToast]);
+  }, [value, timeInput, panel, isTimeline, isMemoPanel, effectiveGroupId, addEntry, addToast, t]);
 
   const disabled = isTimeline && timelineGroups.length === 0;
   const isTop = inputPosition === 'top';
@@ -147,7 +149,7 @@ export function EntryInput({ panel }: EntryInputProps) {
         }
       }}
       placeholder={
-        disabled ? 'まずメモグループを追加してください' : 'メモを入力… (Shift+Enter で改行)'
+        disabled ? t('entries.input.placeholderDisabled') : t('entries.input.placeholder')
       }
       textareaRef={inputRef}
       textError={textError}

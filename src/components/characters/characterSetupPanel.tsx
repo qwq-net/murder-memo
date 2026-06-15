@@ -19,6 +19,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { CharacterRowView } from '@/components/characters/characterRowView';
 import { ModalFrame } from '@/components/common/modalFrame';
 import { X } from '@/components/icons';
+import { useT } from '@/i18n';
 import { splitCharactersByRole } from '@/lib/characterSort';
 import { useStore } from '@/store';
 import type { Character, CharacterRole } from '@/types/memo';
@@ -36,6 +37,7 @@ const DEFAULT_COLORS = [
 ];
 
 export function CharacterSetupPanel() {
+  const t = useT();
   const isOpen = useStore((s) => s.isCharacterSetupOpen);
   const setOpen = useStore((s) => s.setCharacterSetupOpen);
   const characters = useStore((s) => s.characters);
@@ -80,10 +82,10 @@ export function CharacterSetupPanel() {
     const usedColors = new Set(characters.map((c) => c.color));
     const nextColor = DEFAULT_COLORS.find((c) => !usedColors.has(c)) ?? '#888888';
     await addCharacter({ name, color: nextColor, role: activeTab, showInEntries: true });
-    addToast('登場人物を追加しました');
+    addToast(t('characters.toasts.added'));
     setNewName('');
     requestAnimationFrame(() => nameInputRef.current?.focus());
-  }, [newName, characters, addCharacter, activeTab, addToast]);
+  }, [newName, characters, addCharacter, activeTab, addToast, t]);
 
   const tabStyle = (tab: CharacterRole): React.CSSProperties => ({
     flex: 1,
@@ -101,7 +103,12 @@ export function CharacterSetupPanel() {
   });
 
   return (
-    <ModalFrame open={isOpen} onClose={() => setOpen(false)} width={480} ariaLabel="登場人物設定">
+    <ModalFrame
+      open={isOpen}
+      onClose={() => setOpen(false)}
+      width={480}
+      ariaLabel={t('characters.heading')}
+    >
       {/* ModalFrame の overflowY: auto 内で、ヘッダー/タブ固定 + リスト部スクロールを実現 */}
       <div
         style={{
@@ -130,10 +137,16 @@ export function CharacterSetupPanel() {
               fontWeight: 600,
             }}
           >
-            登場人物
+            {t('characters.heading')}
           </span>
-          <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>ドラッグで行動順を変更</span>
-          <button onClick={() => setOpen(false)} aria-label="閉じる" className="modal-close-btn">
+          <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>
+            {t('characters.reorderHint')}
+          </span>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label={t('common.close')}
+            className="modal-close-btn"
+          >
             <X size={18} />
           </button>
         </div>
@@ -141,7 +154,7 @@ export function CharacterSetupPanel() {
         {/* プレイヤー / NPC タブ */}
         <div
           role="tablist"
-          aria-label="キャラクタータイプ"
+          aria-label={t('characters.tabs.typeList')}
           style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}
         >
           <button
@@ -152,7 +165,7 @@ export function CharacterSetupPanel() {
             onClick={() => setActiveTab('pl')}
             style={tabStyle('pl')}
           >
-            プレイヤー（{plChars.length}）
+            {t('characters.tabs.pl', { n: plChars.length })}
           </button>
           <button
             role="tab"
@@ -162,7 +175,7 @@ export function CharacterSetupPanel() {
             onClick={() => setActiveTab('npc')}
             style={tabStyle('npc')}
           >
-            NPC（{npcChars.length}）
+            {t('characters.tabs.npc', { n: npcChars.length })}
           </button>
         </div>
 
@@ -182,7 +195,7 @@ export function CharacterSetupPanel() {
                 fontSize: 14,
               }}
             >
-              {activeTab === 'pl' ? 'プレイヤーを追加してください' : 'NPCを追加してください'}
+              {activeTab === 'pl' ? t('characters.empty.pl') : t('characters.empty.npc')}
             </div>
           )}
 
@@ -203,7 +216,7 @@ export function CharacterSetupPanel() {
                   onUpdate={updateCharacter}
                   onRemove={(id) => {
                     removeCharacter(id);
-                    addToast('登場人物を削除しました');
+                    addToast(t('characters.toasts.removed'));
                   }}
                 />
               ))}
@@ -231,13 +244,17 @@ export function CharacterSetupPanel() {
                 handleAdd();
               }
             }}
-            placeholder={activeTab === 'pl' ? 'プレイヤー名を入力' : 'NPC名を入力'}
-            aria-label="登場人物の名前"
+            placeholder={
+              activeTab === 'pl'
+                ? t('characters.add.placeholderPl')
+                : t('characters.add.placeholderNpc')
+            }
+            aria-label={t('characters.add.nameLabel')}
             className="input-base"
             style={{ flex: 1, padding: '6px 10px' }}
           />
           <button onClick={handleAdd} disabled={!newName.trim()} className="btn-primary btn-lg">
-            追加
+            {t('common.add')}
           </button>
         </div>
       </div>

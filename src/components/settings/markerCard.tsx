@@ -5,25 +5,10 @@ import { MinimalSlot } from '@/components/characters/characterBadgeBar';
 import { ColorDot } from '@/components/common/colorDot';
 import { RadioGroup } from '@/components/common/radioGroup';
 import { PANEL_CARD_ACCENT } from '@/components/settings/panelConstants';
+import { useT } from '@/i18n';
 import type { CharacterDisplayFormat, CharacterDisplayVisibility, PanelId } from '@/types/memo';
 
-/* ── 共通定数 ─────────────────────────────────────────────────────────────── */
-
-const VISIBILITY_HINTS: Record<CharacterDisplayVisibility, string | null> = {
-  always: null,
-  minimal: 'ホバー / 編集中に全表示',
-  off: null,
-};
-
 /* ── Marker Preview ───────────────────────────────────────────────────────── */
-
-const MOCK_CHARACTERS = [
-  { name: '医者', color: '#e74c3c', active: true },
-  { name: '執事', color: '#3498db', active: true },
-  { name: '令嬢', color: '#2ecc71', active: false },
-  { name: '探偵', color: '#f39c12', active: true },
-  { name: '庭師', color: '#9b59b6', active: false },
-];
 
 const PREVIEW_HEIGHT = 30;
 
@@ -34,7 +19,17 @@ function MarkerPreview({
   format: CharacterDisplayFormat;
   visibility: CharacterDisplayVisibility;
 }) {
+  const t = useT();
   const [hovered, setHovered] = useState(false);
+
+  // デモキャラクター名は t() で言語ごとに切替
+  const mockCharacters = [
+    { name: t('settings.mockDoctor'), color: '#e74c3c', active: true },
+    { name: t('settings.mockButler'), color: '#3498db', active: true },
+    { name: t('settings.mockLady'), color: '#2ecc71', active: false },
+    { name: t('settings.mockDetective'), color: '#f39c12', active: true },
+    { name: t('settings.mockGardener'), color: '#9b59b6', active: false },
+  ];
 
   const containerStyle: React.CSSProperties = {
     background: 'var(--bg-base)',
@@ -50,7 +45,7 @@ function MarkerPreview({
     return (
       <div style={{ ...containerStyle, justifyContent: 'center' }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-          非表示
+          {t('settings.markerVisibilityOffPreview')}
         </span>
       </div>
     );
@@ -65,7 +60,7 @@ function MarkerPreview({
       style={containerStyle}
     >
       <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-        {MOCK_CHARACTERS.map((c) => {
+        {mockCharacters.map((c) => {
           const badge = (
             <CharacterBadge
               key={c.name}
@@ -109,8 +104,16 @@ export function MarkerCard({
   onChangeFormat: (v: CharacterDisplayFormat) => void;
   onChangeVisibility: (v: CharacterDisplayVisibility) => void;
 }) {
+  const t = useT();
   const accent = PANEL_CARD_ACCENT[panel];
-  const hint = VISIBILITY_HINTS[settings.visibility];
+
+  // 表示モード別のヒントテキスト（minimal のみ表示、null は非表示）
+  const visibilityHints: Record<CharacterDisplayVisibility, string | null> = {
+    always: null,
+    minimal: t('settings.markerVisibilityMinimalHint'),
+    off: null,
+  };
+  const hint = visibilityHints[settings.visibility];
 
   return (
     <div
@@ -146,14 +149,14 @@ export function MarkerCard({
         {/* format column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
-            形式
+            {t('settings.markerFormat')}
           </span>
           <RadioGroup<CharacterDisplayFormat>
             stretch
             options={[
-              { value: 'full', label: 'フル' },
-              { value: 'badge', label: 'バッジ' },
-              { value: 'text', label: 'テキスト' },
+              { value: 'full', label: t('settings.markerFormatFull') },
+              { value: 'badge', label: t('settings.markerFormatBadge') },
+              { value: 'text', label: t('settings.markerFormatText') },
             ]}
             value={settings.format}
             onChange={onChangeFormat}
@@ -163,14 +166,14 @@ export function MarkerCard({
         {/* mode column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
-            モード
+            {t('settings.markerMode')}
           </span>
           <RadioGroup<CharacterDisplayVisibility>
             stretch
             options={[
-              { value: 'always', label: '常時' },
-              { value: 'minimal', label: 'ミニマル' },
-              { value: 'off', label: 'オフ' },
+              { value: 'always', label: t('settings.markerVisibilityAlways') },
+              { value: 'minimal', label: t('settings.markerVisibilityMinimal') },
+              { value: 'off', label: t('settings.markerVisibilityOff') },
             ]}
             value={settings.visibility}
             onChange={onChangeVisibility}
