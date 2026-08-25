@@ -6,6 +6,8 @@
 
 [memo.qwqb.net](https://memo.qwqb.net/)
 
+![マダめもくんのスクリーンショット。フリーメモ・自分用メモ・タイムラインの3パネル表示](Screenshot.png)
+
 ## 開発
 
 ```bash
